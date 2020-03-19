@@ -258,20 +258,19 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 锚点坐标转屏幕坐标
+		/// 世界坐标 转 锚点坐标
 		/// </summary>
-		public static Vector3 GetUIPosByAnchoredPos(RectTransform rectTransform, Vector2 anchoredPosition)
+		public static Vector2 GetAnchoredPosByWorldPos(RectTransform rectTransform, Vector3 worldPos,Vector2 anchors)
 		{
-			return new Vector3(
-				((-rectTransform.pivot.x + 0.5f) * rectTransform.rect.width + anchoredPosition.x) * rectTransform.lossyScale.x + rectTransform.position.x,
-				((1 - rectTransform.pivot.y - 0.5f) * rectTransform.rect.height + anchoredPosition.y) * rectTransform.lossyScale.y + rectTransform.position.y,
-				rectTransform.position.z);
+			return new Vector2(
+				(worldPos.x - rectTransform.position.x) / rectTransform.lossyScale.x + (rectTransform.pivot.x - anchors.x) * rectTransform.rect.width,
+				(worldPos.y - rectTransform.position.y) / rectTransform.lossyScale.y + (rectTransform.pivot.y - anchors.y) * rectTransform.rect.height);
 		}
 
 		/// <summary>
-		/// 锚点坐标转屏幕坐标
+		/// 锚点坐标 转 世界坐标
 		/// </summary>
-		public static Vector3 GetUIPosByAnchoredPos(RectTransform rectTransform, Vector2 anchoredPosition, Vector2 anchors)
+		public static Vector3 GetWorldPosByAnchoredPos(RectTransform rectTransform, Vector2 anchoredPosition, Vector2 anchors)
 		{
 			return new Vector3(
 				((-rectTransform.pivot.x + anchors.x) * rectTransform.rect.width + anchoredPosition.x) * rectTransform.lossyScale.x + rectTransform.position.x,

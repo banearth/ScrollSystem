@@ -55,13 +55,6 @@ namespace BanSupport
 		private bool enableScrollOnlyWhenOutOfBounds = false;
 
 		/// <summary>
-		/// 在边界内的时候强制居中
-		/// </summary>
-		[Tooltip("在边界内的时候强制居中")]
-		[SerializeField]
-		private bool forceCenterWhenInBounds = false;
-
-		/// <summary>
 		/// 直接用于滚动
 		/// </summary>
 		public RectTransform contentTrans;
@@ -74,16 +67,10 @@ namespace BanSupport
 		private float gap = 10;
 
 		/// <summary>
-		/// 初始偏移量
-		/// </summary>
-		[SerializeField]
-		private float startOffset = 0;
-
-		/// <summary>
 		/// Gizmos相关
 		/// </summary>
 		[SerializeField]
-		private bool drawGizmos = false;
+		private bool drawGizmos = true;
 
 		public bool DrawGizmos { get { return drawGizmos; } }
 
@@ -101,7 +88,7 @@ namespace BanSupport
 		{
 			get
 			{
-				return (this.transform as RectTransform).rect.width - 2 * border.x;
+				return (this.transform as RectTransform).rect.width - border.x * 2;
 			}
 		}
 
@@ -201,17 +188,9 @@ namespace BanSupport
 		private Func<float,bool> jumpToAction;
 
 		/// <summary>
-		/// 强制固定到中心的偏移量
+		/// 获得距离中心点的距离
 		/// </summary>
-		private Vector2 _forceCenterOffset;
-
-		public Vector2 forceCenterOffset
-		{
-			get
-			{
-				return _forceCenterOffset;
-			}
-		}
+		private Func<Vector2, float> getDistanceToCenter;
 
 		/// <summary>
 		/// 用于更直观展示剩余缓存数量
@@ -226,6 +205,7 @@ namespace BanSupport
 
 		private int visibleStartIndex = 0;
 		private int visibleEndIndex = 0;
+		private Vector2 centerAnchoredPosition;
 
 #if UNITY_EDITOR
 
@@ -233,14 +213,22 @@ namespace BanSupport
 		private Vector2 m_OldSizeDelta = Vector2.zero;
 		private ScrollDirection m_OldScrollDirection = ScrollDirection.Vertical;
 		private Vector2 m_OldBorder = Vector2.zero;
-		private bool m_OldForceCenterWhenInBounds = false;
 		private float m_OldGap = 10;
-		private float m_OldStartOffset = 0;
 		private int m_OldChildCount = 0;
 		private Action m_TurnSameAction;
 #endif
 
 		#endregion
+
+		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
+		{
+			return Mathf.Abs(anchoredPosition.y - centerAnchoredPosition.y);
+		}
+
+		private float GetDistanceToCenterWhenHorizontal(Vector2 anchoredPosition)
+		{
+			return Mathf.Abs(anchoredPosition.x - centerAnchoredPosition.x);
+		}
 
 		#region 内部类
 
@@ -262,8 +250,8 @@ namespace BanSupport
 				result.right = right;
 				result.middle = (left + right) / 2;
 				var curData = scrollSystem.listData[result.middle];
-				curData.UpdatePos(scrollSystem.updateFrame);
-				result.distance = Mathf.Abs(scrollSystem.transform.position.y - curData.worldPosition.y);
+				curData.CheckVisible(scrollSystem.updateFrame);
+				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
 				result.found = curData.isVisible;
 				return result;
 			}
@@ -394,6 +382,7 @@ namespace BanSupport
 		{
 			if (Application.isPlaying)
 			{
+				drawGizmos = false;
 				Init();
 			}
 #if UNITY_EDITOR
@@ -419,11 +408,13 @@ namespace BanSupport
 				{
 					setSingleDataAction = SetSingleContentDataWhenVertical;
 					jumpToAction = JumpToWhenVertical;
+					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
 					setSingleDataAction = SetSingleContentDataWhenHorizontal;
 					jumpToAction = JumpToWhenHorizontal;
+					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
 				}
 			}
 		}
@@ -482,8 +473,8 @@ namespace BanSupport
 						SetAllData(false);
 						break;
 				}
-				dataChanged = DataChange.None;
 				Show();
+				dataChanged = DataChange.None;
 			}
 		}
 
@@ -495,13 +486,28 @@ namespace BanSupport
 			});
 		}
 
+		private void UpdateBounds()
+		{
+			var rectTransfrom = this.contentTrans as RectTransform;
+			scrollBounds.left = -rectTransfrom.anchoredPosition.x;
+			scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
+			scrollBounds.up = -rectTransfrom.anchoredPosition.y;
+			scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
+			centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
+			centerAnchoredPosition.y = - Height / 2 - rectTransfrom.anchoredPosition.y;
+
+			//scrollSystem.forceCenterOffset
+
+		}
+
 		/// <summary>
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
 		private void Show()
 		{	
 			updateFrame++;
-			Tools.GetRectBounds(this.transform as RectTransform, scrollBounds);
+			UpdateBounds();
+
 			if (listData.Count <= 0)
 			{
 				return;
@@ -515,6 +521,7 @@ namespace BanSupport
 			while (searchList.Count > 0 && (--maxSearchTimes > 0)) {
 				var curSearch = searchList[0];
 				searchList.RemoveAt(0);
+				ObjectPoolManager.Recycle(curSearch);
 				if (curSearch.found)
 				{
 					found = true;
@@ -528,7 +535,7 @@ namespace BanSupport
 				SearchListSort();
 			}
 
-			//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
+			Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
 
 			if (maxSearchTimes == 0)
 			{
@@ -549,7 +556,7 @@ namespace BanSupport
 				for (int i = foundIndex - 1; i >= 0; i--)
 				{
 					var curData = listData[i];
-					curData.UpdatePos(updateFrame);
+					curData.CheckVisible(updateFrame);
 					if (curData.isVisible)
 					{
 						visibleStartIndex = i;
@@ -565,7 +572,7 @@ namespace BanSupport
 				for (int i = foundIndex + 1; i < listData.Count; i++)
 				{
 					var curData = listData[i];
-					curData.UpdatePos(updateFrame);
+					curData.CheckVisible(updateFrame);
 					if (curData.isVisible)
 					{
 						visibleEndIndex = i;
@@ -586,9 +593,21 @@ namespace BanSupport
 					listData[i].Hide();
 				}
 
-				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-				{
-					listData[i].UpdateContent();
+				switch (dataChanged) {
+					case DataChange.None:
+					case DataChange.Added:
+						for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+						{
+							listData[i].Update(false,false);
+						}
+						break;
+					case DataChange.Removed:
+					case DataChange.ResetRemoved:
+						for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+						{
+							listData[i].Update(false, true);
+						}
+						break;
 				}
 
 			}
@@ -610,14 +629,6 @@ namespace BanSupport
 		private void InitCursor()
 		{
 			this.cursorPos = Vector2.zero;
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				this.cursorPos.y = startOffset;
-			}
-			else if(scrollDirection == ScrollDirection.Horizontal)
-			{
-				this.cursorPos.x = startOffset;
-			}
 			this.maxHeight = 0;
 		}
 
@@ -673,10 +684,11 @@ namespace BanSupport
 				return;
 			}
 
+			//haha
 			// 设置一个实体的位置
 			Action<RectTransform,Vector2> setPostionFunc = (rectTransform,position) => {
 				position.y = -position.y;
-				rectTransform.anchoredPosition = position;
+				rectTransform.anchoredPosition = position + new Vector2(border.x,-border.y);
 			};
 
 			//初始化
@@ -829,7 +841,6 @@ namespace BanSupport
 				//设置content高度
 				contentTrans.sizeDelta = new Vector2(cursorPos.x + maxHeight - (childCount > 0 ? gap : 0), contentTrans.sizeDelta.y);
 			}
-			UpdateForceCenterForChildren();
 #endif
 		}
 
@@ -986,7 +997,6 @@ namespace BanSupport
 		{
 			UpdateContentSize();
 			UpdateEnableScroll();
-			UpdateForceCenterForData();
 		}
 
 		private bool JumpToWhenVertical(float target)
@@ -1133,83 +1143,6 @@ namespace BanSupport
 				//换新行
 				cursorPos.y = 0;
 				cursorPos.x += data.width + gap;
-			}
-		}
-
-		private void UpdateForceCenterForChildren()
-		{
-			if (forceCenterWhenInBounds)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					if (contentTrans.sizeDelta.y < Height)
-					{
-						var offset = (Height - contentTrans.sizeDelta.y) / 2;
-						contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x, contentTrans.sizeDelta.y + offset);
-						var childCount = this.contentTrans.childCount;
-						for (int i = 0; i < childCount; i++)
-						{
-							var childRectTransform = this.contentTrans.GetChild(i) as RectTransform;
-							childRectTransform.anchoredPosition = new Vector2(
-								childRectTransform.anchoredPosition.x,
-								childRectTransform.anchoredPosition.y - offset);
-						}
-					}
-				}
-				else
-				{
-					if (contentTrans.sizeDelta.x < Width)
-					{
-						var offset = (Width - contentTrans.sizeDelta.x) / 2;
-						contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x + offset, contentTrans.sizeDelta.y);
-						var childCount = this.contentTrans.childCount;
-						for (int i = 0; i < childCount; i++)
-						{
-							var childRectTransform = this.contentTrans.GetChild(i) as RectTransform;
-							childRectTransform.anchoredPosition = new Vector2(
-								childRectTransform.anchoredPosition.x + offset,
-								childRectTransform.anchoredPosition.y);
-						}
-					}
-				}
-			}
-		}
-
-		private void UpdateForceCenterForData()
-		{
-			if (forceCenterWhenInBounds)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					this._forceCenterOffset.x = 0;
-					if (contentTrans.sizeDelta.y < Height)
-					{
-						this._forceCenterOffset.y = (contentTrans.sizeDelta.y - Height) / 2;
-					}
-					else
-					{
-						this._forceCenterOffset.y = 0;
-					}
-				}
-				else if (scrollDirection == ScrollDirection.Horizontal)
-				{
-					this._forceCenterOffset.y = 0;
-					if (contentTrans.sizeDelta.x < Width)
-					{
-						this._forceCenterOffset.x = (Width - contentTrans.sizeDelta.x) / 2;
-
-						//var offset = (width - contentTrans.sizeDelta.x) / 2;
-						//contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x + offset, contentTrans.sizeDelta.y);
-						//listData.ForEach(temp =>
-						//{
-						//	temp.anchoredPosition.x += offset;
-						//});
-					}
-					else
-					{
-						this._forceCenterOffset.x = 0;
-					}
-				}
 			}
 		}
 
@@ -1383,23 +1316,6 @@ namespace BanSupport
 					m_OldGap = gap;
 				};
 			}
-			if (m_OldStartOffset != this.startOffset)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldStartOffset = this.startOffset;
-				};
-			}
-
-			if (m_OldForceCenterWhenInBounds != this.forceCenterWhenInBounds)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldForceCenterWhenInBounds = this.forceCenterWhenInBounds;
-				};
-			}
 
 			if (contentTrans != null && m_OldChildCount != this.contentTrans.childCount)
 			{
@@ -1438,7 +1354,9 @@ namespace BanSupport
 				//滚动区域
 				if (contentTrans != null)
 				{
-					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans), this.transform.position.z, Color.green);
+					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
+						contentTrans.rect.width, contentTrans.rect.height, contentTrans.position, scrollBounds),
+						this.transform.position.z, Color.green);
 				}
 			}
 		}
@@ -1506,7 +1424,7 @@ namespace BanSupport
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
 				var scrollData = dic_DataSource_ScrollData[dataSource];
-				scrollData.UpdateContent(true);
+				scrollData.Update(true, false);
 			}
 			else
 			{
@@ -1526,7 +1444,7 @@ namespace BanSupport
 				{
 					break;
 				}
-				listData[i].UpdateContent(true);
+				listData[i].Update(true,false);
 			}
 		}
 
@@ -1756,6 +1674,11 @@ namespace BanSupport
 		public void Add<T>(string prefabName, T t) where T : ScrollData
 		{
 			Init();
+			if (!objectPoolDic.ContainsKey(prefabName))
+			{
+				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
+				return;
+			}
 			t.OnResize();
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }

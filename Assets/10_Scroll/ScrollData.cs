@@ -37,14 +37,13 @@ namespace BanSupport
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
 
-		public Vector3 worldPosition { get; private set; }
 		private Func<object, Vector2> onResize;
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
 		private RectBounds rectBounds = new RectBounds();
 		private uint lastUpdateFrame = 0;
-		private GameObject targetGo = null;
+		private RectTransform targetTrans = null;
 
 		public Vector2 Size
 		{
@@ -54,6 +53,14 @@ namespace BanSupport
 			}
 		}
 
+		public Vector3 GetWorldPosition()
+		{
+			return Tools.GetWorldPosByAnchoredPos(scrollSystem.contentTrans, anchoredPosition, DEFAULT_ANCHOR);
+		}
+
+		/// <summary>
+		/// 设置宽度和高度
+		/// </summary>
 		public bool OnResize()
 		{
 			bool changed = false;
@@ -97,11 +104,11 @@ namespace BanSupport
 		public void Hide()
 		{
 			this.isVisible = false;
-			if (this.targetGo != null)
+			if (this.targetTrans != null)
 			{
-				objectPool.Recycle(this.targetGo);
+				objectPool.Recycle(this.targetTrans.gameObject);
 				//scrollSystem.AttachScrollData(this.targetGo, null);
-				this.targetGo = null;
+				this.targetTrans = null;
 			}
 		}
 
@@ -109,29 +116,30 @@ namespace BanSupport
 		/// 更新内容
 		/// </summary>
 		/// <param name="refresh">表示强制刷新</param>
-		public void UpdateContent(bool refresh = false)
+		public void Update(bool refreshContent,bool refreshPosition)
 		{
 			if (isVisible)
 			{
-				if (this.targetGo == null)
+				if (this.targetTrans == null)
 				{
-					this.targetGo = objectPool.Get();
+					this.targetTrans = objectPool.Get().transform as RectTransform;
+					refreshContent = true;
+					refreshPosition = true;
 					//scrollSystem.AttachScrollData(this.targetGo, this);
-					refresh = true;
 				}
-				if (refresh)
+				if (refreshPosition)
 				{
-					var rectTransform = this.targetGo.transform as RectTransform;
-					rectTransform.sizeDelta = new Vector2(this.width, this.height);
-					this.scrollSystem.setItemContent(objectPool.prefabName, rectTransform, dataSource);
+					this.targetTrans.sizeDelta  = new Vector2(this.width, this.height);
+					this.targetTrans.anchoredPosition = anchoredPosition;
 				}
-				if (this.targetGo.transform.position != worldPosition)
+				if (refreshContent)
 				{
-					this.targetGo.transform.position = worldPosition;
+					this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
+				}
+
 #if UNITY_EDITOR
-					ShowGizmosBounds();
+				ShowGizmosBounds();
 #endif
-				}	
 			}
 		}
 
@@ -139,7 +147,7 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				Tools.DrawRectBounds(this.worldPosition, scrollSystem.contentTrans.lossyScale.x * width, scrollSystem.contentTrans.lossyScale.y * height, Color.red);
+				Tools.DrawRectBounds(GetWorldPosition(), scrollSystem.contentTrans.lossyScale.x * width, scrollSystem.contentTrans.lossyScale.y * height, Color.red);
 			}
 		}
 
@@ -147,21 +155,37 @@ namespace BanSupport
 		/// 计算世界坐标位置，并且计算是否可见
 		/// 这里只是模拟计算位置，不对预制体进行任何操作
 		/// </summary>
-		public void UpdatePos(uint frame)
+		public void CheckVisible(uint frame)
 		{
 			if (frame > lastUpdateFrame)
 			{
+				
 				lastUpdateFrame = frame;
+				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
+
+				if (isVisible == false) {
+					Debug.Log("isVisible == false");
+				}
+
+				//Tools.GetUIPosByAnchoredPos();
+				/*
 				//根据contentTrans更新世界坐标
-				this.worldPosition = Tools.GetUIPosByAnchoredPos(scrollSystem.contentTrans, this.anchoredPosition + scrollSystem.forceCenterOffset, DEFAULT_ANCHOR);
+				this.worldPosition = Tools.GetUIPosByAnchoredPos(
+					scrollSystem.contentTrans, 
+					this.anchoredPosition + scrollSystem.forceCenterOffset, 
+					DEFAULT_ANCHOR
+				);
 				//设置自己的RectBounds
+
 				var lossyScale = scrollSystem.contentTrans.lossyScale;
 				rectBounds.left = worldPosition.x - 0.5f * width * lossyScale.x;
 				rectBounds.right = worldPosition.x + 0.5f * width * lossyScale.x;
 				rectBounds.up = worldPosition.y + 0.5f * height * lossyScale.y;
 				rectBounds.down = worldPosition.y - 0.5f * height * lossyScale.y;
+				*/
+
 				//判断是否可见
-				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
+
 			}
 		}
 
@@ -173,6 +197,13 @@ namespace BanSupport
 			this.isPositionInited = true;
 			position.y = -position.y;
 			anchoredPosition = position;
+
+			rectBounds.left = anchoredPosition.x - 0.5f * width;
+			rectBounds.right = anchoredPosition.x + 0.5f * width;
+			rectBounds.up = anchoredPosition.y + 0.5f * height;
+			rectBounds.down = anchoredPosition.y - 0.5f * height;
+
+			//Debug.Log("anchoredPosition:"+ anchoredPosition + " rectBounds:"+rectBounds);
 		}
 
 	}

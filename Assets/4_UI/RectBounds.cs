@@ -157,6 +157,19 @@ namespace BanSupport
 			return rectRange;
 		}
 
+		public static RectBounds GetRectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height,
+			Vector3 worldPosition, RectBounds rectRange = null)
+		{
+			width = width * lossyScale.x;
+			height = height * lossyScale.y;
+			if (rectRange == null) { rectRange = new RectBounds(); }
+			rectRange.left = worldPosition.x + width * (-pivot.x);
+			rectRange.right = worldPosition.x + width * (1 - pivot.x);
+			rectRange.up = worldPosition.y + height * (1 - pivot.y);
+			rectRange.down = worldPosition.y + height * (-pivot.y);
+			return rectRange;
+		}
+
 	}
 
 }

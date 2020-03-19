@@ -28,6 +28,9 @@ public class Example : MonoBehaviour
 
 	public ScrollSystem scrollSystem;
 	public InputField inputField_ChatContent;
+	public bool setWorldPosEnable = true;
+
+	public static Example Instance;
 
 	public class ChatData
 	{
@@ -49,6 +52,11 @@ public class Example : MonoBehaviour
 	public int GetInputFieldCount()
 	{
 		return int.Parse(inputField_Number.text);
+	}
+
+	private void Awake()
+	{
+		Instance = this;
 	}
 
 	void Start()
