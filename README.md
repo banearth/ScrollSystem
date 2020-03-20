@@ -1,5 +1,5 @@
 # ScrollSystem
-a loop multiple items scroll solution for unity
+a loop and multiple type of items scrollrect solution for unity
 
 use unity 2019.2.6 or above to open the project
 
