@@ -152,8 +152,7 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 计算世界坐标位置，并且计算是否可见
-		/// 这里只是模拟计算位置，不对预制体进行任何操作
+		/// 只检查是否可见
 		/// </summary>
 		public void CheckVisible(uint frame)
 		{
@@ -187,8 +186,6 @@ namespace BanSupport
 			rectBounds.right = anchoredPosition.x + 0.5f * width;
 			rectBounds.up = anchoredPosition.y + 0.5f * height;
 			rectBounds.down = anchoredPosition.y - 0.5f * height;
-
-			//Debug.Log("anchoredPosition:"+ anchoredPosition + " rectBounds:"+rectBounds);
 		}
 
 	}
