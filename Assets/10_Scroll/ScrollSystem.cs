@@ -22,7 +22,7 @@ namespace BanSupport
 		/// 元素之间的间隔
 		/// </summary>
 		[SerializeField]
-		private Vector2 gap = Vector2.one * 10;
+		private Vector2 spacing = Vector2.one * 10;
 
 		/// <summary>
 		/// 当为负数的时候，表示无上限
@@ -226,7 +226,7 @@ namespace BanSupport
 		private Vector2 m_OldSizeDelta = Vector2.zero;
 		private ScrollDirection m_OldScrollDirection = ScrollDirection.Vertical;
 		private Vector2 m_OldBorder = Vector2.zero;
-		private Vector2 m_OldGap = Vector2.one * 10;
+		private Vector2 m_OldSpacing = Vector2.one * 10;
 		private int m_OldChildCount = 0;
 		private Action m_TurnSameAction;
 #endif
@@ -676,13 +676,13 @@ namespace BanSupport
 			{
 				contentTrans.sizeDelta = new Vector2(
 					contentTrans.sizeDelta.x,
-					cursorPos.y + maxHeight - (listData.Count > 0 ? gap.y : 0) + border.y
+					cursorPos.y + maxHeight - (listData.Count > 0 ? spacing.y : 0) + border.y
 				);
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
 				contentTrans.sizeDelta = new Vector2(
-					cursorPos.x + maxHeight - (listData.Count > 0 ? gap.x : 0) + border.x,
+					cursorPos.x + maxHeight - (listData.Count > 0 ? spacing.x : 0) + border.x,
 					contentTrans.sizeDelta.y
 				);
 			}
@@ -737,11 +737,11 @@ namespace BanSupport
 						//设置位置
 						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
 						//更新光标
-						cursorPos += Vector2.right * (rectTransform.sizeDelta.x + gap.x);
+						cursorPos += Vector2.right * (rectTransform.sizeDelta.x + spacing.x);
 						//更新最大高度
-						if (maxHeight < rectTransform.sizeDelta.y + gap.y)
+						if (maxHeight < rectTransform.sizeDelta.y + spacing.y)
 						{
-							maxHeight = rectTransform.sizeDelta.y + gap.y;
+							maxHeight = rectTransform.sizeDelta.y + spacing.y;
 						}
 					}
 					else
@@ -780,13 +780,13 @@ namespace BanSupport
 						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
 						//换新行
 						cursorPos.x = border.x;
-						cursorPos.y += rectTransform.sizeDelta.y + gap.y;
+						cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
 					}
 				}
 				//设置content高度
 				contentTrans.sizeDelta = new Vector2(
 					contentTrans.sizeDelta.x,
-					cursorPos.y + maxHeight - (childCount > 0 ? gap.y : 0) + border.y
+					cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y
 				);
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
@@ -817,11 +817,11 @@ namespace BanSupport
 						//设置位置
 						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
 						//更新光标
-						cursorPos += Vector2.up * (rectTransform.sizeDelta.y + gap.y);
+						cursorPos += Vector2.up * (rectTransform.sizeDelta.y + spacing.y);
 						//更新最大高度
-						if (maxHeight < rectTransform.sizeDelta.x + gap.x)
+						if (maxHeight < rectTransform.sizeDelta.x + spacing.x)
 						{
-							maxHeight = rectTransform.sizeDelta.x + gap.x;
+							maxHeight = rectTransform.sizeDelta.x + spacing.x;
 						}
 					}
 					else
@@ -852,12 +852,12 @@ namespace BanSupport
 						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
 						//换新行
 						cursorPos.y = border.y;
-						cursorPos.x += rectTransform.sizeDelta.x + gap.x;
+						cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
 					}
 				}
 				//设置content高度
 				contentTrans.sizeDelta = new Vector2(
-					cursorPos.x + maxHeight - (childCount > 0 ? gap.x : 0) + border.x,
+					cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x,
 					contentTrans.sizeDelta.y
 				);
 			}
@@ -888,7 +888,7 @@ namespace BanSupport
 					var findLayoutGroup = existScrollRect.content.GetComponent<HorizontalOrVerticalLayoutGroup>();
 					if (findLayoutGroup != null)
 					{
-						this.gap = findLayoutGroup.spacing * Vector2.one;
+						this.spacing = findLayoutGroup.spacing * Vector2.one;
 					}
 
 					//删除viewport
@@ -1062,11 +1062,11 @@ namespace BanSupport
 				//设置位置
 				data.SetAnchoredPosition(cursorPos + data.Size / 2);
 				//更新光标
-				cursorPos += Vector2.right * (data.width + gap.x);
+				cursorPos += Vector2.right * (data.width + spacing.x);
 				//更新最大高度
-				if (maxHeight < data.height + gap.y)
+				if (maxHeight < data.height + spacing.y)
 				{
-					maxHeight = data.height + gap.y;
+					maxHeight = data.height + spacing.y;
 				}
 			}
 			else
@@ -1101,7 +1101,7 @@ namespace BanSupport
 				data.SetAnchoredPosition(cursorPos + data.height / 2 * Vector2.up);
 				//换新行
 				cursorPos.x = border.x;
-				cursorPos.y += data.height + gap.y;
+				cursorPos.y += data.height + spacing.y;
 			}
 		}
 
@@ -1121,11 +1121,11 @@ namespace BanSupport
 				//设置位置
 				data.SetAnchoredPosition(cursorPos + data.Size / 2);
 				//更新光标
-				cursorPos += Vector2.up * (data.height + gap.y);
+				cursorPos += Vector2.up * (data.height + spacing.y);
 				//更新最大高度
-				if (maxHeight < data.width + gap.x)
+				if (maxHeight < data.width + spacing.x)
 				{
-					maxHeight = data.width + gap.x;
+					maxHeight = data.width + spacing.x;
 				}
 			}
 			else
@@ -1159,7 +1159,7 @@ namespace BanSupport
 				data.SetAnchoredPosition(cursorPos + data.width / 2 * Vector2.right);
 				//换新行
 				cursorPos.y = border.y;
-				cursorPos.x += data.width + gap.x;
+				cursorPos.x += data.width + spacing.x;
 			}
 		}
 
@@ -1325,12 +1325,12 @@ namespace BanSupport
 					m_OldSizeDelta = (this.transform as RectTransform).sizeDelta;
 				};
 			}
-			if (m_OldGap != this.gap)
+			if (m_OldSpacing != this.spacing)
 			{
 				result = true;
 				m_TurnSameAction += () =>
 				{
-					m_OldGap = gap;
+					m_OldSpacing = spacing;
 				};
 			}
 
