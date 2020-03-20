@@ -119,7 +119,7 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 使用Debug方块
+		/// 使用Debug画方块
 		/// </summary>
 		public static void DrawRectRange(RectBounds rectBounds, Color color)
 		{

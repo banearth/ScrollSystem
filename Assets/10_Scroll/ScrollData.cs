@@ -158,16 +158,10 @@ namespace BanSupport
 		public void CheckVisible(uint frame)
 		{
 			if (frame > lastUpdateFrame)
-			{
-				
+			{				
 				lastUpdateFrame = frame;
 				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
 
-				if (isVisible == false) {
-					Debug.Log("isVisible == false");
-				}
-
-				//Tools.GetUIPosByAnchoredPos();
 				/*
 				//根据contentTrans更新世界坐标
 				this.worldPosition = Tools.GetUIPosByAnchoredPos(
@@ -175,16 +169,7 @@ namespace BanSupport
 					this.anchoredPosition + scrollSystem.forceCenterOffset, 
 					DEFAULT_ANCHOR
 				);
-				//设置自己的RectBounds
-
-				var lossyScale = scrollSystem.contentTrans.lossyScale;
-				rectBounds.left = worldPosition.x - 0.5f * width * lossyScale.x;
-				rectBounds.right = worldPosition.x + 0.5f * width * lossyScale.x;
-				rectBounds.up = worldPosition.y + 0.5f * height * lossyScale.y;
-				rectBounds.down = worldPosition.y - 0.5f * height * lossyScale.y;
 				*/
-
-				//判断是否可见
 
 			}
 		}
