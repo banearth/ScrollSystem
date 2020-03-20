@@ -1428,6 +1428,9 @@ namespace BanSupport
 
 		public Action<string, Transform, object> setItemContent { get; private set; }
 
+		//public Action<string, Transform> setItemDisable { get; private set; }
+
+
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
 		//todo 这块的优化没想好
@@ -1450,6 +1453,11 @@ namespace BanSupport
 		{
 			this.setItemContent = setItemContent;
 		}
+
+		//public void SetItemDisableDelegate(Action<string, Transform> setItemDisable)
+		//{
+		//	this.setItemDisable = setItemDisable;
+		//}
 
 		public void Set(object dataSource)
 		{
