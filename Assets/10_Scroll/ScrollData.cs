@@ -129,11 +129,13 @@ namespace BanSupport
 				}
 				if (refreshPosition)
 				{
+					//Debug.Log("refreshPosition");
 					this.targetTrans.sizeDelta  = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
 				}
 				if (refreshContent)
 				{
+					//Debug.Log("refreshContent");
 					this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
 				}
 

@@ -19,6 +19,12 @@ namespace BanSupport
 		private Vector2 border = Vector2.zero;
 
 		/// <summary>
+		/// 元素之间的间隔
+		/// </summary>
+		[SerializeField]
+		private Vector2 gap = Vector2.one * 10;
+
+		/// <summary>
 		/// 当为负数的时候，表示无上限
 		/// </summary>
 		[Tooltip("当为负数的时候，表示无上限。否则的话，当添加新的元素的时候，超过上限会自动删掉最开始的")]
@@ -58,12 +64,6 @@ namespace BanSupport
 		/// 直接用于滚动
 		/// </summary>
 		public RectTransform contentTrans;
-
-		/// <summary>
-		/// 元素之间的间隔
-		/// </summary>
-		[SerializeField]
-		private Vector2 gap = Vector2.one * 10;
 
 		/// <summary>
 		/// Gizmos相关
@@ -699,7 +699,6 @@ namespace BanSupport
 				return;
 			}
 
-			//haha
 			// 设置一个实体的位置
 			Action<RectTransform,Vector2> setPostionFunc = (rectTransform,position) => {
 				position.y = -position.y;
@@ -730,7 +729,6 @@ namespace BanSupport
 						//发生过偏移，并且这次物体的右边界超过宽度
 						if (cursorPos.x > border.x && cursorPos.x + rectTransform.sizeDelta.x > Width - border.x)
 						{
-							//haha
 							//那么执行换行操作
 							cursorPos.x = border.x;
 							cursorPos.y += maxHeight;
@@ -1593,6 +1591,21 @@ namespace BanSupport
 		}
 
 		/// <summary>
+		/// 倒序排列
+		/// </summary>
+		public void Reverse()
+		{
+			if (listData.Count <= 0) {
+				return;
+			}
+			listData.Reverse();
+			if (this.dataChanged < DataChange.ResetRemoved)
+			{
+				this.dataChanged = DataChange.Removed;
+			}
+		}
+
+		/// <summary>
 		/// 跳转
 		/// 垂直滚动时 0表示最上方，1表示最下方
 		/// 水平滚动时 0表示最左方，1表示最右方
@@ -1754,14 +1767,6 @@ namespace BanSupport
 				dic_DataSource_ScrollData.Add(dataSource, scrollData);
 			}
 		}
-
-		/*
-		public void Insert(string prefabName, object dataSource, Func<object, Vector2> onResize = null)
-		{
-			Init();
-
-		}
-		*/
 
 		#endregion
 

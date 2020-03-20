@@ -13,6 +13,7 @@ public class Example : MonoBehaviour
 	public Button buttonAddChatJump;
 	public Button buttonCreateDeleteAndAdd;
 	public Button buttonJumpWithoutAnimation;
+	public Button buttonReverse;
 
 	public InputField inputField_Number;
 	public Button buttonAdd;
@@ -112,6 +113,10 @@ public class Example : MonoBehaviour
 		buttonJumpWithoutAnimation.onClick.AddListener(() =>
 		{
 			scrollSystem.Jump(1, false);
+		});
+		buttonReverse.onClick.AddListener(() =>
+		{
+			scrollSystem.Reverse();
 		});
 
 		scrollSystem.SetItemContentDelegate((prefabName, root, data) =>
