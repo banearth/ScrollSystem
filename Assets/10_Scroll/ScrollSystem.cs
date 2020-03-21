@@ -14,6 +14,15 @@ namespace BanSupport
 
 		#region 众多参数
 
+		public bool Centered { get { return centered; } }
+
+		[Tooltip("尽量保持剧中")]
+		[SerializeField]
+		private bool centered = false;
+
+		[HideInInspector]
+		public int startCorner = 1;
+
 		[Tooltip("边界")]
 		[SerializeField]
 		private Vector2 border = Vector2.zero;
@@ -79,6 +88,8 @@ namespace BanSupport
 		public enum ScrollDirection { Vertical, Horizontal }
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
+
+		public ScrollDirection Direction { get { return scrollDirection; } }
 
 		public RectTransform selfRectTransform
 		{
@@ -172,9 +183,14 @@ namespace BanSupport
 		private Vector2 cursorPos;
 
 		/// <summary>
-		/// 当前最大高度
+		/// 最后一行的最大高度，用于在换行的时候使用
 		/// </summary>
 		private float maxHeight;
+
+		/// <summary>
+		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
+		/// </summary>
+		private float maxWidth;
 
 		private Action<ScrollData> setSingleDataAction;
 
@@ -219,6 +235,9 @@ namespace BanSupport
 		private int visibleStartIndex = 0;
 		private int visibleEndIndex = 0;
 		private Vector2 centerAnchoredPosition;
+		private Vector2 prefabAnchor;
+
+		public Vector2 PrefabAnchor { get { return prefabAnchor; } }
 
 #if UNITY_EDITOR
 
@@ -228,6 +247,7 @@ namespace BanSupport
 		private Vector2 m_OldBorder = Vector2.zero;
 		private Vector2 m_OldSpacing = Vector2.one * 10;
 		private int m_OldChildCount = 0;
+		private bool m_Centered = false;
 		private Action m_TurnSameAction;
 #endif
 
@@ -412,11 +432,21 @@ namespace BanSupport
 			if (!inited)
 			{
 				inited = true;
-				if (!ObjectPoolManager.IsRegisted<SearchGroup>()) { ObjectPoolManager.Regist<SearchGroup>(() => new SearchGroup()); }
-				RegistObjectPool();
-				scrollRect.onValueChanged.AddListener(OnValueChanged);
+
+				//初始化
+				InitGetCenterOffset();
+				InitTransAnchoredPosition();
+				InitFormatPrefabRectTransform();
 				InitCursor();
 				InitContentTrans();
+
+				//注册搜索对象池
+				if (!ObjectPoolManager.IsRegisted<SearchGroup>()) { ObjectPoolManager.Regist(() => new SearchGroup()); }
+				//注册预制体对象池
+				RegistObjectPool();
+				//注册滚动监听
+				scrollRect.onValueChanged.AddListener(OnValueChanged);
+
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
 					setSingleDataAction = SetSingleContentDataWhenVertical;
@@ -502,12 +532,40 @@ namespace BanSupport
 		private void UpdateBounds()
 		{
 			var rectTransfrom = this.contentTrans as RectTransform;
-			scrollBounds.left = -rectTransfrom.anchoredPosition.x;
-			scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
-			scrollBounds.up = -rectTransfrom.anchoredPosition.y;
-			scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
-			centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
-			centerAnchoredPosition.y = - Height / 2 - rectTransfrom.anchoredPosition.y;
+			switch (startCorner) {
+				case 0:
+					scrollBounds.left = -rectTransfrom.anchoredPosition.x;
+					scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
+					scrollBounds.up = -rectTransfrom.anchoredPosition.y;
+					scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
+					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
+					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
+					break;
+				case 1:
+					scrollBounds.left = - Width - rectTransfrom.anchoredPosition.x;
+					scrollBounds.right = -rectTransfrom.anchoredPosition.x; 
+					scrollBounds.up = -rectTransfrom.anchoredPosition.y;
+					scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
+					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
+					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
+					break;
+				case 2:
+					scrollBounds.left = -rectTransfrom.anchoredPosition.x;
+					scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
+					scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
+					scrollBounds.down = -rectTransfrom.anchoredPosition.y;
+					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
+					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
+					break;
+				case 3:
+					scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
+					scrollBounds.right = -rectTransfrom.anchoredPosition.x;
+					scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
+					scrollBounds.down = -rectTransfrom.anchoredPosition.y ;
+					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
+					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
+					break;
+			}
 		}
 
 		/// <summary>
@@ -640,6 +698,7 @@ namespace BanSupport
 		{
 			this.cursorPos = new Vector2(border.x,border.y);
 			this.maxHeight = 0;
+			this.maxWidth = 0;
 		}
 
 		/// <summary>
@@ -649,21 +708,76 @@ namespace BanSupport
 		{
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				//设置conentTrans
-				contentTrans.pivot = new Vector2(0.5f, 1);
-				contentTrans.anchorMin = new Vector2(0, 1);
-				contentTrans.anchorMax = new Vector2(1, 1);
-				contentTrans.offsetMin = new Vector2(0, 0);
-				contentTrans.offsetMax = new Vector2(0, 0);
+				switch (startCorner) {
+					case 0://Left Up
+					case 1://Right Up
+						contentTrans.pivot = new Vector2(0.5f, 1);
+						contentTrans.anchorMin = new Vector2(0, 1);
+						contentTrans.anchorMax = new Vector2(1, 1);
+						contentTrans.offsetMin = new Vector2(0, 0);
+						contentTrans.offsetMax = new Vector2(0, 0);
+						break;
+					case 2://Left Down
+					case 3://Right Down
+						contentTrans.pivot = new Vector2(0.5f, 0);
+						contentTrans.anchorMin = new Vector2(0, 0);
+						contentTrans.anchorMax = new Vector2(1, 0);
+						contentTrans.offsetMin = new Vector2(0, 0);
+						contentTrans.offsetMax = new Vector2(0, 0);
+						break;
+				}
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				//设置conentTrans
-				contentTrans.pivot = new Vector2(0, 0.5f);
-				contentTrans.anchorMin = new Vector2(0, 0);
-				contentTrans.anchorMax = new Vector2(0, 1);
-				contentTrans.offsetMin = new Vector2(0, 0);
-				contentTrans.offsetMax = new Vector2(0, 0);
+				switch (startCorner)
+				{
+					case 0://Left Up
+					case 2://Left Down
+						contentTrans.pivot = new Vector2(0, 0.5f);
+						contentTrans.anchorMin = new Vector2(0, 0);
+						contentTrans.anchorMax = new Vector2(0, 1);
+						contentTrans.offsetMin = new Vector2(0, 0);
+						contentTrans.offsetMax = new Vector2(0, 0);
+						break;
+					case 1://Right Up
+					case 3://Right Down
+						contentTrans.pivot = new Vector2(1, 0.5f);
+						contentTrans.anchorMin = new Vector2(1, 0);
+						contentTrans.anchorMax = new Vector2(1, 1);
+						contentTrans.offsetMin = new Vector2(0, 0);
+						contentTrans.offsetMax = new Vector2(0, 0);
+						break;
+				}
+			}
+		}
+
+		private float oldMaxWidth = 0;
+
+		private void UpdateCentered()
+		{
+			if (centered)
+			{
+				if (oldMaxWidth == maxWidth)
+				{
+					return;
+				}
+				oldMaxWidth = maxWidth;
+				if (scrollDirection == ScrollDirection.Vertical)
+				{
+					var centerOffset = (Width - border.x - maxWidth) / 2;
+					foreach (var aScrollData in listData)
+					{
+						aScrollData.SetCenterOffset(Vector2.right * centerOffset);
+					}
+				}
+				else if (scrollDirection == ScrollDirection.Horizontal)
+				{
+					var centerOffset = (Height - border.y - maxWidth) / 2;
+					foreach (var aScrollData in listData)
+					{
+						aScrollData.SetCenterOffset(Vector2.up * centerOffset);
+					}
+				}		
 			}
 		}
 
@@ -688,6 +802,148 @@ namespace BanSupport
 			}
 		}
 
+		private Func<Vector2, Vector2> transAnchoredPosition;
+
+		private void InitTransAnchoredPosition()
+		{
+			switch (startCorner)
+			{
+				case 0:
+					//Left Up
+					transAnchoredPosition = origin =>
+					{
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 1:
+					//Right Up
+					transAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 2:
+					//Left Down
+					transAnchoredPosition = origin =>
+					{
+						return origin;
+					};
+					break;
+				case 3:
+					//Right Down
+					transAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						return origin;
+					};
+					break;
+			}
+		}
+
+		/// <summary>
+		/// 转化AnchoredPosition
+		/// </summary>
+		public Vector2 TransAnchoredPosition(Vector2 position)
+		{
+			var returnPosition = transAnchoredPosition(position);
+			return returnPosition;
+		}
+
+		private Func<Vector2> getCenterOffset;
+
+		private void InitGetCenterOffset()
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
+			}
+		}
+
+		public Vector2 GetCenterOffset()
+		{
+			return getCenterOffset();
+		}
+
+		private Action<RectTransform> formatPrefabRectTransform;
+
+		/// <summary>
+		/// 格式化预制体
+		/// </summary>
+		private void InitFormatPrefabRectTransform()
+		{
+			if (Application.isPlaying)
+			{
+				switch (startCorner)
+				{
+					case 0:
+						//Left Up
+						prefabAnchor = new Vector2(0,1);
+						break;
+					case 1:
+						//Right Up
+						prefabAnchor = new Vector2(1, 1);
+						break;
+					case 2:
+						//Left Down
+						prefabAnchor = new Vector2(0, 0);
+						break;
+					case 3:
+						//Right Down
+						prefabAnchor = new Vector2(1, 0);
+						break;
+				}
+			}
+			else
+			{
+				switch (startCorner)
+				{
+					case 0:
+						//Left Up
+						formatPrefabRectTransform = rectTransform =>
+						{
+							rectTransform.pivot = new Vector2(0.5f, 0.5f);
+							rectTransform.anchorMin = new Vector2(0, 1);
+							rectTransform.anchorMax = new Vector2(0, 1);
+						};
+						break;
+					case 1:
+						//Right Up
+						formatPrefabRectTransform = rectTransform =>
+						{
+							rectTransform.pivot = new Vector2(0.5f, 0.5f);
+							rectTransform.anchorMin = new Vector2(1, 1);
+							rectTransform.anchorMax = new Vector2(1, 1);
+						};
+						break;
+					case 2:
+						//Left Down
+						formatPrefabRectTransform = rectTransform =>
+						{
+							rectTransform.pivot = new Vector2(0.5f, 0.5f);
+							rectTransform.anchorMin = new Vector2(0, 0);
+							rectTransform.anchorMax = new Vector2(0, 0);
+						};
+						break;
+					case 3:
+						//Right Down
+						formatPrefabRectTransform = rectTransform =>
+						{
+							rectTransform.pivot = new Vector2(0.5f, 0.5f);
+							rectTransform.anchorMin = new Vector2(1, 0);
+							rectTransform.anchorMax = new Vector2(1, 0);
+						};
+						break;
+				}
+			}
+		}
+
 		/// <summary>
 		/// 根据子物体来排列内容，这个方法只在编辑器环境下使用
 		/// </summary>
@@ -699,25 +955,21 @@ namespace BanSupport
 				return;
 			}
 
-			// 设置一个实体的位置
-			Action<RectTransform,Vector2> setPostionFunc = (rectTransform,position) => {
-				position.y = -position.y;
-				rectTransform.anchoredPosition = position;
-			};
-
 			//初始化
+			InitGetCenterOffset();
+			InitTransAnchoredPosition();
+			InitFormatPrefabRectTransform();
 			InitCursor();
 			InitContentTrans();
 
+			Dictionary<RectTransform, Vector2> dic_RectTransform_AnchoredPosition = new Dictionary<RectTransform, Vector2>();
 			var childCount = this.contentTrans.childCount;
 			if (scrollDirection == ScrollDirection.Vertical)
-			{	
+			{
 				for (int i = 0; i < childCount; i++)
 				{
 					var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
-					rectTransform.pivot = new Vector2(0.5f, 0.5f);
-					rectTransform.anchorMin = new Vector2(0, 1);
-					rectTransform.anchorMax = new Vector2(0, 1);
+					formatPrefabRectTransform(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
 					if (layout != null)
@@ -735,9 +987,13 @@ namespace BanSupport
 							maxHeight = 0;
 						}
 						//设置位置
-						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
 						//更新光标
-						cursorPos += Vector2.right * (rectTransform.sizeDelta.x + spacing.x);
+						cursorPos.x += rectTransform.sizeDelta.x;
+						//更新最大宽度
+						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x;}
+						//增加间隔
+						cursorPos.x += spacing.x;
 						//更新最大高度
 						if (maxHeight < rectTransform.sizeDelta.y + spacing.y)
 						{
@@ -759,12 +1015,6 @@ namespace BanSupport
 									cursorPos.x = Width / 2;
 								}
 								break;
-							case ScrollLayout.NewLine.CenterFitSize:
-								{
-									rectTransform.sizeDelta = new Vector2(Width - border.x * 2, rectTransform.sizeDelta.y);
-									cursorPos.x = Width / 2;
-								}
-								break;
 							case ScrollLayout.NewLine.LeftOrUp:
 								{
 									cursorPos.x = rectTransform.sizeDelta.x / 2 + border.x;
@@ -776,8 +1026,8 @@ namespace BanSupport
 								}
 								break;
 						}
-						//设置位置
-						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
+						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
+						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
 						//换新行
 						cursorPos.x = border.x;
 						cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
@@ -788,22 +1038,28 @@ namespace BanSupport
 					contentTrans.sizeDelta.x,
 					cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y
 				);
+				float centerOffset = 0;
+				if (centered)
+				{
+					centerOffset = (Width - border.x - maxWidth) / 2;
+				}
+				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
+				{
+					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.right * centerOffset);
+				}
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
 				for (int i = 0; i < childCount; i++)
 				{
 					var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
-					rectTransform.pivot = new Vector2(0.5f, 0.5f);
-					rectTransform.anchorMin = new Vector2(0, 1);
-					rectTransform.anchorMax = new Vector2(0, 1);
+					formatPrefabRectTransform(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
 					if (layout != null)
 					{
 						newLine = layout.newLine;
 					}
-
 					if (newLine == ScrollLayout.NewLine.None)
 					{
 						//发生过偏移，并且这次物体的右边界超过宽度
@@ -815,9 +1071,13 @@ namespace BanSupport
 							maxHeight = 0;
 						}
 						//设置位置
-						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
 						//更新光标
-						cursorPos += Vector2.up * (rectTransform.sizeDelta.y + spacing.y);
+						cursorPos.y += rectTransform.sizeDelta.y;
+						//更新最大宽度
+						if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
+						//增加间隔
+						cursorPos.y += spacing.y;
 						//更新最大高度
 						if (maxHeight < rectTransform.sizeDelta.x + spacing.x)
 						{
@@ -835,21 +1095,23 @@ namespace BanSupport
 						switch (newLine)
 						{
 							case ScrollLayout.NewLine.Center:
-								cursorPos.y = Height / 2;
-								break;
-							case ScrollLayout.NewLine.CenterFitSize:
-								cursorPos.y = Height / 2;
-								rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, Height);
+								{
+									cursorPos.y = Height / 2;
+								}
 								break;
 							case ScrollLayout.NewLine.LeftOrUp:
-								cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
+								{
+									cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
+								}
 								break;
 							case ScrollLayout.NewLine.RightOrDown:
-								cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
+								{
+									cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
+								}
 								break;
 						}
-						//设置位置
-						setPostionFunc(rectTransform, cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
+						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
+						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
 						//换新行
 						cursorPos.y = border.y;
 						cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
@@ -860,7 +1122,17 @@ namespace BanSupport
 					cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x,
 					contentTrans.sizeDelta.y
 				);
+				float centerOffset = 0;
+				if (centered)
+				{
+					centerOffset = (Height - border.y - maxWidth) / 2;
+				}
+				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
+				{
+					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.up * centerOffset);
+				}
 			}
+			dic_RectTransform_AnchoredPosition.Clear();
 #endif
 		}
 
@@ -960,7 +1232,6 @@ namespace BanSupport
 		}
 
 #endif
-
 		private void SetAllData(bool applyLocate)
 		{
 			bool locateScrollDataEnable = applyLocate;
@@ -1015,6 +1286,7 @@ namespace BanSupport
 		/// </summary>
 		private void EndSetData()
 		{
+			UpdateCentered();
 			UpdateContentSize();
 			UpdateEnableScroll();
 		}
@@ -1062,7 +1334,11 @@ namespace BanSupport
 				//设置位置
 				data.SetAnchoredPosition(cursorPos + data.Size / 2);
 				//更新光标
-				cursorPos += Vector2.right * (data.width + spacing.x);
+				cursorPos.x += data.width;
+				//更新最大宽度
+				if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
+				//增加间隔
+				cursorPos.x += spacing.x;
 				//更新最大高度
 				if (maxHeight < data.height + spacing.y)
 				{
@@ -1084,10 +1360,6 @@ namespace BanSupport
 				{
 					case ScrollLayout.NewLine.Center:
 						cursorPos.x = Width / 2;
-						break;
-					case ScrollLayout.NewLine.CenterFitSize:
-						cursorPos.x = Width / 2;
-						data.width = Width;
 						break;
 					case ScrollLayout.NewLine.LeftOrUp:
 						cursorPos.x = data.width/2 + border.x;
@@ -1111,7 +1383,7 @@ namespace BanSupport
 			if (data.newLine == ScrollLayout.NewLine.None)
 			{
 				//发生过偏移，并且这次物体的右边界超过宽度
-				if (cursorPos.y > border.y && cursorPos.y + data.height > Height)
+				if (cursorPos.y > border.y && cursorPos.y + data.height > Height - border.y)
 				{
 					//那么执行换行操作
 					cursorPos.y = border.y;
@@ -1121,7 +1393,11 @@ namespace BanSupport
 				//设置位置
 				data.SetAnchoredPosition(cursorPos + data.Size / 2);
 				//更新光标
-				cursorPos += Vector2.up * (data.height + spacing.y);
+				cursorPos.y += data.height;
+				//更新最大宽度
+				if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
+				//增加间隔
+				cursorPos.y += spacing.y;
 				//更新最大高度
 				if (maxHeight < data.width + spacing.x)
 				{
@@ -1143,10 +1419,6 @@ namespace BanSupport
 				{
 					case ScrollLayout.NewLine.Center:
 						cursorPos.y = Width / 2;
-						break;
-					case ScrollLayout.NewLine.CenterFitSize:
-						cursorPos.y = Height / 2;
-						data.height = Height;
 						break;
 					case ScrollLayout.NewLine.LeftOrUp:
 						cursorPos.y = data.height / 2 + border.y;
@@ -1234,6 +1506,7 @@ namespace BanSupport
 			{
 				//把每个需要缓存的对象置于外部
 				var origin = contentTrans.GetChild(0).gameObject;
+				//注册之前确保这份预制体已经是我们想要的格式
 				origin.transform.SetParent(this.transform);
 				origin.SetActive(false);
 				//生成对应数量的缓存
@@ -1313,7 +1586,7 @@ namespace BanSupport
 			}
 			return result;
 		}
-		
+
 		private bool CheckSetContentChildren()
 		{
 			bool result = false;
@@ -1358,6 +1631,14 @@ namespace BanSupport
 					m_OldBorder = border;
 				};
 			}
+			if (m_Centered != centered)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_Centered = centered;
+				};
+			}
 			return result;
 		}
 
@@ -1372,22 +1653,28 @@ namespace BanSupport
 				if (contentTrans != null)
 				{
 					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans, scrollBounds), this.transform.position.z, Color.green);
-					if (border.x > 0 || border.y > 0)
+					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
 					{
-						if (scrollDirection == ScrollDirection.Horizontal)
-						{
-							Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
-								contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2,
-								contentTrans.position + border.x * Vector3.right * contentTrans.lossyScale.x, scrollBounds), this.transform.position.z, Color.green
-							);
-						}
-						else if (scrollDirection == ScrollDirection.Vertical)
-						{
-							Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
-								contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2, 
-								contentTrans.position + border.y * Vector3.down * contentTrans.lossyScale.y, scrollBounds),this.transform.position.z, Color.green
-							);
-						}
+						//if (scrollDirection == ScrollDirection.Horizontal)
+						//{
+						//	Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
+						//		contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2,
+						//		contentTrans.position + border.x * Vector3.right * contentTrans.lossyScale.x, scrollBounds), this.transform.position.z, Color.green
+						//	);
+						//}
+						//else if (scrollDirection == ScrollDirection.Vertical)
+						//{
+						//	Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
+						//		contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2, 
+						//		contentTrans.position + border.y * Vector3.down * contentTrans.lossyScale.y, scrollBounds),this.transform.position.z, Color.green
+						//	);
+						//}
+						scrollBounds.left += contentTrans.lossyScale.x * border.x;
+						scrollBounds.right -= contentTrans.lossyScale.x * border.x;
+						scrollBounds.up -= contentTrans.lossyScale.y * border.y;
+						scrollBounds.down += contentTrans.lossyScale.y * border.y;
+						Tools.DrawRectRange(scrollBounds, this.transform.position.z, Color.green);
+
 					}
 				}
 			}
@@ -1726,30 +2013,7 @@ namespace BanSupport
 
 		#region Add方法
 
-		public void Add<T>(string prefabName, T t) where T : ScrollData
-		{
-			Init();
-			if (!objectPoolDic.ContainsKey(prefabName))
-			{
-				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
-				return;
-			}
-			t.OnResize();
-			//如果之前什么都没有，那么不需要一个个添加进去
-			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }
-			listData.Add(t);
-			ApplyMaxCount();
-			if (dataChanged < DataChange.Removed)
-			{
-				dataChanged = DataChange.Added;
-				this.setSingleDataAction(t);
-			}
-			if (t.dataSource != null)
-			{
-				dic_DataSource_ScrollData.Add(t.dataSource, t);
-			}
-		}
-
+		
 		public void Add(string prefabName, object dataSource, Func<object, Vector2> onResize = null)
 		{
 			Init();
@@ -1758,7 +2022,6 @@ namespace BanSupport
 				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
 				return;
 			}
-			var objectPool = objectPoolDic[prefabName];
 			ScrollData scrollData = new ScrollData(this, prefabName, dataSource, onResize);
 			scrollData.OnResize();
 			//如果之前什么都没有，那么不需要一个个添加进去
@@ -1767,8 +2030,25 @@ namespace BanSupport
 			ApplyMaxCount();
 			if (dataChanged < DataChange.Removed)
 			{
-				dataChanged = DataChange.Added;
-				this.setSingleDataAction(scrollData);
+				if (Centered)
+				{
+					var oldMaxWidth = this.maxWidth;
+					this.setSingleDataAction(scrollData);
+					if (oldMaxWidth != this.maxWidth)
+					{
+						dataChanged = DataChange.Removed;
+					}
+					else
+					{
+						scrollData.SetCenterOffset(getCenterOffset());
+						dataChanged = DataChange.Added;
+					}
+				}
+				else
+				{
+					this.setSingleDataAction(scrollData);
+					dataChanged = DataChange.Added;
+				}
 			}
 			if (dataSource != null)
 			{

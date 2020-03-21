@@ -123,6 +123,12 @@ public class Example : MonoBehaviour
 		{
 			switch (prefabName)
 			{
+				case "D":
+					{
+						var a = data as SimpleData;
+						root.Find("Text").GetComponent<Text>().text = a.index.ToString();
+					}
+					break;
 				case "A":
 					{
 						//Debug.Log("Read A");
@@ -195,15 +201,16 @@ public class Example : MonoBehaviour
 
 	private void AddChatJump()
 	{
-		scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
+		//todo
+		//scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
 		scrollSystem.Jump(1);
 	}
 
 	private void AddChat()
 	{
-		for (int i = 0;i<5;i++) {
-			scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
-		}
+		//for (int i = 0;i<5;i++) {
+		//	scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
+		//}
 	}
 
 	private void DeleteAll()
@@ -215,7 +222,7 @@ public class Example : MonoBehaviour
 		scrollSystem.Clear();
 		for (int i = 0; i < 30; i++)
 		{
-			scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
+			//scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
 		}
 	}
 

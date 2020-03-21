@@ -9,8 +9,6 @@ namespace BanSupport
 	public class ScrollData
 	{
 
-		public static Vector2 DEFAULT_ANCHOR = new Vector2(0, 1);
-
 		public ScrollData() { }
 
 		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> onResize)
@@ -55,7 +53,7 @@ namespace BanSupport
 
 		public Vector3 GetWorldPosition()
 		{
-			return Tools.GetWorldPosByAnchoredPos(scrollSystem.contentTrans, anchoredPosition, DEFAULT_ANCHOR);
+			return Tools.GetWorldPosByAnchoredPos(scrollSystem.contentTrans, anchoredPosition, scrollSystem.PrefabAnchor);
 		}
 
 		/// <summary>
@@ -117,7 +115,7 @@ namespace BanSupport
 		/// 更新内容
 		/// </summary>
 		/// <param name="refresh">表示强制刷新</param>
-		public void Update(bool refreshContent,bool refreshPosition)
+		public void Update(bool refreshContent, bool refreshPosition)
 		{
 			if (isVisible)
 			{
@@ -131,8 +129,11 @@ namespace BanSupport
 				if (refreshPosition)
 				{
 					//Debug.Log("refreshPosition");
-					this.targetTrans.sizeDelta  = new Vector2(this.width, this.height);
+					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
+#if UNITY_EDITOR
+					ShowGizmosBounds();
+#endif
 				}
 				if (refreshContent)
 				{
@@ -140,9 +141,6 @@ namespace BanSupport
 					this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
 				}
 
-#if UNITY_EDITOR
-				ShowGizmosBounds();
-#endif
 			}
 		}
 
@@ -160,35 +158,52 @@ namespace BanSupport
 		public void CheckVisible(uint frame)
 		{
 			if (frame > lastUpdateFrame)
-			{				
+			{
 				lastUpdateFrame = frame;
 				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
-
-				/*
-				//根据contentTrans更新世界坐标
-				this.worldPosition = Tools.GetUIPosByAnchoredPos(
-					scrollSystem.contentTrans, 
-					this.anchoredPosition + scrollSystem.forceCenterOffset, 
-					DEFAULT_ANCHOR
-				);
-				*/
-
+				if (!isVisible) {
+					Debug.Log("come here");
+				}
 			}
 		}
 
 		/// <summary>
 		/// 设置位置
 		/// </summary>
-		public void SetAnchoredPosition(Vector2 position)
+		public void SetAnchoredPosition(Vector2 originPosition)
 		{
 			this.isPositionInited = true;
-			position.y = -position.y;
-			anchoredPosition = position;
+			if (scrollSystem.Centered && (newLine == ScrollLayout.NewLine.None))
+			{
+				 
+				//只是临时存储用
+				this.anchoredPosition = originPosition;
+			}
+			else
+			{
+				this.anchoredPosition = scrollSystem.TransAnchoredPosition(originPosition);
+				UpdateRectBounds();
+			}
+		}
 
-			rectBounds.left = anchoredPosition.x - 0.5f * width;
-			rectBounds.right = anchoredPosition.x + 0.5f * width;
-			rectBounds.up = anchoredPosition.y + 0.5f * height;
-			rectBounds.down = anchoredPosition.y - 0.5f * height;
+		/// <summary>
+		/// 设置居中偏移量
+		/// </summary>
+		public void SetCenterOffset(Vector2 offset)
+		{
+			if (newLine == ScrollLayout.NewLine.None)
+			{
+				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.anchoredPosition + offset);
+				UpdateRectBounds();
+			}
+		}
+
+		private void UpdateRectBounds()
+		{
+			this.rectBounds.left = anchoredPosition.x - 0.5f * width;
+			this.rectBounds.right = anchoredPosition.x + 0.5f * width;
+			this.rectBounds.up = anchoredPosition.y + 0.5f * height;
+			this.rectBounds.down = anchoredPosition.y - 0.5f * height;
 		}
 
 	}

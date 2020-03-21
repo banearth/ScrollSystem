@@ -21,7 +21,6 @@ namespace BanSupport
 		{
 			None,//不启用新行
 			Center,//居中
-			CenterFitSize,//居中且铺满
 			LeftOrUp,//贴着左边或者下边
 			RightOrDown,//贴着右边或者上边
 		};

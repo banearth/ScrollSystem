@@ -6,14 +6,14 @@ using UnityEngine;
 namespace BanSupport
 {
 
-	public static partial class ScrollSytemExtension
-	{
-		public static void AddChatData(this ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, string> getMsgFunc)
-		{
-			var newScrollData = new ChatScrollData(scrollSystem, prefabName, dataSource, getMsgFunc);
-			scrollSystem.Add(prefabName, newScrollData);
-		}
-	}
+	//public static partial class ScrollSytemExtension
+	//{
+		//public static void AddChatData(this ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, string> getMsgFunc)
+		//{
+		//	var newScrollData = new ChatScrollData(scrollSystem, prefabName, dataSource, getMsgFunc);
+		//	scrollSystem.Add(prefabName, newScrollData);
+		//}
+	//}
 
 	public class ChatScrollData : ScrollData
 	{
