@@ -21,7 +21,7 @@ namespace BanSupport
 		private bool centered = false;
 
 		[HideInInspector]
-		public int startCorner = 1;
+		public int startCorner = 0;
 
 		[Tooltip("边界")]
 		[SerializeField]

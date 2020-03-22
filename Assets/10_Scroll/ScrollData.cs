@@ -161,9 +161,6 @@ namespace BanSupport
 			{
 				lastUpdateFrame = frame;
 				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
-				if (!isVisible) {
-					Debug.Log("come here");
-				}
 			}
 		}
 
