@@ -190,7 +190,9 @@ namespace BanSupport
 		/// <summary>
 		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
 		/// </summary>
-		private float maxWidth;
+		private float maxWidth = 0;
+
+		private float oldMaxWidth = 0;
 
 		private Action<ScrollData> setSingleDataAction;
 
@@ -699,6 +701,7 @@ namespace BanSupport
 			this.cursorPos = new Vector2(border.x,border.y);
 			this.maxHeight = 0;
 			this.maxWidth = 0;
+			this.oldMaxWidth = 0;
 		}
 
 		/// <summary>
@@ -750,8 +753,6 @@ namespace BanSupport
 				}
 			}
 		}
-
-		private float oldMaxWidth = 0;
 
 		private void UpdateCentered()
 		{
@@ -1870,7 +1871,6 @@ namespace BanSupport
 				Debug.LogWarning("无法找到需要插入的Index:" + insertIndex);
 				return;
 			}
-			var objectPool = objectPoolDic[prefabName];
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
 			newScrollData.OnResize();
 			listData.Insert(insertIndex, newScrollData);
