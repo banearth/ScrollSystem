@@ -22,15 +22,15 @@ namespace BanSupport
 
 		public ChatScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, string> getMsgFunc)
 		{
-			base.Init(scrollSystem, prefabName, dataSource, ResizeByString);
-			this.getMsgFunc = getMsgFunc;
+			//base.Init(scrollSystem, prefabName, dataSource, ResizeByString);
+			//this.getMsgFunc = getMsgFunc;
 		}
 
-		private Vector2 ResizeByString(object dataSource)
-		{
-			var msg = getMsgFunc(dataSource);
-			return new Vector2(0, objectPool.CalculateHeightByFitString(msg));
-		}
+		//private Vector2 ResizeByString(object dataSource)
+		//{
+		//	var msg = getMsgFunc(dataSource);
+		//	return new Vector2(0, objectPool.CalculateHeightByFitString(msg));
+		//}
 
 	}
 

@@ -8,6 +8,8 @@ using System;
 public class Example : MonoBehaviour
 {
 
+	public static int global_index = 0;
+
 	public Button buttonDeleteAll;
 	public Button buttonAddChat;
 	public Button buttonAddChatJump;
@@ -33,11 +35,6 @@ public class Example : MonoBehaviour
 
 	public static Example Instance;
 
-	public class ChatData
-	{
-		public string msg;
-	}
-
 	public List<string> GetSelectedPrefabNames() {
 		List<string> result = new List<string>();
 		for (int i = 0; i < prefabSelected.Length; i++)
@@ -62,11 +59,6 @@ public class Example : MonoBehaviour
 
 	void Start()
 	{
-		//prefabSelected = new bool[prefabNames.Length];
-		//for (int i = 0; i < prefabNames.Length; i++)
-		//{
-		//	prefabSelected[i] = false;
-		//}
 
 		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
 
@@ -119,72 +111,46 @@ public class Example : MonoBehaviour
 			scrollSystem.Reverse();
 		});
 
+		scrollSystem.SetItemInitDelegate((prefabName, root) =>
+		{
+			switch (prefabName)
+			{
+				case "B":
+					root.GetComponent<ItemB>().Init(scrollSystem);
+					break;
+				case "C":
+					root.GetComponent<ItemC>().Init(scrollSystem);
+					break;
+			}
+		});
+
 		scrollSystem.SetItemContentDelegate((prefabName, root, data) =>
 		{
 			switch (prefabName)
 			{
-				case "D":
-					{
-						var a = data as SimpleData;
-						root.Find("Text").GetComponent<Text>().text = a.index.ToString();
-					}
-					break;
 				case "A":
 					{
-						//Debug.Log("Read A");
-						//a表示累加
-						var a = data as SimpleData;
-						root.Find("Text").GetComponent<Text>().text = a.index.ToString();
-
-						var button = root.GetComponent<Button>();
-						button.onClick.RemoveAllListeners();
-						button.onClick.AddListener(() =>
-						{
-							a.index++;
-							scrollSystem.Set(a);
-						});
+						root.GetComponent<ItemA>().UpdateInfo(data as SimpleData);
 					}
 					break;
 				case "B":
 					{
-						//Debug.Log("Read B");
-						//表示删除
-						var a = data as SimpleData;
-						root.Find("Text").GetComponent<Text>().text = a.index.ToString();
-
-						var button = root.GetComponent<Button>();
-						button.onClick.RemoveAllListeners();
-						button.onClick.AddListener(() =>
-						{
-							scrollSystem.Remove(data);
-						});
+						root.GetComponent<ItemB>().UpdateInfo(data as SimpleData);
 					}
 					break;
 				case "C":
 					{
-						//Debug.Log("Read C");
-						//表示插入
-						var a = data as SimpleData;
-						root.Find("Text").GetComponent<Text>().text = a.index.ToString();
-
-						var button = root.GetComponent<Button>();
-						button.onClick.RemoveAllListeners();
-						button.onClick.AddListener(() =>
-						{
-							scrollSystem.Insert("C",data, new SimpleData { index = global_index++ });
-						});
+						root.GetComponent<ItemC>().UpdateInfo(data as SimpleData);
+					}
+					break;
+				case "D":
+					{
+						root.GetComponent<ItemD>().UpdateInfo(data as SimpleData);
 					}
 					break;
 				case "Chat":
 					{
-						var chatData = data as ChatData;
-						root.Find("Text").GetComponent<Text>().text = chatData.msg;
-						var button = root.GetComponent<Button>();
-						button.onClick.RemoveAllListeners();
-						button.onClick.AddListener(() =>
-						{
-							scrollSystem.Remove(data);
-						});
+						root.GetComponent<ItemChat>().UpdateInfo(data as ChatData);
 					}
 					break;
 			}
@@ -192,25 +158,22 @@ public class Example : MonoBehaviour
 
 	}
 
-	private static int global_index = 0;
-
-	public class SimpleData
-	{
-		public int index;
-	}
 
 	private void AddChatJump()
 	{
-		//todo
-		//scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
+		scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
+		{
+			return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
+		});
 		scrollSystem.Jump(1);
 	}
 
 	private void AddChat()
 	{
-		//for (int i = 0;i<5;i++) {
-		//	scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
-		//}
+		scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
+		{
+			return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
+		});
 	}
 
 	private void DeleteAll()
@@ -222,23 +185,18 @@ public class Example : MonoBehaviour
 		scrollSystem.Clear();
 		for (int i = 0; i < 30; i++)
 		{
-			//scrollSystem.AddChatData("Chat", new ChatData { msg = inputField_ChatContent.text }, data => (data as ChatData).msg);
+			scrollSystem.Add("D",new SimpleData { index = Example.global_index++ });
 		}
 	}
 
-	private void RemoveFirst()
-	{
-		scrollSystem.RemoveFirst();
-	}
+}
 
-	public void RemoveLast()
-	{
-		scrollSystem.RemoveLast();
-	}
+public class SimpleData
+{
+	public int index;
+}
 
-	public void Clear()
-	{
-		scrollSystem.Clear();
-	}
-
+public class ChatData
+{
+	public string msg;
 }

@@ -23,6 +23,20 @@ namespace BanSupport
 
 		#region 时间相关
 
+		public static System.Diagnostics.Stopwatch StartWatch()
+		{
+			System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+			stopwatch.Start();
+			return stopwatch;
+		}
+
+		public static double StopWatch(System.Diagnostics.Stopwatch watch)
+		{
+			watch.Stop();
+			return watch.Elapsed.TotalMilliseconds;
+		}
+
+
 		/// <summary>
 		/// 把总秒转化为时分秒
 		/// </summary>

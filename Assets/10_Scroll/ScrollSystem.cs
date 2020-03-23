@@ -9,6 +9,7 @@ namespace BanSupport
 {
 
 	[ExecuteInEditMode]
+	[RequireComponent(typeof(ScrollRect),typeof(Mask))]
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler
 	{
 
@@ -318,7 +319,6 @@ namespace BanSupport
 			public string prefabName { get; private set; }
 			public GameObject origin;
 			public List<GameObject> list;
-			public Transform contentTrans;
 			public ScrollLayout.NewLine newLine { private set; get; }
 
 			private Func<string,float> calculateHeightByFitString;
@@ -327,12 +327,14 @@ namespace BanSupport
 
 			public float prefabHeight { private set; get; }
 
-			public ObjectPool(GameObject origin,List<GameObject> list,Transform contentTrans)
+			private ScrollSystem scrollSystem;
+
+			public ObjectPool(GameObject origin,List<GameObject> list, ScrollSystem scrollSystem)
 			{
 				this.prefabName = origin.name;
 				this.origin = origin;
 				this.list = list;
-				this.contentTrans = contentTrans;
+				this.scrollSystem = scrollSystem;
 				var prefabRectTransform = origin.transform as RectTransform;
 				this.prefabWidth = prefabRectTransform.sizeDelta.x;
 				this.prefabHeight = prefabRectTransform.sizeDelta.y;
@@ -383,13 +385,14 @@ namespace BanSupport
 				{
 					getObject = this.list[0];
 					list.RemoveAt(0);
-					getObject.transform.SetParent(this.contentTrans.transform);
+					getObject.transform.SetParent(scrollSystem.contentTrans.transform);
 				}
 				else
 				{
 					//没有库存需要生成
-					getObject = GameObject.Instantiate(this.origin, this.contentTrans.transform);
+					getObject = GameObject.Instantiate(this.origin, scrollSystem.contentTrans.transform);
 					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
+					if (scrollSystem.setItemInit != null) { scrollSystem.setItemInit(this.prefabName, getObject.transform); }
 				}
 				getObject.SetActive(true);
 				return getObject;
@@ -402,7 +405,7 @@ namespace BanSupport
 					Debug.LogWarning("回收的对象为空！");
 					return;
 				}
-				obj.transform.SetParent(this.contentTrans.parent);
+				obj.transform.SetParent(scrollSystem.transform);
 				obj.SetActive(false);
 				this.list.Add(obj);
 			}
@@ -653,33 +656,54 @@ namespace BanSupport
 					}
 				}
 
-				for (int i = 0; i < visibleStartIndex; i++)
+				bool refreshPosition = false;
+				switch (dataChanged)
 				{
-					listData[i].Hide();
-				}
-
-				for (int i = visibleEndIndex + 1; i < listData.Count; i++)
-				{
-					listData[i].Hide();
-				}
-
-				switch (dataChanged) {
 					case DataChange.None:
 					case DataChange.Added:
-						for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-						{
-							listData[i].Update(false,false);
-						}
+						refreshPosition = false;
 						break;
 					case DataChange.Removed:
 					case DataChange.ResetRemoved:
-						for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-						{
-							listData[i].Update(false, true);
-						}
+						refreshPosition = true;
 						break;
 				}
 
+				//方法一（这个效率更高一些）
+				//var watch = Tools.StartWatch();
+				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+				{
+					listShowScrollData.Remove(listData[i]);
+				}
+				foreach (var tempData in listShowScrollData) {
+					tempData.Hide();
+				}
+				listShowScrollData.Clear();
+				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+				{
+					var curData = listData[i];
+					curData.Update(false, refreshPosition);
+					listShowScrollData.Add(curData);
+				}
+				//Debug.Log(Tools.StopWatch(watch));
+				
+				
+
+				//方法二
+				/*
+				var watch = Tools.StartWatch();
+				for (int i = 0;i<visibleStartIndex;i++) {
+					listData[i].Hide();
+				}
+				for (int i = visibleEndIndex+1;i<listData.Count;i++) {
+					listData[i].Hide();
+				}
+				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+				{
+					listData[i].Update(false, refreshPosition);
+				}
+				Debug.Log(Tools.StopWatch(watch));
+				*/
 			}
 		}
 
@@ -1143,6 +1167,9 @@ namespace BanSupport
 		/// </summary>
 		private void SetComponent()
 		{
+
+			if (this == null) { return; }
+
 			//contentTrans
 			if (contentTrans == null)
 			{
@@ -1516,6 +1543,7 @@ namespace BanSupport
 				{
 					var clone = GameObject.Instantiate(origin.gameObject, this.transform);
 					clone.name = clone.name.Substring(0, clone.name.Length - 7);
+					if (this.setItemInit != null) { this.setItemInit(origin.name, clone.transform); }
 					list.Add(clone);
 				}
 				if (objectPoolDic.ContainsKey(origin.name))
@@ -1525,7 +1553,7 @@ namespace BanSupport
 				}
 				else
 				{
-					objectPoolDic.Add(origin.name, new ObjectPool(origin, list, contentTrans));
+					objectPoolDic.Add(origin.name, new ObjectPool(origin, list,  this));
 				}
 			}
 			return true;
@@ -1714,39 +1742,33 @@ namespace BanSupport
 
 		#region 外部方法
 
+		public Action<string, Transform> setItemInit { get; private set; }
+
 		public Action<string, Transform, object> setItemContent { get; private set; }
-
-		//public Action<string, Transform> setItemDisable { get; private set; }
-
 
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
-		//todo 这块的优化没想好
-		/*
-		private Dictionary<GameObject, ScrollData> dic_GameObject_ScrollData = new Dictionary<GameObject, ScrollData>();
+		private List<ScrollData> listShowScrollData = new List<ScrollData>();
 
-		public void AttachScrollData(GameObject go, ScrollData scrollData)
-		{
-			if (dic_GameObject_ScrollData.ContainsKey(go))
-			{
-				dic_GameObject_ScrollData[go] = scrollData;
-			}
-			else
-			{
-				dic_GameObject_ScrollData.Add(go, scrollData);
-			}
-		}
-		*/
+		/// <summary>
+		/// 可以把这个理解为item的Update
+		/// </summary>
 		public void SetItemContentDelegate(Action<string, Transform, System.Object> setItemContent)
 		{
 			this.setItemContent = setItemContent;
 		}
 
-		//public void SetItemDisableDelegate(Action<string, Transform> setItemDisable)
-		//{
-		//	this.setItemDisable = setItemDisable;
-		//}
+		/// <summary>
+		/// 可以把这个理解为item的Start
+		/// </summary>
+		public void SetItemInitDelegate(Action<string, Transform> setItemInit)
+		{
+			this.setItemInit = setItemInit;
+		}
 
+		/// <summary>
+		/// 更新元素显示
+		/// </summary>
 		public void Set(object dataSource)
 		{
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
@@ -1760,6 +1782,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 刷新可见元素
+		/// </summary>
 		public void Refresh()
 		{
 			if (listData.Count == 0)
@@ -1776,6 +1801,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 删除全部
+		/// </summary>
 		public void Clear()
 		{
 			bool removedAny = false;
@@ -1792,16 +1820,25 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 删最后一个
+		/// </summary>
 		public bool RemoveLast()
 		{
 			return Remove(listData.Count - 1);
 		}
 
+		/// <summary>
+		/// 删第一个
+		/// </summary>
 		public bool RemoveFirst()
 		{
 			return Remove(0);
 		}
 
+		/// <summary>
+		/// 删，根据索引
+		/// </summary>
 		public bool Remove(int index)
 		{
 			if (index >= 0 && index < listData.Count)
@@ -1826,6 +1863,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 删，根据data
+		/// </summary>
 		public bool Remove(object dataSource)
 		{
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
@@ -1844,44 +1884,6 @@ namespace BanSupport
 			{
 				Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
 				return false;
-			}
-		}
-
-		/// <summary>
-		/// 插入在谁的前面
-		/// 第一个参数插在谁的前面
-		/// 第二个是真正插入的新数据
-		/// </summary>
-		public void Insert(string prefabName, object insertedDataSource, object newDataSource, Func<object, Vector2> onResize = null)
-		{
-			if (!objectPoolDic.ContainsKey(prefabName))
-			{
-				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
-				return;
-			}
-			if (!dic_DataSource_ScrollData.ContainsKey(insertedDataSource))
-			{
-				Debug.LogWarning("无法找到该insertedDataSource:" + insertedDataSource.ToString());
-				return;
-			}
-			var insertedScrollData = dic_DataSource_ScrollData[insertedDataSource];
-			int insertIndex = listData.IndexOf(insertedScrollData);
-			if (insertIndex < 0)
-			{
-				Debug.LogWarning("无法找到需要插入的Index:" + insertIndex);
-				return;
-			}
-			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
-			newScrollData.OnResize();
-			listData.Insert(insertIndex, newScrollData);
-			ApplyMaxCount();
-			if (this.dataChanged < DataChange.ResetRemoved)
-			{
-				this.dataChanged = DataChange.Removed;
-			}
-			if (newDataSource != null)
-			{
-				dic_DataSource_ScrollData.Add(newDataSource, newScrollData);
 			}
 		}
 
@@ -1906,7 +1908,6 @@ namespace BanSupport
 		/// 水平滚动时 0表示最左方，1表示最右方
 		/// animated 是否保留动画
 		/// </summary>
-		/// <param name="normalizedPosition"></param>
 		public void Jump(float normalizedPosition, bool animated = true)
 		{
 			if (!this.gameObject.activeSelf) { return; }
@@ -1969,7 +1970,6 @@ namespace BanSupport
 			return listData.Count;
 		}
 
-
 		/// <summary>
 		/// 某种或多种元素的总数量
 		/// </summary>
@@ -2009,11 +2009,10 @@ namespace BanSupport
 			return count;
 		}
 
-		#endregion
 
-		#region Add方法
-
-		
+		/// <summary>
+		/// 增
+		/// </summary>
 		public void Add(string prefabName, object dataSource, Func<object, Vector2> onResize = null)
 		{
 			Init();
@@ -2053,6 +2052,44 @@ namespace BanSupport
 			if (dataSource != null)
 			{
 				dic_DataSource_ScrollData.Add(dataSource, scrollData);
+			}
+		}
+
+		/// <summary>
+		/// 插入在谁的前面
+		/// 第一个参数插在谁的前面
+		/// 第二个是真正插入的新数据
+		/// </summary>
+		public void Insert(string prefabName, object insertedDataSource, object newDataSource, Func<object, Vector2> onResize = null)
+		{
+			if (!objectPoolDic.ContainsKey(prefabName))
+			{
+				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
+				return;
+			}
+			if (!dic_DataSource_ScrollData.ContainsKey(insertedDataSource))
+			{
+				Debug.LogWarning("无法找到该insertedDataSource:" + insertedDataSource.ToString());
+				return;
+			}
+			var insertedScrollData = dic_DataSource_ScrollData[insertedDataSource];
+			int insertIndex = listData.IndexOf(insertedScrollData);
+			if (insertIndex < 0)
+			{
+				Debug.LogWarning("无法找到需要插入的Index:" + insertIndex);
+				return;
+			}
+			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
+			newScrollData.OnResize();
+			listData.Insert(insertIndex, newScrollData);
+			ApplyMaxCount();
+			if (this.dataChanged < DataChange.ResetRemoved)
+			{
+				this.dataChanged = DataChange.Removed;
+			}
+			if (newDataSource != null)
+			{
+				dic_DataSource_ScrollData.Add(newDataSource, newScrollData);
 			}
 		}
 

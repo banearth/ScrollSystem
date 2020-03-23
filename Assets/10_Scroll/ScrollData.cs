@@ -104,9 +104,7 @@ namespace BanSupport
 			this.isVisible = false;
 			if (this.targetTrans != null)
 			{
-				//this.scrollSystem.setItemDisable(objectPool.prefabName, this.targetTrans);
 				objectPool.Recycle(this.targetTrans.gameObject);
-				//scrollSystem.AttachScrollData(this.targetGo, null);
 				this.targetTrans = null;
 			}
 		}
@@ -124,7 +122,6 @@ namespace BanSupport
 					this.targetTrans = objectPool.Get().transform as RectTransform;
 					refreshContent = true;
 					refreshPosition = true;
-					//scrollSystem.AttachScrollData(this.targetGo, this);
 				}
 				if (refreshPosition)
 				{
@@ -140,7 +137,6 @@ namespace BanSupport
 					//Debug.Log("refreshContent");
 					this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
 				}
-
 			}
 		}
 
