@@ -9,7 +9,6 @@ namespace BanSupport
 {
 
 	[ExecuteInEditMode]
-	[RequireComponent(typeof(ScrollRect),typeof(Mask))]
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler
 	{
 
@@ -255,16 +254,6 @@ namespace BanSupport
 #endif
 
 		#endregion
-
-		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
-		{
-			return Mathf.Abs(anchoredPosition.y - centerAnchoredPosition.y);
-		}
-
-		private float GetDistanceToCenterWhenHorizontal(Vector2 anchoredPosition)
-		{
-			return Mathf.Abs(anchoredPosition.x - centerAnchoredPosition.x);
-		}
 
 		#region 内部类
 
@@ -524,6 +513,16 @@ namespace BanSupport
 				Show();
 				dataChanged = DataChange.None;
 			}
+		}
+
+		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
+		{
+			return Mathf.Abs(anchoredPosition.y - centerAnchoredPosition.y);
+		}
+
+		private float GetDistanceToCenterWhenHorizontal(Vector2 anchoredPosition)
+		{
+			return Mathf.Abs(anchoredPosition.x - centerAnchoredPosition.x);
 		}
 
 		private void SearchListSort()
@@ -2091,6 +2090,37 @@ namespace BanSupport
 			{
 				dic_DataSource_ScrollData.Add(newDataSource, newScrollData);
 			}
+		}
+
+		#endregion
+
+		#region 动态创建使用
+
+		/// <summary>
+		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
+		/// </summary>
+		public static ScrollSystem Create(Transform target)
+		{
+#if UNITY_EDITOR
+			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
+			scrollsystem.SetComponent();
+			var image = scrollsystem.GetComponent<Image>();
+			image.type = Image.Type.Sliced;
+			image.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource(typeof(Sprite), "UI/Skin/UIMask.psd") as Sprite;
+			image.color = Color.white;
+			return scrollsystem;
+#endif
+			return null;
+		}
+
+		/// <summary>
+		/// 添加元素
+		/// </summary>
+		public void AddInEditor(Transform target)
+		{
+#if UNITY_EDITOR
+			target.SetParent(this.contentTrans);
+#endif
 		}
 
 		#endregion
