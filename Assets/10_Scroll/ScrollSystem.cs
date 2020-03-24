@@ -1166,9 +1166,6 @@ namespace BanSupport
 		/// </summary>
 		private void SetComponent()
 		{
-
-			if (this == null) { return; }
-
 			//contentTrans
 			if (contentTrans == null)
 			{
@@ -2108,6 +2105,8 @@ namespace BanSupport
 			image.type = Image.Type.Sliced;
 			image.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource(typeof(Sprite), "UI/Skin/UIMask.psd") as Sprite;
 			image.color = Color.white;
+			var mask = scrollsystem.GetComponent<Mask>();
+			mask.showMaskGraphic = false;
 			return scrollsystem;
 #endif
 			return null;
