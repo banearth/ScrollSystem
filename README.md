@@ -5,7 +5,7 @@ use unity 2019.2.6 or above to open the project
 
 any suggestions are welcome
 
-contact me use
+contact me with
 
 email:719252885@qq.com
 
