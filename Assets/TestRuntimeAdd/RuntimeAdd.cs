@@ -8,14 +8,20 @@ public class RuntimeAdd : MonoBehaviour
 	public Transform targetTrans;
 	public Transform[] addedItems;
 
-	void Start()
-	{
+	private BanSupport.ScrollSystem mScrollSystem;
 
+	void Awake()
+	{
+		mScrollSystem = GameObject.FindObjectOfType<BanSupport.ScrollSystem>();
+		mScrollSystem.PreSetting(1, 0, false, new Vector2(1, 1), new Vector2(5, 5), -1, 0);
 	}
 
 	void Update()
 	{
-
+		if (Input.GetKeyDown(KeyCode.A))
+		{
+			mScrollSystem.Add("Item", new object());
+		}
 	}
 
 	[ContextMenu("AddScrollSystem")]

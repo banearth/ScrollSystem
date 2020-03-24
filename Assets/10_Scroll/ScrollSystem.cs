@@ -2123,6 +2123,17 @@ namespace BanSupport
 #endif
 		}
 
+		public void PreSetting(int scrollDirection, int startCorner, bool centered, Vector2 border, Vector2 spacing, int maxCount, float resetNormalizedPosition)
+		{
+			this.scrollDirection = (ScrollDirection)scrollDirection;
+			this.startCorner = startCorner;
+			this.centered = centered;
+			this.border = border;
+			this.spacing = spacing;
+			this.maxCount = maxCount;
+			this.resetNormalizedPosition = resetNormalizedPosition;
+		}
+
 		#endregion
 
 	}

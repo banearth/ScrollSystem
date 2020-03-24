@@ -135,7 +135,9 @@ namespace BanSupport
 				if (refreshContent)
 				{
 					//Debug.Log("refreshContent");
-					this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
+					if (this.scrollSystem.setItemContent != null) {
+						this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
+					}
 				}
 			}
 		}
