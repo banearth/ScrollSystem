@@ -902,6 +902,45 @@ namespace BanSupport
 		/// </summary>
 		private void InitFormatPrefabRectTransform()
 		{
+			switch (startCorner)
+			{
+				case 0:
+					//Left Up
+					formatPrefabRectTransform = rectTransform =>
+					{
+						rectTransform.pivot = new Vector2(0.5f, 0.5f);
+						rectTransform.anchorMin = new Vector2(0, 1);
+						rectTransform.anchorMax = new Vector2(0, 1);
+					};
+					break;
+				case 1:
+					//Right Up
+					formatPrefabRectTransform = rectTransform =>
+					{
+						rectTransform.pivot = new Vector2(0.5f, 0.5f);
+						rectTransform.anchorMin = new Vector2(1, 1);
+						rectTransform.anchorMax = new Vector2(1, 1);
+					};
+					break;
+				case 2:
+					//Left Down
+					formatPrefabRectTransform = rectTransform =>
+					{
+						rectTransform.pivot = new Vector2(0.5f, 0.5f);
+						rectTransform.anchorMin = new Vector2(0, 0);
+						rectTransform.anchorMax = new Vector2(0, 0);
+					};
+					break;
+				case 3:
+					//Right Down
+					formatPrefabRectTransform = rectTransform =>
+					{
+						rectTransform.pivot = new Vector2(0.5f, 0.5f);
+						rectTransform.anchorMin = new Vector2(1, 0);
+						rectTransform.anchorMax = new Vector2(1, 0);
+					};
+					break;
+			}
 			if (Application.isPlaying)
 			{
 				switch (startCorner)
@@ -921,48 +960,6 @@ namespace BanSupport
 					case 3:
 						//Right Down
 						prefabAnchor = new Vector2(1, 0);
-						break;
-				}
-			}
-			else
-			{
-				switch (startCorner)
-				{
-					case 0:
-						//Left Up
-						formatPrefabRectTransform = rectTransform =>
-						{
-							rectTransform.pivot = new Vector2(0.5f, 0.5f);
-							rectTransform.anchorMin = new Vector2(0, 1);
-							rectTransform.anchorMax = new Vector2(0, 1);
-						};
-						break;
-					case 1:
-						//Right Up
-						formatPrefabRectTransform = rectTransform =>
-						{
-							rectTransform.pivot = new Vector2(0.5f, 0.5f);
-							rectTransform.anchorMin = new Vector2(1, 1);
-							rectTransform.anchorMax = new Vector2(1, 1);
-						};
-						break;
-					case 2:
-						//Left Down
-						formatPrefabRectTransform = rectTransform =>
-						{
-							rectTransform.pivot = new Vector2(0.5f, 0.5f);
-							rectTransform.anchorMin = new Vector2(0, 0);
-							rectTransform.anchorMax = new Vector2(0, 0);
-						};
-						break;
-					case 3:
-						//Right Down
-						formatPrefabRectTransform = rectTransform =>
-						{
-							rectTransform.pivot = new Vector2(0.5f, 0.5f);
-							rectTransform.anchorMin = new Vector2(1, 0);
-							rectTransform.anchorMax = new Vector2(1, 0);
-						};
 						break;
 				}
 			}
@@ -1529,27 +1526,29 @@ namespace BanSupport
 			while (contentTrans.childCount > 0)
 			{
 				//把每个需要缓存的对象置于外部
-				var origin = contentTrans.GetChild(0).gameObject;
+				var originRectTransform = contentTrans.GetChild(0) as RectTransform;
+				//确保提前格式化
+				formatPrefabRectTransform(originRectTransform);
 				//注册之前确保这份预制体已经是我们想要的格式
-				origin.transform.SetParent(this.transform);
-				origin.SetActive(false);
+				originRectTransform.SetParent(this.transform);
+				originRectTransform.gameObject.SetActive(false);
 				//生成对应数量的缓存
 				List<GameObject> list = new List<GameObject>();
 				for (int i = 0; i < registPoolCount; i++)
 				{
-					var clone = GameObject.Instantiate(origin.gameObject, this.transform);
+					var clone = GameObject.Instantiate(originRectTransform.gameObject, this.transform);
 					clone.name = clone.name.Substring(0, clone.name.Length - 7);
-					if (this.setItemInit != null) { this.setItemInit(origin.name, clone.transform); }
+					if (this.setItemInit != null) { this.setItemInit(originRectTransform.name, clone.transform); }
 					list.Add(clone);
 				}
-				if (objectPoolDic.ContainsKey(origin.name))
+				if (objectPoolDic.ContainsKey(originRectTransform.name))
 				{
 					Debug.LogWarning("请确保缓存对象没有重名情况！");
 					return false;
 				}
 				else
 				{
-					objectPoolDic.Add(origin.name, new ObjectPool(origin, list,  this));
+					objectPoolDic.Add(originRectTransform.name, new ObjectPool(originRectTransform.gameObject, list,  this));
 				}
 			}
 			return true;
@@ -2131,6 +2130,19 @@ namespace BanSupport
 			this.spacing = spacing;
 			this.maxCount = maxCount;
 			this.resetNormalizedPosition = resetNormalizedPosition;
+		}
+
+		public void SetLayout(string prefabName, int scrollLayoutNewLineType)
+		{
+			var itemGo = this.contentTrans.Find("prefabName").gameObject;
+			if (itemGo != null)
+			{
+				Tools.AddComponentIfNotExist<ScrollLayout>(itemGo).newLine = (ScrollLayout.NewLine)scrollLayoutNewLineType;
+			}
+			else
+			{
+				Debug.Log("无法找到prefabName:" + prefabName);
+			}
 		}
 
 		#endregion
