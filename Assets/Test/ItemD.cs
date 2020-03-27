@@ -14,15 +14,15 @@ public class ItemD : MonoBehaviour
 
     private void Awake()
     {
-        label = this.transform.Find("Text").GetComponent<Text>();
-        button = this.GetComponent<Button>();
-        button.onClick.AddListener(OnClick);
+        //label = this.transform.Find("Text").GetComponent<Text>();
+        //button = this.GetComponent<Button>();
+        //button.onClick.AddListener(OnClick);
     }
 
     public void UpdateInfo(SimpleData data)
     {
-        this.data = data;
-        label.text = data.index.ToString();
+        //this.data = data;
+        //label.text = data.index.ToString();
     }
 
     public void OnClick()

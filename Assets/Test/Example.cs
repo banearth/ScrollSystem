@@ -57,8 +57,19 @@ public class Example : MonoBehaviour
 		Instance = this;
 	}
 
+	private List<SimpleData> currentDatas = null;
+
 	void Start()
 	{
+
+		if (currentDatas == null)
+		{
+			currentDatas = new List<SimpleData>();
+			for (int i = 0; i < 100; i++)
+			{
+				currentDatas.Add(new SimpleData { index = Example.global_index++ });
+			}
+		}
 
 		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
 
@@ -181,11 +192,12 @@ public class Example : MonoBehaviour
 		scrollSystem.Clear();
 	}
 
-	private void DeleteAndAdd() {
+	private void DeleteAndAdd()
+	{
 		scrollSystem.Clear();
-		for (int i = 0; i < 30; i++)
+		foreach (var simpleData in currentDatas)
 		{
-			scrollSystem.Add("D",new SimpleData { index = Example.global_index++ });
+			scrollSystem.Add("D", simpleData);
 		}
 	}
 

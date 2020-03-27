@@ -374,7 +374,7 @@ namespace BanSupport
 				{
 					getObject = this.list[0];
 					list.RemoveAt(0);
-					getObject.transform.SetParent(scrollSystem.contentTrans.transform);
+					//getObject.transform.SetParent(scrollSystem.contentTrans.transform);
 				}
 				else
 				{
@@ -394,7 +394,7 @@ namespace BanSupport
 					Debug.LogWarning("回收的对象为空！");
 					return;
 				}
-				obj.transform.SetParent(scrollSystem.transform);
+				//obj.transform.SetParent(scrollSystem.transform);
 				obj.SetActive(false);
 				this.list.Add(obj);
 			}
@@ -498,6 +498,7 @@ namespace BanSupport
 			}
 			if (dataChanged != DataChange.None)
 			{
+				var watch = BanSupport.Tools.StartWatch();
 				switch (dataChanged)
 				{
 					case DataChange.Added:
@@ -510,7 +511,10 @@ namespace BanSupport
 						SetAllData(false);
 						break;
 				}
+				Debug.Log("SetAllData:" + BanSupport.Tools.StopWatch(watch));
+				watch = BanSupport.Tools.StartWatch();
 				Show();
+				Debug.Log("Show:" + BanSupport.Tools.StopWatch(watch));
 				dataChanged = DataChange.None;
 			}
 		}
@@ -576,7 +580,8 @@ namespace BanSupport
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
 		private void Show()
-		{	
+		{
+			var watch = BanSupport.Tools.StartWatch();
 			updateFrame++;
 			UpdateBounds();
 
@@ -674,10 +679,16 @@ namespace BanSupport
 				{
 					listShowScrollData.Remove(listData[i]);
 				}
+
 				foreach (var tempData in listShowScrollData) {
 					tempData.Hide();
 				}
+
 				listShowScrollData.Clear();
+
+				Debug.Log("Show 1:" + BanSupport.Tools.StopWatch(watch));
+				watch = BanSupport.Tools.StartWatch();
+
 				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
 				{
 					var curData = listData[i];
@@ -704,6 +715,9 @@ namespace BanSupport
 				Debug.Log(Tools.StopWatch(watch));
 				*/
 			}
+
+			Debug.Log("Show 2:" + BanSupport.Tools.StopWatch(watch));
+
 		}
 
 		public void ShowGizmosBounds()
@@ -1175,7 +1189,7 @@ namespace BanSupport
 					{
 						var first = existScrollRect.content.GetChild(0);
 						listItems.Add(first);
-						first.SetParent(this.transform);
+						//first.SetParent(this.transform);
 					}
 
 					var findLayoutGroup = existScrollRect.content.GetComponent<HorizontalOrVerticalLayoutGroup>();
@@ -1203,6 +1217,7 @@ namespace BanSupport
 					}
 					listItems.Clear();
 				}
+				listItems = null;
 
 			}
 
@@ -1523,20 +1538,26 @@ namespace BanSupport
 				Debug.LogWarning("请把需要创建的对象置于contentTrans节点下！");
 				return false;
 			}
-			while (contentTrans.childCount > 0)
+			List<RectTransform> allChildren = new List<RectTransform>();
+			for (int i = 0; i < contentTrans.childCount; i++)
+			{
+				allChildren.Add(contentTrans.GetChild(i) as RectTransform);
+			}
+			//while (contentTrans.childCount > 0)
+			foreach (var originRectTransform  in allChildren)
 			{
 				//把每个需要缓存的对象置于外部
-				var originRectTransform = contentTrans.GetChild(0) as RectTransform;
+				//var originRectTransform = contentTrans.GetChild(0) as RectTransform;
 				//确保提前格式化
 				formatPrefabRectTransform(originRectTransform);
 				//注册之前确保这份预制体已经是我们想要的格式
-				originRectTransform.SetParent(this.transform);
+				//originRectTransform.SetParent(this.transform);
 				originRectTransform.gameObject.SetActive(false);
 				//生成对应数量的缓存
 				List<GameObject> list = new List<GameObject>();
 				for (int i = 0; i < registPoolCount; i++)
 				{
-					var clone = GameObject.Instantiate(originRectTransform.gameObject, this.transform);
+					var clone = GameObject.Instantiate(originRectTransform.gameObject, this.contentTrans);
 					clone.name = clone.name.Substring(0, clone.name.Length - 7);
 					if (this.setItemInit != null) { this.setItemInit(originRectTransform.name, clone.transform); }
 					list.Add(clone);
@@ -1551,6 +1572,8 @@ namespace BanSupport
 					objectPoolDic.Add(originRectTransform.name, new ObjectPool(originRectTransform.gameObject, list,  this));
 				}
 			}
+			allChildren.Clear();
+			allChildren = null;
 			return true;
 		}
 
@@ -1801,6 +1824,7 @@ namespace BanSupport
 		/// </summary>
 		public void Clear()
 		{
+			var watch = BanSupport.Tools.StartWatch();
 			bool removedAny = false;
 			while (listData.Count > 0)
 			{
@@ -1813,6 +1837,7 @@ namespace BanSupport
 			{
 				dataChanged = DataChange.ResetRemoved;
 			}
+			Debug.Log("Clear:"+BanSupport.Tools.StopWatch(watch));
 		}
 
 		/// <summary>
@@ -2097,7 +2122,6 @@ namespace BanSupport
 		/// </summary>
 		public static ScrollSystem Create(Transform target)
 		{
-#if UNITY_EDITOR
 			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
 			scrollsystem.SetComponent();
 			var image = scrollsystem.GetComponent<Image>();
@@ -2107,8 +2131,6 @@ namespace BanSupport
 			var mask = scrollsystem.GetComponent<Mask>();
 			mask.showMaskGraphic = false;
 			return scrollsystem;
-#endif
-			return null;
 		}
 
 		/// <summary>
@@ -2116,9 +2138,7 @@ namespace BanSupport
 		/// </summary>
 		public void AddInEditor(Transform target)
 		{
-#if UNITY_EDITOR
 			target.SetParent(this.contentTrans);
-#endif
 		}
 
 		public void PreSetting(int scrollDirection, int startCorner, bool centered, Vector2 border, Vector2 spacing, int maxCount, float resetNormalizedPosition)
