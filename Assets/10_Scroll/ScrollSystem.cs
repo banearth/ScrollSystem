@@ -498,7 +498,6 @@ namespace BanSupport
 			}
 			if (dataChanged != DataChange.None)
 			{
-				var watch = BanSupport.Tools.StartWatch();
 				switch (dataChanged)
 				{
 					case DataChange.Added:
@@ -511,10 +510,7 @@ namespace BanSupport
 						SetAllData(false);
 						break;
 				}
-				Debug.Log("SetAllData:" + BanSupport.Tools.StopWatch(watch));
-				watch = BanSupport.Tools.StartWatch();
 				Show();
-				Debug.Log("Show:" + BanSupport.Tools.StopWatch(watch));
 				dataChanged = DataChange.None;
 			}
 		}
@@ -581,7 +577,6 @@ namespace BanSupport
 		/// </summary>
 		private void Show()
 		{
-			var watch = BanSupport.Tools.StartWatch();
 			updateFrame++;
 			UpdateBounds();
 
@@ -686,17 +681,12 @@ namespace BanSupport
 
 				listShowScrollData.Clear();
 
-				Debug.Log("Show 1:" + BanSupport.Tools.StopWatch(watch));
-				watch = BanSupport.Tools.StartWatch();
-
 				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
 				{
 					var curData = listData[i];
 					curData.Update(false, refreshPosition);
 					listShowScrollData.Add(curData);
 				}
-				//Debug.Log(Tools.StopWatch(watch));
-				
 				
 
 				//方法二
@@ -716,7 +706,6 @@ namespace BanSupport
 				*/
 			}
 
-			Debug.Log("Show 2:" + BanSupport.Tools.StopWatch(watch));
 
 		}
 
@@ -1824,7 +1813,6 @@ namespace BanSupport
 		/// </summary>
 		public void Clear()
 		{
-			var watch = BanSupport.Tools.StartWatch();
 			bool removedAny = false;
 			while (listData.Count > 0)
 			{
@@ -1837,7 +1825,6 @@ namespace BanSupport
 			{
 				dataChanged = DataChange.ResetRemoved;
 			}
-			Debug.Log("Clear:"+BanSupport.Tools.StopWatch(watch));
 		}
 
 		/// <summary>
