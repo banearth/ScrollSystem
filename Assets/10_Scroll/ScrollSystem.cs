@@ -2109,6 +2109,7 @@ namespace BanSupport
 		/// </summary>
 		public static ScrollSystem Create(Transform target)
 		{
+#if UNITY_EDITOR
 			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
 			scrollsystem.SetComponent();
 			var image = scrollsystem.GetComponent<Image>();
@@ -2118,6 +2119,9 @@ namespace BanSupport
 			var mask = scrollsystem.GetComponent<Mask>();
 			mask.showMaskGraphic = false;
 			return scrollsystem;
+#else
+			return null;
+#endif
 		}
 
 		/// <summary>
@@ -2125,7 +2129,9 @@ namespace BanSupport
 		/// </summary>
 		public void AddInEditor(Transform target)
 		{
+#if UNITY_EDITOR
 			target.SetParent(this.contentTrans);
+#endif
 		}
 
 		public void PreSetting(int scrollDirection, int startCorner, bool centered, Vector2 border, Vector2 spacing, int maxCount, float resetNormalizedPosition)
