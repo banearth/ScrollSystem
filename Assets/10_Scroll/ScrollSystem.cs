@@ -234,8 +234,6 @@ namespace BanSupport
 			}
 		}
 
-		private int visibleStartIndex = 0;
-		private int visibleEndIndex = 0;
 		private Vector2 centerAnchoredPosition;
 		private Vector2 prefabAnchor;
 
@@ -623,36 +621,39 @@ namespace BanSupport
 			//根据位置上下寻找
 			if (found)
 			{
+				listNextVisibleScrollData.Add(listData[foundIndex]);
+				float curLineTop = listData[foundIndex].top;
 				//向上
-				visibleStartIndex = foundIndex;
 				for (int i = foundIndex - 1; i >= 0; i--)
 				{
 					var curData = listData[i];
 					curData.CheckVisible(updateFrame);
 					if (curData.isVisible)
 					{
-						visibleStartIndex = i;
+						listNextVisibleScrollData.Add(curData);
 					}
-					else
+					else if (curData.top != curLineTop)
 					{
 						break;
 					}
+					curLineTop = curData.top;
 				}
 
 				//向下
-				visibleEndIndex = foundIndex;
+				curLineTop = listData[foundIndex].top;
 				for (int i = foundIndex + 1; i < listData.Count; i++)
 				{
 					var curData = listData[i];
 					curData.CheckVisible(updateFrame);
 					if (curData.isVisible)
 					{
-						visibleEndIndex = i;
+						listNextVisibleScrollData.Add(curData);
 					}
-					else
+					else if (curData.top != curLineTop)
 					{
 						break;
 					}
+					curLineTop = curData.top;
 				}
 
 				bool refreshPosition = false;
@@ -670,24 +671,17 @@ namespace BanSupport
 
 				//方法一（这个效率更高一些）
 				//var watch = Tools.StartWatch();
-				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+				foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
+				foreach (var tempData in listVisibleScrollData) { tempData.Hide(); }
+				listVisibleScrollData.Clear();
+				listVisibleScrollData.AddRange(listNextVisibleScrollData);
+				listNextVisibleScrollData.Clear();
+				foreach (var visibleData in listVisibleScrollData)
 				{
-					listShowScrollData.Remove(listData[i]);
+					visibleData.Update(false, refreshPosition);
 				}
+				//Debug.Log(Tools.StopWatch(watch));
 
-				foreach (var tempData in listShowScrollData) {
-					tempData.Hide();
-				}
-
-				listShowScrollData.Clear();
-
-				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-				{
-					var curData = listData[i];
-					curData.Update(false, refreshPosition);
-					listShowScrollData.Add(curData);
-				}
-				
 
 				//方法二
 				/*
@@ -1755,7 +1749,9 @@ namespace BanSupport
 
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
-		private List<ScrollData> listShowScrollData = new List<ScrollData>();
+		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
+
+		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
 		/// <summary>
 		/// 可以把这个理解为item的Update
@@ -1798,13 +1794,9 @@ namespace BanSupport
 			{
 				return;
 			}
-			for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
+			foreach (var aVisibleScrollData in listVisibleScrollData)
 			{
-				if (i < 0 || i >= listData.Count)
-				{
-					break;
-				}
-				listData[i].Update(true,false);
+				aVisibleScrollData.Update(true,false);
 			}
 		}
 
