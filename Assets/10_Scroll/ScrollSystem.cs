@@ -1842,13 +1842,22 @@ namespace BanSupport
 		{
 			if (index >= 0 && index < listData.Count)
 			{
-				var scrollData = listData[index];
-				if (scrollData.dataSource != null)
-				{
-					dic_DataSource_ScrollData.Remove(scrollData.dataSource);
-				}
-				scrollData.Hide();
+				var removedScrollData = listData[index];
+				//自身删除
+				removedScrollData.Hide();
+				//从listData中删除
 				listData.RemoveAt(index);
+				//从dic_DataSource_ScrollData中删除
+				if (removedScrollData.dataSource != null)
+				{
+					dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
+				}
+				//从listVisibleScrollData删除
+				if (listVisibleScrollData.Contains(removedScrollData))
+				{
+					listVisibleScrollData.Remove(removedScrollData);
+				}
+				//标记当前数据更改过
 				if (dataChanged < DataChange.ResetRemoved)
 				{
 					dataChanged = DataChange.Removed;
@@ -1869,10 +1878,19 @@ namespace BanSupport
 		{
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
-				var scrollData = dic_DataSource_ScrollData[dataSource];
+				var removedScrollData = dic_DataSource_ScrollData[dataSource];
+				//自身删除
+				removedScrollData.Hide();
+				//从listData中删除
+				listData.Remove(removedScrollData);
+				//从dic_DataSource_ScrollData中删除
 				dic_DataSource_ScrollData.Remove(dataSource);
-				scrollData.Hide();
-				listData.Remove(scrollData);
+				//从listVisibleScrollData删除
+				if (listVisibleScrollData.Contains(removedScrollData))
+				{
+					listVisibleScrollData.Remove(removedScrollData);
+				}
+				//标记当前数据更改过
 				if (this.dataChanged < DataChange.ResetRemoved)
 				{
 					dataChanged = DataChange.Removed;

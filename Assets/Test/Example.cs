@@ -16,6 +16,10 @@ public class Example : MonoBehaviour
 	public Button buttonCreateDeleteAndAdd;
 	public Button buttonJumpWithoutAnimation;
 	public Button buttonReverse;
+	public Button buttonRemoveFirst;
+	public Button buttonRemoveLast;
+	public Button ButtonRefresh;
+	public Button ButtonChangeData;
 
 	public InputField inputField_Number;
 	public Button buttonAdd;
@@ -57,70 +61,18 @@ public class Example : MonoBehaviour
 		Instance = this;
 	}
 
-	private List<SimpleData> currentDatas = null;
+	private List<SimpleData> deleteAndAddDatas = new List<SimpleData>();
+	private List<SimpleData> createdDatas = new List<SimpleData>();
 
 	void Start()
 	{
-
-		if (currentDatas == null)
+	
+		for (int i = 0; i < 100; i++)
 		{
-			currentDatas = new List<SimpleData>();
-			for (int i = 0; i < 100; i++)
-			{
-				currentDatas.Add(new SimpleData { index = Example.global_index++ });
-			}
+			deleteAndAddDatas.Add(new SimpleData { index = Example.global_index++ });
 		}
 
-		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
-
-		for (int i = 0;i<buttons.Length;i++) {
-			var curButton = buttons[i];
-			var index = i;
-			Action readAction = () =>
-			{
-				curButton.transform.Find("Mark").gameObject.SetActive(prefabSelected[index]);
-			};
-			curButton.onClick.AddListener(()=> {
-				prefabSelected[index] = !prefabSelected[index];
-				readAction();
-			});
-			readAction();
-		}
-
-		buttonAdd.onClick.AddListener(() =>
-		{
-			foreach (var aName in GetSelectedPrefabNames())
-			{
-				for (int i = 0; i < GetInputFieldCount(); i++)
-				{
-					scrollSystem.Add(aName, new SimpleData { index = global_index++ });
-				}
-			}
-		});
-
-		buttonCheck.onClick.AddListener(() =>
-		{
-			Debug.Log(scrollSystem.GetCount(GetSelectedPrefabNames().ToArray()));
-		});
-
-		buttonCheckExcept.onClick.AddListener(() =>
-		{
-			Debug.Log(scrollSystem.GetCountExcept(GetSelectedPrefabNames().ToArray()));
-		});
-
-		buttonAddChat.onClick.AddListener(AddChat);
-		buttonAddChatJump.onClick.AddListener(AddChatJump);
-
-		buttonDeleteAll.onClick.AddListener(DeleteAll);
-		buttonCreateDeleteAndAdd.onClick.AddListener(DeleteAndAdd);
-		buttonJumpWithoutAnimation.onClick.AddListener(() =>
-		{
-			scrollSystem.Jump(1, false);
-		});
-		buttonReverse.onClick.AddListener(() =>
-		{
-			scrollSystem.Reverse();
-		});
+		BindButton();
 
 		scrollSystem.SetItemInitDelegate((prefabName, root) =>
 		{
@@ -169,36 +121,95 @@ public class Example : MonoBehaviour
 
 	}
 
-
-	private void AddChatJump()
+	private void BindButton()
 	{
-		scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
+		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
+		for (int i = 0; i < buttons.Length; i++)
 		{
-			return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
-		});
-		scrollSystem.Jump(1);
-	}
-
-	private void AddChat()
-	{
-		scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
-		{
-			return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
-		});
-	}
-
-	private void DeleteAll()
-	{
-		scrollSystem.Clear();
-	}
-
-	private void DeleteAndAdd()
-	{
-		scrollSystem.Clear();
-		foreach (var simpleData in currentDatas)
-		{
-			scrollSystem.Add("D", simpleData);
+			var curButton = buttons[i];
+			var index = i;
+			Action readAction = () =>
+			{
+				curButton.transform.Find("Mark").gameObject.SetActive(prefabSelected[index]);
+			};
+			curButton.onClick.AddListener(() => {
+				prefabSelected[index] = !prefabSelected[index];
+				readAction();
+			});
+			readAction();
 		}
+		buttonAdd.onClick.AddListener(() =>
+		{
+			foreach (var aName in GetSelectedPrefabNames())
+			{
+				for (int i = 0; i < GetInputFieldCount(); i++)
+				{
+					scrollSystem.Add(aName, GenerateSimpleData());
+				}
+			}
+		});
+		buttonCheck.onClick.AddListener(() => { Debug.Log(scrollSystem.GetCount(GetSelectedPrefabNames().ToArray())); });
+		buttonCheckExcept.onClick.AddListener(() => { Debug.Log(scrollSystem.GetCountExcept(GetSelectedPrefabNames().ToArray())); });
+		buttonAddChat.onClick.AddListener(() =>
+		{
+			scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
+			{
+				return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
+			});
+		});
+		buttonAddChatJump.onClick.AddListener(() =>
+		{
+			scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
+			{
+				return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
+			});
+			scrollSystem.Jump(1);
+		});
+		buttonDeleteAll.onClick.AddListener(() =>
+		{
+			createdDatas.Clear();
+			scrollSystem.Clear();
+		});
+		buttonCreateDeleteAndAdd.onClick.AddListener(() =>
+		{
+			createdDatas.Clear();
+			scrollSystem.Clear();
+			foreach (var simpleData in deleteAndAddDatas)
+			{
+				createdDatas.Add(simpleData);
+				scrollSystem.Add("D", simpleData);
+			}
+		});
+		buttonJumpWithoutAnimation.onClick.AddListener(() => { scrollSystem.Jump(1, false); });
+		buttonReverse.onClick.AddListener(() => { createdDatas.Reverse(); scrollSystem.Reverse(); });
+		buttonRemoveFirst.onClick.AddListener(() =>
+			{
+				if (createdDatas.Count > 0) {
+					var removedData = createdDatas[0];
+					createdDatas.Remove(removedData);
+					scrollSystem.Remove(removedData);
+				}
+			}
+		);
+		buttonRemoveLast.onClick.AddListener(() => 
+			{
+				if (createdDatas.Count > 0)
+				{
+					var removedData = createdDatas[createdDatas.Count - 1];
+					createdDatas.Remove(removedData);
+					scrollSystem.Remove(removedData);
+				}
+			}
+		);
+		ButtonRefresh.onClick.AddListener(() => { scrollSystem.Refresh(); });
+		ButtonChangeData.onClick.AddListener(() => { createdDatas.ForEach(temp => { temp.index++; Debug.Log("added to index:" + temp.index); }); });
+	}
+
+	public SimpleData GenerateSimpleData()
+	{
+		var returnData = new SimpleData { index = global_index++ };
+		createdDatas.Add(returnData);
+		return returnData;
 	}
 
 }
