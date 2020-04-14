@@ -39,6 +39,8 @@ namespace BanSupport
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
+		public float top { get { return rectBounds.up; } }
+
 		private RectBounds rectBounds = new RectBounds();
 		private uint lastUpdateFrame = 0;
 		private RectTransform targetTrans = null;
