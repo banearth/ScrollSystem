@@ -2030,5 +2030,35 @@ namespace BanSupport
 
 		#endregion
 
+		/// <summary>
+		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
+		/// </summary>
+		public static ScrollSystem Create(Transform target)
+		{
+#if UNITY_EDITOR
+			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
+			scrollsystem.SetComponent();
+			var image = scrollsystem.GetComponent<Image>();
+			image.type = Image.Type.Sliced;
+			image.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource(typeof(Sprite), "UI/Skin/UIMask.psd") as Sprite;
+			image.color = Color.white;
+			var mask = scrollsystem.GetComponent<Mask>();
+			mask.showMaskGraphic = false;
+			return scrollsystem;
+#else
+			return null;
+#endif
+		}
+
+		/// <summary>
+		/// 添加元素
+		/// </summary>
+		public void AddInEditor(Transform target)
+		{
+#if UNITY_EDITOR
+			target.SetParent(this.contentTrans);
+#endif
+		}
+
 	}
 }
