@@ -19,7 +19,7 @@ public class ItemD : MonoBehaviour
         button.onClick.AddListener(OnClick);
     }
 
-    public void UpdateInfo(SimpleData data)
+    public void OnRefresh(SimpleData data)
     {
         this.data = data;
         label.text = data.index.ToString();

@@ -19,7 +19,7 @@ public class TestSwap : MonoBehaviour
 
 	void Start()
 	{
-		scrollSystem.SetItemContentDelegate(UpdateInfo);
+		scrollSystem.SetOnItemRefresh(UpdateInfo);
 
 		buttonClear.onClick.AddListener(() =>
 		{

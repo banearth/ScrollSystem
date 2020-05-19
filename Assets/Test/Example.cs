@@ -39,7 +39,8 @@ public class Example : MonoBehaviour
 
 	public static Example Instance;
 
-	public List<string> GetSelectedPrefabNames() {
+	public List<string> GetSelectedPrefabNames()
+	{
 		List<string> result = new List<string>();
 		for (int i = 0; i < prefabSelected.Length; i++)
 		{
@@ -66,7 +67,7 @@ public class Example : MonoBehaviour
 
 	void Start()
 	{
-	
+
 		for (int i = 0; i < 100; i++)
 		{
 			deleteAndAddDatas.Add(new SimpleData { index = Example.global_index++ });
@@ -74,49 +75,47 @@ public class Example : MonoBehaviour
 
 		BindButton();
 
-		scrollSystem.SetItemInitDelegate((prefabName, root) =>
+		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
 		{
-			switch (prefabName)
-			{
-				case "B":
-					root.GetComponent<ItemB>().Init(scrollSystem);
-					break;
-				case "C":
-					root.GetComponent<ItemC>().Init(scrollSystem);
-					break;
-			}
-		});
-
-		scrollSystem.SetItemContentDelegate((prefabName, root, data) =>
-		{
+			Debug.Log(string.Format(" {0} Refresh id:{1}", prefabName, (data as SimpleData).index.ToString()));
 			switch (prefabName)
 			{
 				case "A":
 					{
-						root.GetComponent<ItemA>().UpdateInfo(data as SimpleData);
+						root.GetComponent<ItemA>().OnRefresh(data as SimpleData);
 					}
 					break;
 				case "B":
 					{
-						root.GetComponent<ItemB>().UpdateInfo(data as SimpleData);
+						root.GetComponent<ItemB>().OnRefresh(data as SimpleData);
 					}
 					break;
 				case "C":
 					{
-						root.GetComponent<ItemC>().UpdateInfo(data as SimpleData);
+						root.GetComponent<ItemC>().OnRefresh(data as SimpleData);
 					}
 					break;
 				case "D":
 					{
-						root.GetComponent<ItemD>().UpdateInfo(data as SimpleData);
+						root.GetComponent<ItemD>().OnRefresh(data as SimpleData);
 					}
 					break;
 				case "Chat":
 					{
-						root.GetComponent<ItemChat>().UpdateInfo(data as ChatData);
+						root.GetComponent<ItemChat>().OnRefresh(data as ChatData);
 					}
 					break;
 			}
+		});
+
+		scrollSystem.SetOnItemClose((prefabName, root) =>
+		{
+			Debug.Log(string.Format(" {0} Close", prefabName));
+		});
+
+		scrollSystem.SetOnitemOpen((prefabName, root) =>
+		{
+			Debug.Log(string.Format(" {0} Open", prefabName));
 		});
 
 	}
@@ -132,7 +131,8 @@ public class Example : MonoBehaviour
 			{
 				curButton.transform.Find("Mark").gameObject.SetActive(prefabSelected[index]);
 			};
-			curButton.onClick.AddListener(() => {
+			curButton.onClick.AddListener(() =>
+			{
 				prefabSelected[index] = !prefabSelected[index];
 				readAction();
 			});
@@ -184,14 +184,15 @@ public class Example : MonoBehaviour
 		buttonReverse.onClick.AddListener(() => { createdDatas.Reverse(); scrollSystem.Reverse(); });
 		buttonRemoveFirst.onClick.AddListener(() =>
 			{
-				if (createdDatas.Count > 0) {
+				if (createdDatas.Count > 0)
+				{
 					var removedData = createdDatas[0];
 					createdDatas.Remove(removedData);
 					scrollSystem.Remove(removedData);
 				}
 			}
 		);
-		buttonRemoveLast.onClick.AddListener(() => 
+		buttonRemoveLast.onClick.AddListener(() =>
 			{
 				if (createdDatas.Count > 0)
 				{
@@ -219,7 +220,7 @@ public class SimpleData
 	public int index;
 }
 
-public class ChatData
+public class ChatData : SimpleData
 {
 	public string msg;
 }

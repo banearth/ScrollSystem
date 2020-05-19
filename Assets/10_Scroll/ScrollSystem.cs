@@ -33,13 +33,6 @@ namespace BanSupport
 		[SerializeField]
 		private Vector2 spacing = Vector2.one * 10;
 
-		/// <summary>
-		/// 当为负数的时候，表示无上限
-		/// </summary>
-		[Tooltip("当为负数的时候，表示无上限。否则的话，当添加新的元素的时候，超过上限会自动删掉最开始的")]
-		[SerializeField]
-		private int maxCount = -1;
-
 		[Range(0, 1)]
 		/// <summary>
 		/// 当发生重置的时候，设置的位置
@@ -379,7 +372,6 @@ namespace BanSupport
 					//没有库存需要生成
 					getObject = GameObject.Instantiate(this.origin, scrollSystem.contentTrans.transform);
 					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
-					if (scrollSystem.setItemInit != null) { scrollSystem.setItemInit(this.prefabName, getObject.transform); }
 				}
 				getObject.SetActive(true);
 				return getObject;
@@ -1163,45 +1155,10 @@ namespace BanSupport
 			//contentTrans
 			if (contentTrans == null)
 			{
-				//说明是第一次
-				var existScrollRect = GetComponent<ScrollRect>();
-				List<Transform> listItems = new List<Transform>();
-				if (existScrollRect != null)
-				{
-					while (existScrollRect.content.childCount > 0)
-					{
-						var first = existScrollRect.content.GetChild(0);
-						listItems.Add(first);
-						//first.SetParent(this.transform);
-					}
-
-					var findLayoutGroup = existScrollRect.content.GetComponent<HorizontalOrVerticalLayoutGroup>();
-					if (findLayoutGroup != null)
-					{
-						this.spacing = findLayoutGroup.spacing * Vector2.one;
-					}
-
-					//删除viewport
-					DestroyImmediate(existScrollRect.viewport.gameObject);
-					DestroyImmediate(existScrollRect);
-					
-				}
-
 				contentTrans = new GameObject("Content Transform", typeof(RectTransform)).transform as RectTransform;
 				contentTrans.SetParent(this.transform);
 				contentTrans.transform.localPosition = Vector3.zero;
 				contentTrans.localScale = Vector3.one;
-
-				if (listItems.Count > 0)
-				{
-					foreach (var aItem in listItems)
-					{
-						aItem.SetParent(contentTrans);
-					}
-					listItems.Clear();
-				}
-				listItems = null;
-
 			}
 
 			//Image
@@ -1526,11 +1483,8 @@ namespace BanSupport
 			{
 				allChildren.Add(contentTrans.GetChild(i) as RectTransform);
 			}
-			//while (contentTrans.childCount > 0)
 			foreach (var originRectTransform  in allChildren)
 			{
-				//把每个需要缓存的对象置于外部
-				//var originRectTransform = contentTrans.GetChild(0) as RectTransform;
 				//确保提前格式化
 				formatPrefabRectTransform(originRectTransform);
 				//注册之前确保这份预制体已经是我们想要的格式
@@ -1542,7 +1496,6 @@ namespace BanSupport
 				{
 					var clone = GameObject.Instantiate(originRectTransform.gameObject, this.contentTrans);
 					clone.name = clone.name.Substring(0, clone.name.Length - 7);
-					if (this.setItemInit != null) { this.setItemInit(originRectTransform.name, clone.transform); }
 					list.Add(clone);
 				}
 				if (objectPoolDic.ContainsKey(originRectTransform.name))
@@ -1571,32 +1524,6 @@ namespace BanSupport
 
 		private float oldLocatePosition = 0;
 		private ScrollData locateScrollData = null;
-
-		private void ApplyMaxCount()
-		{
-			if (this.maxCount > 0 && listData.Count > this.maxCount)
-			{
-				if (locateScrollData == null)
-				{
-					locateScrollData = listData[listData.Count - 2];
-				}
-				var scrollData = listData[0];
-				if (locateScrollData == scrollData)
-				{
-					locateScrollData = listData[1];
-				}
-				if (scrollData.dataSource != null)
-				{
-					dic_DataSource_ScrollData.Remove(scrollData.dataSource);
-				}
-				scrollData.Hide();
-				listData.RemoveAt(0);
-				if (dataChanged < DataChange.ResetRemoved)
-				{
-					dataChanged = DataChange.Removed;
-				}
-			}
-		}
 
 		#endregion
 
@@ -1743,30 +1670,31 @@ namespace BanSupport
 
 		#region 外部方法
 
-		public Action<string, Transform> setItemInit { get; private set; }
-
-		public Action<string, Transform, object> setItemContent { get; private set; }
-
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
 		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
 
 		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
-		/// <summary>
-		/// 可以把这个理解为item的Update
-		/// </summary>
-		public void SetItemContentDelegate(Action<string, Transform, System.Object> setItemContent)
+		public Action<string, Transform> onItemOpen { get; private set; }
+
+		public Action<string, Transform> onItemClose { get; private set; }
+
+		public Action<string, Transform, object> onItemRefresh { get; private set; }
+
+		public void SetOnItemRefresh(Action<string, Transform, object> onItemRefresh)
 		{
-			this.setItemContent = setItemContent;
+			this.onItemRefresh = onItemRefresh;
 		}
 
-		/// <summary>
-		/// 可以把这个理解为item的Start
-		/// </summary>
-		public void SetItemInitDelegate(Action<string, Transform> setItemInit)
+		public void SetOnItemClose(Action<string,Transform> onItemClose)
 		{
-			this.setItemInit = setItemInit;
+			this.onItemClose = onItemClose;
+		}
+
+		public void SetOnitemOpen(Action<string, Transform> onItemOpen)
+		{
+			this.onItemOpen = onItemOpen;
 		}
 
 		/// <summary>
@@ -2001,14 +1929,6 @@ namespace BanSupport
 			}
 			return count;
 		}
-		
-		/// <summary>
-		/// 设置最大数量，超过这个数量会自动删除第一个
-		/// </summary>
-		public void SetMaxCount(int maxCount)
-		{
-			this.maxCount = maxCount;
-		}
 
 		/// <summary>
 		/// 除了某种或者多种元素的总数量
@@ -2043,7 +1963,6 @@ namespace BanSupport
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }
 			listData.Add(scrollData);
-			ApplyMaxCount();
 			if (dataChanged < DataChange.Removed)
 			{
 				if (Centered)
@@ -2099,7 +2018,6 @@ namespace BanSupport
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
 			newScrollData.OnResize();
 			listData.Insert(insertIndex, newScrollData);
-			ApplyMaxCount();
 			if (this.dataChanged < DataChange.ResetRemoved)
 			{
 				this.dataChanged = DataChange.Removed;
@@ -2107,64 +2025,6 @@ namespace BanSupport
 			if (newDataSource != null)
 			{
 				dic_DataSource_ScrollData.Add(newDataSource, newScrollData);
-			}
-		}
-
-		#endregion
-
-		#region 动态创建使用
-
-		/// <summary>
-		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
-		/// </summary>
-		public static ScrollSystem Create(Transform target)
-		{
-#if UNITY_EDITOR
-			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
-			scrollsystem.SetComponent();
-			var image = scrollsystem.GetComponent<Image>();
-			image.type = Image.Type.Sliced;
-			image.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource(typeof(Sprite), "UI/Skin/UIMask.psd") as Sprite;
-			image.color = Color.white;
-			var mask = scrollsystem.GetComponent<Mask>();
-			mask.showMaskGraphic = false;
-			return scrollsystem;
-#else
-			return null;
-#endif
-		}
-
-		/// <summary>
-		/// 添加元素
-		/// </summary>
-		public void AddInEditor(Transform target)
-		{
-#if UNITY_EDITOR
-			target.SetParent(this.contentTrans);
-#endif
-		}
-
-		public void PreSetting(int scrollDirection, int startCorner, bool centered, Vector2 border, Vector2 spacing, int maxCount, float resetNormalizedPosition)
-		{
-			this.scrollDirection = (ScrollDirection)scrollDirection;
-			this.startCorner = startCorner;
-			this.centered = centered;
-			this.border = border;
-			this.spacing = spacing;
-			this.maxCount = maxCount;
-			this.resetNormalizedPosition = resetNormalizedPosition;
-		}
-
-		public void SetLayout(string prefabName, int scrollLayoutNewLineType)
-		{
-			var itemGo = this.contentTrans.Find("prefabName").gameObject;
-			if (itemGo != null)
-			{
-				Tools.AddComponentIfNotExist<ScrollLayout>(itemGo).newLine = (ScrollLayout.NewLine)scrollLayoutNewLineType;
-			}
-			else
-			{
-				Debug.Log("无法找到prefabName:" + prefabName);
 			}
 		}
 

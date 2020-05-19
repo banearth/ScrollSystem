@@ -106,6 +106,11 @@ namespace BanSupport
 			this.isVisible = false;
 			if (this.targetTrans != null)
 			{
+				//离开视野
+				if (this.scrollSystem.onItemClose != null)
+				{
+					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans);
+				}
 				objectPool.Recycle(this.targetTrans.gameObject);
 				this.targetTrans = null;
 			}
@@ -114,20 +119,23 @@ namespace BanSupport
 		/// <summary>
 		/// 更新内容
 		/// </summary>
-		/// <param name="refresh">表示强制刷新</param>
 		public void Update(bool refreshContent, bool refreshPosition)
 		{
 			if (isVisible)
 			{
 				if (this.targetTrans == null)
 				{
+					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
 					refreshContent = true;
 					refreshPosition = true;
+					if (this.scrollSystem.onItemOpen!= null)
+					{
+						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans);
+					}
 				}
 				if (refreshPosition)
 				{
-					//Debug.Log("refreshPosition");
 					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
 #if UNITY_EDITOR
@@ -136,9 +144,10 @@ namespace BanSupport
 				}
 				if (refreshContent)
 				{
-					//Debug.Log("refreshContent");
-					if (this.scrollSystem.setItemContent != null) {
-						this.scrollSystem.setItemContent(objectPool.prefabName, this.targetTrans, dataSource);
+					//根据data刷新
+					if (this.scrollSystem.onItemRefresh != null)
+					{
+						this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans, dataSource);
 					}
 				}
 			}

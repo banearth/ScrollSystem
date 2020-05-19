@@ -19,7 +19,7 @@ public class ItemChat : MonoBehaviour
         button.onClick.AddListener(OnClick);
     }
 
-    public void UpdateInfo(ChatData data)
+    public void OnRefresh(ChatData data)
     {
         this.data = data;
         label.text = data.msg;

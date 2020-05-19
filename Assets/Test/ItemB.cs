@@ -25,7 +25,7 @@ public class ItemB : MonoBehaviour
         this.scrollSystem = scrollSystem;
     }
 
-    public void UpdateInfo(SimpleData data)
+    public void OnRefresh(SimpleData data)
 	{
 		this.data = data;
 		label.text = data.index.ToString();
