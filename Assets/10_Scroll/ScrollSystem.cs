@@ -135,7 +135,7 @@ namespace BanSupport
 			}
 		}
 		private ScrollRect _scrollRect = null;
-		
+
 
 		/// <summary>
 		/// 这个scrollRect的范围，用于检测是否超出了范围
@@ -193,8 +193,8 @@ namespace BanSupport
 
 		private bool inited = false;
 
-		public enum DataChange 
-		{ 
+		public enum DataChange
+		{
 			None,//表示无变化，不需要操作
 			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
 			Removed,//表示需要位置重构
@@ -209,7 +209,7 @@ namespace BanSupport
 		/// <summary>
 		/// 返回是否跳转结束
 		/// </summary>
-		private Func<float,bool> jumpToAction;
+		private Func<float, bool> jumpToAction;
 
 		/// <summary>
 		/// 获得距离中心点的距离
@@ -259,7 +259,7 @@ namespace BanSupport
 			public int middle;
 			public bool found;
 
-			public static SearchGroup Get(int left, int right,ScrollSystem scrollSystem)
+			public static SearchGroup Get(int left, int right, ScrollSystem scrollSystem)
 			{
 				var result = ObjectPoolManager.Get<SearchGroup>();
 				result.left = left;
@@ -301,15 +301,15 @@ namespace BanSupport
 			public List<GameObject> list;
 			public ScrollLayout.NewLine newLine { private set; get; }
 
-			private Func<string,float> calculateHeightByFitString;
-			
+			private Func<string, float> calculateHeightByFitString;
+
 			public float prefabWidth { private set; get; }
 
 			public float prefabHeight { private set; get; }
 
 			private ScrollSystem scrollSystem;
 
-			public ObjectPool(GameObject origin,List<GameObject> list, ScrollSystem scrollSystem)
+			public ObjectPool(GameObject origin, List<GameObject> list, ScrollSystem scrollSystem)
 			{
 				this.prefabName = origin.name;
 				this.origin = origin;
@@ -536,8 +536,8 @@ namespace BanSupport
 					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 1:
-					scrollBounds.left = - Width - rectTransfrom.anchoredPosition.x;
-					scrollBounds.right = -rectTransfrom.anchoredPosition.x; 
+					scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
+					scrollBounds.right = -rectTransfrom.anchoredPosition.x;
 					scrollBounds.up = -rectTransfrom.anchoredPosition.y;
 					scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
@@ -555,7 +555,7 @@ namespace BanSupport
 					scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
 					scrollBounds.right = -rectTransfrom.anchoredPosition.x;
 					scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
-					scrollBounds.down = -rectTransfrom.anchoredPosition.y ;
+					scrollBounds.down = -rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
 					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
@@ -575,7 +575,7 @@ namespace BanSupport
 				return;
 			}
 
-			searchList.Add(SearchGroup.Get(0, listData.Count - 1,this));
+			searchList.Add(SearchGroup.Get(0, listData.Count - 1, this));
 			bool found = false;
 			int foundIndex = -1;
 			uint maxSearchTimes = 1000;
@@ -697,7 +697,7 @@ namespace BanSupport
 
 		public void ShowGizmosBounds()
 		{
-			listData.ForEach(temp=> {
+			listData.ForEach(temp => {
 				if (temp.isVisible)
 				{
 					temp.ShowGizmosBounds();
@@ -710,7 +710,7 @@ namespace BanSupport
 		/// </summary>
 		private void InitCursor()
 		{
-			this.cursorPos = new Vector2(border.x,border.y);
+			this.cursorPos = new Vector2(border.x, border.y);
 			this.maxHeight = 0;
 			this.maxWidth = 0;
 			this.oldMaxWidth = 0;
@@ -790,7 +790,7 @@ namespace BanSupport
 					{
 						aScrollData.SetCenterOffset(Vector2.up * centerOffset);
 					}
-				}		
+				}
 			}
 		}
 
@@ -936,7 +936,7 @@ namespace BanSupport
 				{
 					case 0:
 						//Left Up
-						prefabAnchor = new Vector2(0,1);
+						prefabAnchor = new Vector2(0, 1);
 						break;
 					case 1:
 						//Right Up
@@ -1001,7 +1001,7 @@ namespace BanSupport
 						//更新光标
 						cursorPos.x += rectTransform.sizeDelta.x;
 						//更新最大宽度
-						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x;}
+						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
 						//增加间隔
 						cursorPos.x += spacing.x;
 						//更新最大高度
@@ -1163,7 +1163,7 @@ namespace BanSupport
 
 			//Image
 			bool isNew;
-			var image = Tools.AddComponentIfNotExist<Image>(this.gameObject,out isNew);
+			var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
 			if (isNew)
 			{
 				image.sprite = null;
@@ -1172,14 +1172,14 @@ namespace BanSupport
 
 
 			//Mask
-			var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject,out isNew);
+			var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
 			if (isNew)
 			{
 				mask.showMaskGraphic = true;
 			}
 
 			//Scroll
-			var scrollRect = Tools.AddComponentIfNotExist<ScrollRect>(this.gameObject,out isNew);
+			var scrollRect = Tools.AddComponentIfNotExist<ScrollRect>(this.gameObject, out isNew);
 			if (isNew) {
 				scrollRect.decelerationRate = 0.04f;
 			}
@@ -1338,13 +1338,13 @@ namespace BanSupport
 						cursorPos.x = Width / 2;
 						break;
 					case ScrollLayout.NewLine.LeftOrUp:
-						cursorPos.x = data.width/2 + border.x;
+						cursorPos.x = data.width / 2 + border.x;
 						break;
 					case ScrollLayout.NewLine.RightOrDown:
 						cursorPos.x = Width - data.width / 2 - border.x;
 						break;
 				}
-				
+
 				//设置位置
 				data.SetAnchoredPosition(cursorPos + data.height / 2 * Vector2.up);
 				//换新行
@@ -1483,7 +1483,7 @@ namespace BanSupport
 			{
 				allChildren.Add(contentTrans.GetChild(i) as RectTransform);
 			}
-			foreach (var originRectTransform  in allChildren)
+			foreach (var originRectTransform in allChildren)
 			{
 				//确保提前格式化
 				formatPrefabRectTransform(originRectTransform);
@@ -1505,7 +1505,7 @@ namespace BanSupport
 				}
 				else
 				{
-					objectPoolDic.Add(originRectTransform.name, new ObjectPool(originRectTransform.gameObject, list,  this));
+					objectPoolDic.Add(originRectTransform.name, new ObjectPool(originRectTransform.gameObject, list, this));
 				}
 			}
 			allChildren.Clear();
@@ -1687,7 +1687,7 @@ namespace BanSupport
 			this.onItemRefresh = onItemRefresh;
 		}
 
-		public void SetOnItemClose(Action<string,Transform> onItemClose)
+		public void SetOnItemClose(Action<string, Transform> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
@@ -1724,7 +1724,7 @@ namespace BanSupport
 			}
 			foreach (var aVisibleScrollData in listVisibleScrollData)
 			{
-				aVisibleScrollData.Update(true,false);
+				aVisibleScrollData.Update(true, false);
 			}
 		}
 
@@ -2103,6 +2103,12 @@ namespace BanSupport
 		public void SetOnDrag(Action<PointerEventData> onDrag)
 		{
 			this.onDrag = onDrag;
+		}
+
+		public void SetScrollDirection(bool isHorOrVer)
+		{
+			this.scrollRect.horizontal = isHorOrVer;
+			this.scrollRect.vertical = !isHorOrVer;
 		}
 
 		#endregion
