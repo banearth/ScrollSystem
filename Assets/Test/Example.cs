@@ -117,7 +117,7 @@ public class Example : MonoBehaviour
 			Debug.Log(string.Format(" {0} Close", prefabName));
 		});
 
-		scrollSystem.SetOnitemOpen((prefabName, root, data) =>
+		scrollSystem.SetOnItemOpen((prefabName, root, data) =>
 		{
 			Debug.Log(string.Format(" {0} Open", prefabName));
 		});

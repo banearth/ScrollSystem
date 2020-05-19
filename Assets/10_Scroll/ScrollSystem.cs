@@ -1661,7 +1661,7 @@ namespace BanSupport
 			this.onItemClose = onItemClose;
 		}
 
-		public void SetOnitemOpen(Action<string, Transform, object> onItemOpen)
+		public void SetOnItemOpen(Action<string, Transform, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
 		}
