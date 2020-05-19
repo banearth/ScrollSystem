@@ -1676,9 +1676,9 @@ namespace BanSupport
 
 		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
-		public Action<string, Transform> onItemOpen { get; private set; }
+		public Action<string, Transform, object> onItemOpen { get; private set; }
 
-		public Action<string, Transform> onItemClose { get; private set; }
+		public Action<string, Transform, object> onItemClose { get; private set; }
 
 		public Action<string, Transform, object> onItemRefresh { get; private set; }
 
@@ -1687,12 +1687,12 @@ namespace BanSupport
 			this.onItemRefresh = onItemRefresh;
 		}
 
-		public void SetOnItemClose(Action<string, Transform> onItemClose)
+		public void SetOnItemClose(Action<string, Transform, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
 
-		public void SetOnitemOpen(Action<string, Transform> onItemOpen)
+		public void SetOnitemOpen(Action<string, Transform, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
 		}

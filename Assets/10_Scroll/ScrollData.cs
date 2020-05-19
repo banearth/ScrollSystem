@@ -109,7 +109,7 @@ namespace BanSupport
 				//离开视野
 				if (this.scrollSystem.onItemClose != null)
 				{
-					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans);
+					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans, this.dataSource);
 				}
 				objectPool.Recycle(this.targetTrans.gameObject);
 				this.targetTrans = null;
@@ -131,7 +131,7 @@ namespace BanSupport
 					refreshPosition = true;
 					if (this.scrollSystem.onItemOpen!= null)
 					{
-						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans);
+						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans, this.dataSource);
 					}
 				}
 				if (refreshPosition)

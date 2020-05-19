@@ -108,12 +108,12 @@ public class Example : MonoBehaviour
 			}
 		});
 
-		scrollSystem.SetOnItemClose((prefabName, root) =>
+		scrollSystem.SetOnItemClose((prefabName, root, data) =>
 		{
 			Debug.Log(string.Format(" {0} Close", prefabName));
 		});
 
-		scrollSystem.SetOnitemOpen((prefabName, root) =>
+		scrollSystem.SetOnitemOpen((prefabName, root, data) =>
 		{
 			Debug.Log(string.Format(" {0} Open", prefabName));
 		});
