@@ -118,6 +118,22 @@ public class Example : MonoBehaviour
 			Debug.Log(string.Format(" {0} Open", prefabName));
 		});
 
+		scrollSystem.SetOnBeginDrag(data =>
+		{
+			Debug.Log("OnBeginDrag");
+		});
+
+		scrollSystem.SetOnEndDrag(data =>
+		{
+			Debug.Log("OnEndDrag");
+		});
+
+		//scrollSystem.SetOnDrag(data =>
+		//{
+		//	Debug.Log("OnDrag");
+		//});
+
+
 	}
 
 	private void BindButton()

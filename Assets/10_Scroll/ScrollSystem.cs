@@ -9,7 +9,7 @@ namespace BanSupport
 {
 
 	[ExecuteInEditMode]
-	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler
+	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
 		#region 众多参数
@@ -2030,6 +2030,8 @@ namespace BanSupport
 
 		#endregion
 
+		#region 一些辅助方法
+
 		/// <summary>
 		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
 		/// </summary>
@@ -2059,6 +2061,52 @@ namespace BanSupport
 			target.SetParent(this.contentTrans);
 #endif
 		}
+
+		private Action<PointerEventData> onBeginDrag = null;
+		private Action<PointerEventData> onEndDrag = null;
+		private Action<PointerEventData> onDrag = null;
+
+		public void OnBeginDrag(PointerEventData eventData)
+		{
+			if (onBeginDrag != null)
+			{
+				onBeginDrag(eventData);
+			}
+		}
+
+		public void OnEndDrag(PointerEventData eventData)
+		{
+			if (onEndDrag != null)
+			{
+				onEndDrag(eventData);
+			}
+		}
+
+		public void OnDrag(PointerEventData eventData)
+		{
+			if (onDrag != null)
+			{
+				onDrag(eventData);
+			}
+		}
+
+		public void SetOnBeginDrag(Action<PointerEventData> onBeginDrag)
+		{
+			this.onBeginDrag = onBeginDrag;
+		}
+
+		public void SetOnEndDrag(Action<PointerEventData> onEndDrag)
+		{
+			this.onEndDrag = onEndDrag;
+		}
+
+		public void SetOnDrag(Action<PointerEventData> onDrag)
+		{
+			this.onDrag = onDrag;
+		}
+
+		#endregion
+
 
 	}
 }
