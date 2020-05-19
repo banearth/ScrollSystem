@@ -10,6 +10,10 @@ public class Example : MonoBehaviour
 
 	public static int global_index = 0;
 
+	public bool useBeginDragEvent = false;
+	public bool useDragEvent = false;
+	public bool useEndDragEvent = false;
+
 	public Button buttonDeleteAll;
 	public Button buttonAddChat;
 	public Button buttonAddChatJump;
@@ -118,21 +122,29 @@ public class Example : MonoBehaviour
 			Debug.Log(string.Format(" {0} Open", prefabName));
 		});
 
-		scrollSystem.SetOnBeginDrag(data =>
+		if (useBeginDragEvent)
 		{
-			Debug.Log("OnBeginDrag");
-		});
+			scrollSystem.SetOnBeginDrag(data =>
+			{
+				Debug.Log("OnBeginDrag");
+			});
+		}
 
-		scrollSystem.SetOnEndDrag(data =>
+		if (useEndDragEvent)
 		{
-			Debug.Log("OnEndDrag");
-		});
+			scrollSystem.SetOnEndDrag(data =>
+			{
+				Debug.Log("OnEndDrag");
+			});
+		}
 
-		//scrollSystem.SetOnDrag(data =>
-		//{
-		//	Debug.Log("OnDrag");
-		//});
-
+		if (useDragEvent)
+		{
+			scrollSystem.SetOnDrag(data =>
+			{
+				Debug.Log("OnDrag");
+			});
+		}
 
 	}
 
@@ -168,17 +180,12 @@ public class Example : MonoBehaviour
 		buttonCheckExcept.onClick.AddListener(() => { Debug.Log(scrollSystem.GetCountExcept(GetSelectedPrefabNames().ToArray())); });
 		buttonAddChat.onClick.AddListener(() =>
 		{
-			scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
-			{
-				return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
-			});
+			AddChat(inputField_ChatContent.text);
 		});
+
 		buttonAddChatJump.onClick.AddListener(() =>
 		{
-			scrollSystem.Add("Chat", new ChatData { msg = inputField_ChatContent.text }, data =>
-			{
-				return new Vector2(0, scrollSystem.GetPreferHeightByString("Chat", (data as ChatData).msg));
-			});
+			AddChat(inputField_ChatContent.text);
 			scrollSystem.Jump(1);
 		});
 		buttonDeleteAll.onClick.AddListener(() =>
@@ -227,6 +234,18 @@ public class Example : MonoBehaviour
 		var returnData = new SimpleData { index = global_index++ };
 		createdDatas.Add(returnData);
 		return returnData;
+	}
+
+	private void AddChat(string msg)
+	{
+		scrollSystem.Add("Chat", new ChatData { msg = msg}, GetChatHeight);
+	}
+
+	private Vector2 GetChatHeight(object data)
+	{
+		ScrollLayout referScrollLayout = scrollSystem.GetOriginPrefab("Chat").GetComponent<ScrollLayout>();
+		var height = referScrollLayout.GetHeightByStr((data as ChatData).msg);
+		return new Vector2(0, height);
 	}
 
 }

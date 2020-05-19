@@ -301,8 +301,6 @@ namespace BanSupport
 			public List<GameObject> list;
 			public ScrollLayout.NewLine newLine { private set; get; }
 
-			private Func<string, float> calculateHeightByFitString;
-
 			public float prefabWidth { private set; get; }
 
 			public float prefabHeight { private set; get; }
@@ -326,35 +324,6 @@ namespace BanSupport
 				else
 				{
 					this.newLine = ScrollLayout.NewLine.None;
-				}
-				if (layout != null && layout.fitLabel != null)
-				{
-					var height = (origin.transform as RectTransform).sizeDelta.y;
-					var heightOffset = height - layout.fitLabel.preferredHeight;
-					this.calculateHeightByFitString = tempStr =>
-					{
-						layout.fitLabel.text = tempStr;
-						return layout.fitLabel.preferredHeight + heightOffset;
-					};
-				}
-				else
-				{
-					this.calculateHeightByFitString = null;
-				}
-			}
-
-			/// <summary>
-			/// 根据要匹配的字符串，来计算所需的高度
-			/// </summary>
-			public float CalculateHeightByFitString(string str)
-			{
-				if (this.calculateHeightByFitString == null)
-				{
-					return (origin.transform as RectTransform).sizeDelta.y;
-				}
-				else
-				{
-					return this.calculateHeightByFitString(str);
 				}
 			}
 
@@ -1881,19 +1850,6 @@ namespace BanSupport
 			}
 		}
 
-		/// <summary>
-		/// 根据字符串获得理想高度
-		/// </summary>
-		public float GetPreferHeightByString(string prefabName, string str)
-		{
-			if (!objectPoolDic.ContainsKey(prefabName))
-			{
-				Debug.LogWarning("要调用的预制体没有注册 prefabName:" + prefabName);
-				return 0;
-			}
-			var objectPool = objectPoolDic[prefabName];
-			return objectPool.CalculateHeightByFitString(str);
-		}
 
 		/// <summary>
 		/// 遍历预制体，用于结合lua代码
@@ -1904,6 +1860,21 @@ namespace BanSupport
 			foreach (var prefabName in objectPoolDic.Keys)
 			{
 				foreachFunc(prefabName, objectPoolDic[prefabName].origin.transform);
+			}
+		}
+
+		/// <summary>
+		/// 根据名字获得原始模板预制体
+		/// </summary>
+		public GameObject GetOriginPrefab(string prefabName)
+		{
+			if (objectPoolDic.ContainsKey(prefabName))
+			{
+				return objectPoolDic[prefabName].origin;
+			}
+			else
+			{
+				return null;
 			}
 		}
 
@@ -1950,7 +1921,8 @@ namespace BanSupport
 		/// <summary>
 		/// 增
 		/// </summary>
-		public void Add(string prefabName, object dataSource, Func<object, Vector2> onResize = null)
+		/// <param name="getSize">具体参数含义 Vector2  GetSize(object data) </param>
+		public void Add(string prefabName, object dataSource, Func<object, Vector2> getSize = null)
 		{
 			Init();
 			if (!objectPoolDic.ContainsKey(prefabName))
@@ -1958,8 +1930,8 @@ namespace BanSupport
 				Debug.LogWarning("要增加的预制体没有注册 prefabName:" + prefabName);
 				return;
 			}
-			ScrollData scrollData = new ScrollData(this, prefabName, dataSource, onResize);
-			scrollData.OnResize();
+			ScrollData scrollData = new ScrollData(this, prefabName, dataSource, getSize);
+			scrollData.CalculateSize();
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }
 			listData.Add(scrollData);
@@ -2016,7 +1988,7 @@ namespace BanSupport
 				return;
 			}
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
-			newScrollData.OnResize();
+			newScrollData.CalculateSize();
 			listData.Insert(insertIndex, newScrollData);
 			if (this.dataChanged < DataChange.ResetRemoved)
 			{

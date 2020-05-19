@@ -11,18 +11,18 @@ namespace BanSupport
 
 		public ScrollData() { }
 
-		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> onResize)
+		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
-			Init(scrollSystem, prefabName, dataSource, onResize);
+			Init(scrollSystem, prefabName, dataSource, getSize);
 		}
 
-		protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> onResize)
+		protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
 			this.scrollSystem = scrollSystem;
 			this.objectPool = scrollSystem.ObjectPoolDic[prefabName];
 			this.dataSource = dataSource;
 			this.newLine = objectPool.newLine;
-			this.onResize = onResize;
+			this.getSize = getSize;
 			this.isPositionInited = false;
 		}
 
@@ -35,7 +35,7 @@ namespace BanSupport
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
 
-		private Func<object, Vector2> onResize;
+		private Func<object, Vector2> getSize;
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
@@ -61,12 +61,12 @@ namespace BanSupport
 		/// <summary>
 		/// 设置宽度和高度
 		/// </summary>
-		public bool OnResize()
+		public bool CalculateSize()
 		{
 			bool changed = false;
-			if (onResize != null)
+			if (getSize != null)
 			{
-				var newSize = onResize(dataSource);
+				var newSize = getSize(dataSource);
 				if (newSize.x > 0)
 				{
 					if (this.width != newSize.x)

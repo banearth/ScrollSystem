@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,9 +27,37 @@ namespace BanSupport
 		};
 
 		/// <summary>
-		/// 可以为空，如果存在值则表示会匹配高度，用于聊天
+		/// 可以为空，如果不为空则表示会匹配高度，用于聊天
 		/// </summary>
 		public Text fitLabel = null;
+
+		private Func<string,float> getHeightByStr = null;
+
+		public float GetHeightByStr(string str)
+		{
+			if (getHeightByStr != null)
+			{
+				return getHeightByStr(str);
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		private void Awake()
+		{
+			if (fitLabel != null)
+			{
+				var height = (this.transform as RectTransform).sizeDelta.y;
+				var heightOffset = height - fitLabel.preferredHeight;
+				this.getHeightByStr = tempStr =>
+				{
+					fitLabel.text = tempStr;
+					return fitLabel.preferredHeight + heightOffset;
+				};
+			}
+		}
 
 #if UNITY_EDITOR
 

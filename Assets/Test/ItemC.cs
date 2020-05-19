@@ -18,11 +18,7 @@ public class ItemC : MonoBehaviour
         label = this.transform.Find("Text").GetComponent<Text>();
         button = this.GetComponent<Button>();
         button.onClick.AddListener(OnClick);
-    }
-
-    public void Init(ScrollSystem scrollSystem)
-    {
-        this.scrollSystem = scrollSystem;
+        scrollSystem = GetComponentInParent<ScrollSystem>();
     }
 
     public void OnRefresh(SimpleData data)
