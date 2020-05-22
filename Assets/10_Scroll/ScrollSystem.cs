@@ -460,7 +460,14 @@ namespace BanSupport
 				switch (dataChanged)
 				{
 					case DataChange.Added:
-						EndSetData();
+						{
+							for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
+							{
+								var scrollData = this.listData[i];
+								this.setSingleDataAction(scrollData);
+							}
+							EndSetData();
+						}
 						break;
 					case DataChange.Removed:
 						SetAllData(true);
@@ -620,10 +627,7 @@ namespace BanSupport
 				bool refreshPosition = false;
 				switch (dataChanged)
 				{
-					case DataChange.None:
 					case DataChange.Added:
-						refreshPosition = false;
-						break;
 					case DataChange.Removed:
 					case DataChange.ResetRemoved:
 						refreshPosition = true;
@@ -744,21 +748,10 @@ namespace BanSupport
 					return;
 				}
 				oldMaxWidth = maxWidth;
-				if (scrollDirection == ScrollDirection.Vertical)
+				var centerOffset = getCenterOffset();
+				foreach (var aScrollData in listData)
 				{
-					var centerOffset = (Width - border.x - maxWidth) / 2;
-					foreach (var aScrollData in listData)
-					{
-						aScrollData.SetCenterOffset(Vector2.right * centerOffset);
-					}
-				}
-				else if (scrollDirection == ScrollDirection.Horizontal)
-				{
-					var centerOffset = (Height - border.y - maxWidth) / 2;
-					foreach (var aScrollData in listData)
-					{
-						aScrollData.SetCenterOffset(Vector2.up * centerOffset);
-					}
+					aScrollData.SetCenterOffset(centerOffset);
 				}
 			}
 		}
@@ -1234,6 +1227,8 @@ namespace BanSupport
 			UpdateCentered();
 			UpdateContentSize();
 			UpdateEnableScroll();
+			//Add重置
+			this.addModeStartIndex = 0;
 		}
 
 		private bool JumpToWhenVertical(float target)
@@ -1266,6 +1261,7 @@ namespace BanSupport
 
 		private void SetSingleContentDataWhenVertical(ScrollData data)
 		{
+			data.CalculateSize();
 			if (data.newLine == ScrollLayout.NewLine.None)
 			{
 				//发生过偏移，并且这次物体的右边界超过宽度
@@ -1324,6 +1320,7 @@ namespace BanSupport
 
 		private void SetSingleContentDataWhenHorizontal(ScrollData data)
 		{
+			data.CalculateSize();
 			//指定使用新行
 			if (data.newLine == ScrollLayout.NewLine.None)
 			{
@@ -1645,23 +1642,23 @@ namespace BanSupport
 
 		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
-		public Action<string, Transform, object> onItemOpen { get; private set; }
+		public Action<string, GameObject, object> onItemOpen { get; private set; }
 
-		public Action<string, Transform, object> onItemClose { get; private set; }
+		public Action<string, GameObject, object> onItemClose { get; private set; }
 
-		public Action<string, Transform, object> onItemRefresh { get; private set; }
+		public Action<string, GameObject, object> onItemRefresh { get; private set; }
 
-		public void SetOnItemRefresh(Action<string, Transform, object> onItemRefresh)
+		public void SetOnItemRefresh(Action<string, GameObject, object> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
 		}
 
-		public void SetOnItemClose(Action<string, Transform, object> onItemClose)
+		public void SetOnItemClose(Action<string, GameObject, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
 
-		public void SetOnItemOpen(Action<string, Transform, object> onItemOpen)
+		public void SetOnItemOpen(Action<string, GameObject, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
 		}
@@ -1917,6 +1914,7 @@ namespace BanSupport
 			return count;
 		}
 
+		private int addModeStartIndex = 0;
 
 		/// <summary>
 		/// 增
@@ -1935,27 +1933,10 @@ namespace BanSupport
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }
 			listData.Add(scrollData);
-			if (dataChanged < DataChange.Removed)
+			if (dataChanged < DataChange.Added)
 			{
-				if (Centered)
-				{
-					var oldMaxWidth = this.maxWidth;
-					this.setSingleDataAction(scrollData);
-					if (oldMaxWidth != this.maxWidth)
-					{
-						dataChanged = DataChange.Removed;
-					}
-					else
-					{
-						scrollData.SetCenterOffset(getCenterOffset());
-						dataChanged = DataChange.Added;
-					}
-				}
-				else
-				{
-					this.setSingleDataAction(scrollData);
-					dataChanged = DataChange.Added;
-				}
+				addModeStartIndex = listData.Count - 1;
+				dataChanged = DataChange.Added;
 			}
 			if (dataSource != null)
 			{
@@ -1990,7 +1971,7 @@ namespace BanSupport
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
 			newScrollData.CalculateSize();
 			listData.Insert(insertIndex, newScrollData);
-			if (this.dataChanged < DataChange.ResetRemoved)
+			if (this.dataChanged < DataChange.Removed)
 			{
 				this.dataChanged = DataChange.Removed;
 			}

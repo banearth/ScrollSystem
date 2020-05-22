@@ -10,6 +10,7 @@ public class Example : MonoBehaviour
 
 	public static int global_index = 0;
 
+	public bool useOpenCloseRefreshEvent = false;
 	public bool useBeginDragEvent = false;
 	public bool useDragEvent = false;
 	public bool useEndDragEvent = false;
@@ -81,7 +82,10 @@ public class Example : MonoBehaviour
 
 		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
 		{
-			Debug.Log(string.Format(" {0} Refresh id:{1}", prefabName, (data as SimpleData).index.ToString()));
+			if (useOpenCloseRefreshEvent)
+			{
+				Debug.Log(string.Format(" {0} Refresh id:{1}", prefabName, (data as SimpleData).index.ToString()));
+			}
 			switch (prefabName)
 			{
 				case "A":
@@ -114,12 +118,18 @@ public class Example : MonoBehaviour
 
 		scrollSystem.SetOnItemClose((prefabName, root, data) =>
 		{
-			Debug.Log(string.Format(" {0} Close", prefabName));
+			if (useOpenCloseRefreshEvent)
+			{
+				Debug.Log(string.Format(" {0} Close", prefabName));
+			}
 		});
 
 		scrollSystem.SetOnItemOpen((prefabName, root, data) =>
 		{
-			Debug.Log(string.Format(" {0} Open", prefabName));
+			if (useOpenCloseRefreshEvent)
+			{
+				Debug.Log(string.Format(" {0} Open", prefabName));
+			}
 		});
 
 		if (useBeginDragEvent)

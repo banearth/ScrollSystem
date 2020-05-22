@@ -34,6 +34,7 @@ namespace BanSupport
 		public System.Object dataSource;
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
+		public Vector2 originPosition;
 
 		private Func<object, Vector2> getSize;
 		public bool isVisible { get; private set; }
@@ -109,7 +110,7 @@ namespace BanSupport
 				//离开视野
 				if (this.scrollSystem.onItemClose != null)
 				{
-					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans, this.dataSource);
+					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 				}
 				objectPool.Recycle(this.targetTrans.gameObject);
 				this.targetTrans = null;
@@ -131,7 +132,7 @@ namespace BanSupport
 					refreshPosition = true;
 					if (this.scrollSystem.onItemOpen!= null)
 					{
-						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans, this.dataSource);
+						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 					}
 				}
 				if (refreshPosition)
@@ -147,7 +148,7 @@ namespace BanSupport
 					//根据data刷新
 					if (this.scrollSystem.onItemRefresh != null)
 					{
-						this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans, dataSource);
+						this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
 					}
 				}
 			}
@@ -179,17 +180,9 @@ namespace BanSupport
 		public void SetAnchoredPosition(Vector2 originPosition)
 		{
 			this.isPositionInited = true;
-			if (scrollSystem.Centered && (newLine == ScrollLayout.NewLine.None))
-			{
-				 
-				//只是临时存储用
-				this.anchoredPosition = originPosition;
-			}
-			else
-			{
-				this.anchoredPosition = scrollSystem.TransAnchoredPosition(originPosition);
-				UpdateRectBounds();
-			}
+			this.originPosition = originPosition;
+			this.anchoredPosition = scrollSystem.TransAnchoredPosition(originPosition);
+			UpdateRectBounds();
 		}
 
 		/// <summary>
@@ -199,7 +192,7 @@ namespace BanSupport
 		{
 			if (newLine == ScrollLayout.NewLine.None)
 			{
-				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.anchoredPosition + offset);
+				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
 				UpdateRectBounds();
 			}
 		}
