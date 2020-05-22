@@ -35,6 +35,9 @@ public class Example : MonoBehaviour
 	public Button buttonC;
 	public Button buttonD;
 
+	public InputField inputField_JumpDataIndex;
+	public Button buttonJumpData;
+
 	public string[] prefabNames;
 	public bool[] prefabSelected;
 
@@ -237,6 +240,13 @@ public class Example : MonoBehaviour
 		);
 		ButtonRefresh.onClick.AddListener(() => { scrollSystem.Refresh(); });
 		ButtonChangeData.onClick.AddListener(() => { createdDatas.ForEach(temp => { temp.index++; Debug.Log("added to index:" + temp.index); }); });
+		buttonJumpData.onClick.AddListener(() =>
+		{
+			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
+			{
+				scrollSystem.JumpDataIndex(result, true);
+			}
+		});
 	}
 
 	public SimpleData GenerateSimpleData()

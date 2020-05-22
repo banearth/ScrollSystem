@@ -187,6 +187,11 @@ namespace BanSupport
 
 		private float oldMaxWidth = 0;
 
+		/// <summary>
+		/// 视图最大尺寸，用于计算跳转使用
+		/// </summary>
+		private float contentSize = 0;
+
 		private Action<ScrollData> setSingleDataAction;
 
 		private Coroutine jumpToCoroutine = null;
@@ -763,17 +768,13 @@ namespace BanSupport
 		{
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				contentTrans.sizeDelta = new Vector2(
-					contentTrans.sizeDelta.x,
-					cursorPos.y + maxHeight - (listData.Count > 0 ? spacing.y : 0) + border.y
-				);
+				this.contentSize = cursorPos.y + maxHeight - (listData.Count > 0 ? spacing.y : 0) + border.y;
+				contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x, this.contentSize);
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				contentTrans.sizeDelta = new Vector2(
-					cursorPos.x + maxHeight - (listData.Count > 0 ? spacing.x : 0) + border.x,
-					contentTrans.sizeDelta.y
-				);
+				this.contentSize = cursorPos.x + maxHeight - (listData.Count > 0 ? spacing.x : 0) + border.x;
+				contentTrans.sizeDelta = new Vector2(this.contentSize, contentTrans.sizeDelta.y);
 			}
 		}
 
@@ -1813,13 +1814,44 @@ namespace BanSupport
 			}
 		}
 
+		public void JumpDataIndex(int index,bool animated = false)
+		{
+			if (index >= 0 && index < listData.Count)
+			{
+				JumpData(listData[index].dataSource, animated);
+			}
+		}
+
+		/// <summary>
+		/// 跳转到某个数据
+		/// </summary>
+		public void JumpData(object dataSource, bool animated = false)
+		{
+			if (!dic_DataSource_ScrollData.ContainsKey(dataSource))
+			{
+				Debug.LogWarning("无法找到该dataSource:" + dataSource?.ToString());
+				return;
+			}
+			var scrollData = this.dic_DataSource_ScrollData[dataSource];
+			float normalizedPosition;
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				normalizedPosition = (scrollData.originPosition.y + border.y - scrollData.height / 2) / this.contentSize;
+			}
+			else
+			{
+				normalizedPosition = (scrollData.originPosition.x + border.x - scrollData.width / 2) / this.contentSize;
+			}
+			Jump(normalizedPosition, animated);
+		}
+
 		/// <summary>
 		/// 跳转
 		/// 垂直滚动时 0表示最上方，1表示最下方
 		/// 水平滚动时 0表示最左方，1表示最右方
 		/// animated 是否保留动画
 		/// </summary>
-		public void Jump(float normalizedPosition, bool animated = true)
+		public void Jump(float normalizedPosition, bool animated = false)
 		{
 			if (!this.gameObject.activeSelf) { return; }
 			//自身应该停止移动
