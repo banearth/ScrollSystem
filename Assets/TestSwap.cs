@@ -66,7 +66,7 @@ public class TestSwap : MonoBehaviour
 		}
 	}
 
-	private void UpdateInfo(string prefab, Transform trans, object data)
+	private void UpdateInfo(string prefab, GameObject trans, object data)
 	{
 		switch (prefab)
 		{

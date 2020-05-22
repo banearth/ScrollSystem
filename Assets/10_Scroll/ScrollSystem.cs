@@ -1851,12 +1851,12 @@ namespace BanSupport
 		/// <summary>
 		/// 遍历预制体，用于结合lua代码
 		/// </summary>
-		public void ForeachOriginPrefabs(Action<string, Transform> foreachFunc)
+		public void ForeachOriginPrefabs(Action<string, GameObject> foreachFunc)
 		{
 			Init();
 			foreach (var prefabName in objectPoolDic.Keys)
 			{
-				foreachFunc(prefabName, objectPoolDic[prefabName].origin.transform);
+				foreachFunc(prefabName, objectPoolDic[prefabName].origin);
 			}
 		}
 

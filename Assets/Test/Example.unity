@@ -2867,7 +2867,7 @@ MonoBehaviour:
   startCorner: 0
   border: {x: 12, y: 12}
   spacing: {x: 5, y: 5}
-  resetNormalizedPosition: 0
+  resetNormalizedPosition: 1
   jumpToSpeed: 10
   registPoolCount: 3
   enableScrollOnlyWhenOutOfBounds: 0
