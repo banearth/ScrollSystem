@@ -1235,7 +1235,8 @@ namespace BanSupport
 		private bool JumpToWhenVertical(float target)
 		{
 			scrollRect.verticalNormalizedPosition = Mathf.Lerp(scrollRect.verticalNormalizedPosition, target, Time.deltaTime * this.jumpToSpeed);
-			if (Mathf.Abs(scrollRect.verticalNormalizedPosition - target) < 0.001f)
+			var pixelDistance = Mathf.Abs(scrollRect.verticalNormalizedPosition - target) * this.contentSize;
+			if (pixelDistance < 1)
 			{
 				scrollRect.verticalNormalizedPosition = target;
 				return true;
@@ -1249,7 +1250,8 @@ namespace BanSupport
 		private bool JumpToWhenHorizontal(float target)
 		{
 			scrollRect.horizontalNormalizedPosition = Mathf.Lerp(scrollRect.horizontalNormalizedPosition, target, Time.deltaTime * this.jumpToSpeed);
-			if (Mathf.Abs(scrollRect.horizontalNormalizedPosition - target) < 0.001f)
+			var pixelDistance = Mathf.Abs(scrollRect.horizontalNormalizedPosition - target) * this.contentSize;
+			if (pixelDistance < 1)
 			{
 				scrollRect.horizontalNormalizedPosition = target;
 				return true;
@@ -1836,11 +1838,11 @@ namespace BanSupport
 			float normalizedPosition;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				normalizedPosition = (scrollData.originPosition.y + border.y - scrollData.height / 2) / this.contentSize;
+				normalizedPosition = (scrollData.originPosition.y + border.y - scrollData.height / 2) / (this.contentSize - Height);
 			}
 			else
 			{
-				normalizedPosition = (scrollData.originPosition.x + border.x - scrollData.width / 2) / this.contentSize;
+				normalizedPosition = (scrollData.originPosition.x + border.x - scrollData.width / 2) / (this.contentSize - Height);
 			}
 			Jump(normalizedPosition, animated);
 		}
@@ -1857,6 +1859,7 @@ namespace BanSupport
 			//自身应该停止移动
 			StopMovement();
 			//然后由程序控制移动
+			normalizedPosition = Mathf.Clamp01(normalizedPosition);
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
 				//为了确保最上方是0，最下方是1

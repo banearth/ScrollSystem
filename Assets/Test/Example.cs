@@ -37,6 +37,10 @@ public class Example : MonoBehaviour
 
 	public InputField inputField_JumpDataIndex;
 	public Button buttonJumpData;
+	public Button buttonLastOne;
+	public Button buttonNextOne;
+	public Slider sliderJumpProgress;
+	public Text textJumpProgress;
 
 	public string[] prefabNames;
 	public bool[] prefabSelected;
@@ -81,7 +85,7 @@ public class Example : MonoBehaviour
 			deleteAndAddDatas.Add(new SimpleData { index = Example.global_index++ });
 		}
 
-		BindButton();
+		BindEvent();
 
 		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
 		{
@@ -161,7 +165,7 @@ public class Example : MonoBehaviour
 
 	}
 
-	private void BindButton()
+	private void BindEvent()
 	{
 		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
 		for (int i = 0; i < buttons.Length; i++)
@@ -246,6 +250,35 @@ public class Example : MonoBehaviour
 			{
 				scrollSystem.JumpDataIndex(result, true);
 			}
+		});
+		buttonLastOne.onClick.AddListener(() =>
+		{
+			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
+			{
+				if (result > 0)
+				{
+					result--;
+					inputField_JumpDataIndex.text = result.ToString();
+					scrollSystem.JumpDataIndex(result, true);
+				}
+			}
+		});
+		buttonNextOne.onClick.AddListener(() =>
+		{
+			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
+			{
+				if (result + 1 < scrollSystem.GetCount())
+				{
+					result++;
+					inputField_JumpDataIndex.text = result.ToString();
+					scrollSystem.JumpDataIndex(result, true);
+				}
+			}
+		});
+		sliderJumpProgress.onValueChanged.AddListener(progress =>
+		{
+			textJumpProgress.text = progress.ToString("0.00");
+			scrollSystem.Jump(progress);
 		});
 	}
 
