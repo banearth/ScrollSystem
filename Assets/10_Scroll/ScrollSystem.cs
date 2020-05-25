@@ -486,7 +486,6 @@ namespace BanSupport
 						SetAllData();
 						break;
 				}
-				Show();
 				dataChanged = DataChange.None;
 			}
 			//跳转相关
@@ -513,6 +512,7 @@ namespace BanSupport
 						break;
 				}
 			}
+			Show();
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
