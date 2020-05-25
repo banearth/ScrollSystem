@@ -271,7 +271,7 @@ namespace BanSupport
 				result.right = right;
 				result.middle = (left + right) / 2;
 				var curData = scrollSystem.listData[result.middle];
-				curData.CheckVisible(scrollSystem.updateFrame);
+				curData.IsVisible(scrollSystem.updateFrame);
 				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
 				result.found = curData.isVisible;
 				return result;
@@ -543,6 +543,35 @@ namespace BanSupport
 			}
 		}
 
+		private float GetScrollDataLineStartPos(ScrollData aScrollData)
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				switch (startCorner)
+				{
+					case 0:
+					case 1:
+						return aScrollData.Up;
+					case 2:
+					case 3:
+						return aScrollData.Down;
+				}
+			}
+			else
+			{
+				switch (startCorner)
+				{
+					case 0:
+					case 2:
+						return aScrollData.Left;
+					case 1:
+					case 3:
+						return aScrollData.Right;
+				}
+			}
+			return 0;
+		}
+
 		/// <summary>
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
@@ -595,38 +624,69 @@ namespace BanSupport
 			if (found)
 			{
 				listNextVisibleScrollData.Add(listData[foundIndex]);
-				float curLineTop = listData[foundIndex].top;
+				float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 				//向上
 				for (int i = foundIndex - 1; i >= 0; i--)
 				{
 					var curData = listData[i];
-					curData.CheckVisible(updateFrame);
-					if (curData.isVisible)
+					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					if (lastLineStartPos != curLineStartPos)
 					{
-						listNextVisibleScrollData.Add(curData);
+						if (found)
+						{
+							if (curData.IsVisible(updateFrame))
+							{
+								listNextVisibleScrollData.Add(curData);
+							}
+							found = curData.isVisible;
+							lastLineStartPos = curLineStartPos;
+						}
+						else
+						{
+							break;
+						}
 					}
-					else if (curData.top != curLineTop)
+					else
 					{
-						break;
+						if (curData.IsVisible(updateFrame))
+						{
+							listNextVisibleScrollData.Add(curData);
+							found = true;
+						}
 					}
-					curLineTop = curData.top;
 				}
 
 				//向下
-				curLineTop = listData[foundIndex].top;
+				lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
+				found = true;
 				for (int i = foundIndex + 1; i < listData.Count; i++)
 				{
 					var curData = listData[i];
-					curData.CheckVisible(updateFrame);
-					if (curData.isVisible)
+					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					if (lastLineStartPos != curLineStartPos)
 					{
-						listNextVisibleScrollData.Add(curData);
+						if (found)
+						{
+							if (curData.IsVisible(updateFrame))
+							{
+								listNextVisibleScrollData.Add(curData);
+							}
+							found = curData.isVisible;
+							lastLineStartPos = curLineStartPos;
+						}
+						else
+						{
+							break;
+						}
 					}
-					else if (curData.top != curLineTop)
+					else
 					{
-						break;
+						if (curData.IsVisible(updateFrame))
+						{
+							listNextVisibleScrollData.Add(curData);
+							found = true;
+						}
 					}
-					curLineTop = curData.top;
 				}
 
 				bool refreshPosition = false;
@@ -1835,14 +1895,41 @@ namespace BanSupport
 				return;
 			}
 			var scrollData = this.dic_DataSource_ScrollData[dataSource];
-			float normalizedPosition;
+			float normalizedPosition = 0;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				normalizedPosition = (scrollData.originPosition.y + border.y - scrollData.height / 2) / (this.contentSize - Height);
+				float offset = this.contentSize - Height;
+				if (offset > 0)
+				{
+					switch (startCorner)
+					{
+						case 0: //Left Up
+						case 1: //Right Up
+							normalizedPosition = (scrollData.originPosition.y - scrollData.height / 2) / offset;
+							break;
+						case 2: //Left Down
+						case 3: //Right Down
+							normalizedPosition = 1 - (scrollData.originPosition.y - scrollData.height / 2) / offset;
+							break;
+					}
+				}
 			}
 			else
 			{
-				normalizedPosition = (scrollData.originPosition.x + border.x - scrollData.width / 2) / (this.contentSize - Height);
+				float offset = this.contentSize - Width;
+				if (offset > 0) {
+					switch (startCorner)
+					{
+						case 0: //Left Up
+						case 2: //Left Down
+							normalizedPosition = (scrollData.originPosition.x - scrollData.width / 2) / offset;
+							break;
+						case 1: //Right Up
+						case 3: //Right Down
+							normalizedPosition = 1 - (scrollData.originPosition.x - scrollData.width / 2) / offset;
+							break;
+					}
+				}
 			}
 			Jump(normalizedPosition, animated);
 		}
