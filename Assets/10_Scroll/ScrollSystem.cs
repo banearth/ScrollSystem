@@ -201,7 +201,6 @@ namespace BanSupport
 			None,//表示无变化，不需要操作
 			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
 			Removed,//表示需要位置重构
-			ResetRemoved //表示需要位置重构，并且重置滑动位置
 		}
 
 		/// <summary>
@@ -218,12 +217,12 @@ namespace BanSupport
 		/// <summary>
 		/// 要跳转的位置
 		/// </summary>
-		private float jumpTargetNormalizedPosition = 0;
+		private float jumpToTargetNormalizedPos = 0;
 
 		/// <summary>
 		/// 返回是否跳转结束
 		/// </summary>
-		private Func<float, bool> jumpToAction;
+		private Func<float, bool> jumpToTargetAction;
 
 		/// <summary>
 		/// 获得距离中心点的距离
@@ -417,13 +416,13 @@ namespace BanSupport
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
 					setSingleDataAction = SetSingleContentDataWhenVertical;
-					jumpToAction = JumpToWhenVertical;
+					jumpToTargetAction = JumpToWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
 					setSingleDataAction = SetSingleContentDataWhenHorizontal;
-					jumpToAction = JumpToWhenHorizontal;
+					jumpToTargetAction = JumpToWhenHorizontal;
 					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
 				}
 			}
@@ -484,10 +483,7 @@ namespace BanSupport
 						}
 						break;
 					case DataChange.Removed:
-						SetAllData(true);
-						break;
-					case DataChange.ResetRemoved:
-						SetAllData(false);
+						SetAllData();
 						break;
 				}
 				Show();
@@ -496,20 +492,21 @@ namespace BanSupport
 			//跳转相关
 			if (jumpState != JumpState.None)
 			{
+				//haha
 				switch (jumpState) {
 					case JumpState.Directly:
 						if (scrollDirection == ScrollDirection.Vertical)
 						{
-							scrollRect.verticalNormalizedPosition = jumpTargetNormalizedPosition;
+							scrollRect.verticalNormalizedPosition = jumpToTargetNormalizedPos;
 						}
 						else
 						{
-							scrollRect.horizontalNormalizedPosition = jumpTargetNormalizedPosition;
+							scrollRect.horizontalNormalizedPosition = jumpToTargetNormalizedPos;
 						}
 						jumpState = JumpState.None;
 						break;
 					case JumpState.Animated:
-						if (jumpToAction(jumpTargetNormalizedPosition))
+						if (jumpToTargetAction(jumpToTargetNormalizedPos))
 						{
 							jumpState = JumpState.None;
 						}
@@ -726,7 +723,6 @@ namespace BanSupport
 				{
 					case DataChange.Added:
 					case DataChange.Removed:
-					case DataChange.ResetRemoved:
 						refreshPosition = true;
 						break;
 				}
@@ -1267,24 +1263,8 @@ namespace BanSupport
 		/// <summary>
 		/// applyLocate 表示保持界面固定不动
 		/// </summary>
-		private void SetAllData(bool applyLocate)
+		private void SetAllData()
 		{
-			bool locateScrollDataEnable = applyLocate;
-			if (locateScrollDataEnable && (locateScrollData != null) && (this.listData.Contains(locateScrollData)) && locateScrollData.isPositionInited)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					this.oldLocatePosition = locateScrollData.anchoredPosition.y;
-				}
-				else if (scrollDirection == ScrollDirection.Horizontal)
-				{
-					this.oldLocatePosition = locateScrollData.anchoredPosition.x;
-				}
-			}
-			else
-			{
-				locateScrollDataEnable = false;
-			}
 			InitCursor();
 			var dataCount = this.listData.Count;
 			for (int i = 0; i < dataCount; i++)
@@ -1293,27 +1273,6 @@ namespace BanSupport
 				setSingleDataAction(curData);
 			}
 			EndSetData();
-			if (locateScrollDataEnable)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					var offset = this.oldLocatePosition - locateScrollData.anchoredPosition.y;
-					this.contentTrans.anchoredPosition += Vector2.up * offset;
-				}
-				else if (scrollDirection == ScrollDirection.Horizontal)
-				{
-					var offset = this.oldLocatePosition - locateScrollData.anchoredPosition.x;
-					this.contentTrans.anchoredPosition += Vector2.right * offset;
-				}
-			}
-			else
-			{
-				if (!applyLocate)
-				{
-					Jump(this.resetNormalizedPosition, false);
-				}
-			}
-			locateScrollData = null;
 		}
 
 		/// <summary>
@@ -1587,9 +1546,6 @@ namespace BanSupport
 			jumpState = JumpState.None;
 		}
 
-		private float oldLocatePosition = 0;
-		private ScrollData locateScrollData = null;
-
 		#endregion
 
 		#region 用于检测变化的值
@@ -1766,8 +1722,9 @@ namespace BanSupport
 			}
 			if (removedAny)
 			{
-				dataChanged = DataChange.ResetRemoved;
+				dataChanged = DataChange.Removed;
 			}
+			Jump(this.resetNormalizedPosition, false);
 		}
 
 		/// <summary>
@@ -1870,8 +1827,12 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 通过一个索引来跳转倒某个位置
+		/// </summary>
 		public void JumpDataIndex(int index,bool animated = false)
 		{
+			//haha
 			if (index >= 0 && index < listData.Count)
 			{
 				JumpData(listData[index].dataSource, animated);
@@ -1946,7 +1907,7 @@ namespace BanSupport
 				//为了确保最上方是0，最下方是1
 				normalizedPosition = 1 - normalizedPosition;
 			}
-			jumpTargetNormalizedPosition = normalizedPosition;
+			jumpToTargetNormalizedPos = normalizedPosition;
 			if (animated)
 			{
 				jumpState = JumpState.Animated;
@@ -2040,7 +2001,11 @@ namespace BanSupport
 			ScrollData scrollData = new ScrollData(this, prefabName, dataSource, getSize);
 			scrollData.CalculateSize();
 			//如果之前什么都没有，那么不需要一个个添加进去
-			if (listData.Count <= 0) { dataChanged = DataChange.ResetRemoved; }
+			if (listData.Count <= 0)
+			{
+				dataChanged = DataChange.Removed;
+				Jump(this.resetNormalizedPosition);
+			}
 			listData.Add(scrollData);
 			if (dataChanged < DataChange.Added)
 			{
