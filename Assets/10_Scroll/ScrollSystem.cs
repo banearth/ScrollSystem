@@ -194,8 +194,6 @@ namespace BanSupport
 
 		private Action<ScrollData> setSingleDataAction;
 
-		private Coroutine jumpToCoroutine = null;
-
 		private bool inited = false;
 
 		public enum DataChange
@@ -210,6 +208,17 @@ namespace BanSupport
 		/// 用于决定是否在show的时候进行数据操作
 		/// </summary>
 		private DataChange dataChanged = DataChange.None;
+
+		private enum JumpState { None, Directly, Animated }
+		/// <summary>
+		/// 跳转状态
+		/// </summary>
+		private JumpState jumpState = JumpState.None;
+
+		/// <summary>
+		/// 要跳转的位置
+		/// </summary>
+		private float jumpTargetNormalizedPosition = 0;
 
 		/// <summary>
 		/// 返回是否跳转结束
@@ -271,7 +280,7 @@ namespace BanSupport
 				result.right = right;
 				result.middle = (left + right) / 2;
 				var curData = scrollSystem.listData[result.middle];
-				curData.CheckVisible(scrollSystem.updateFrame);
+				curData.IsVisible(scrollSystem.updateFrame);
 				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
 				result.found = curData.isVisible;
 				return result;
@@ -484,6 +493,29 @@ namespace BanSupport
 				Show();
 				dataChanged = DataChange.None;
 			}
+			//跳转相关
+			if (jumpState != JumpState.None)
+			{
+				switch (jumpState) {
+					case JumpState.Directly:
+						if (scrollDirection == ScrollDirection.Vertical)
+						{
+							scrollRect.verticalNormalizedPosition = jumpTargetNormalizedPosition;
+						}
+						else
+						{
+							scrollRect.horizontalNormalizedPosition = jumpTargetNormalizedPosition;
+						}
+						jumpState = JumpState.None;
+						break;
+					case JumpState.Animated:
+						if (jumpToAction(jumpTargetNormalizedPosition))
+						{
+							jumpState = JumpState.None;
+						}
+						break;
+				}
+			}
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
@@ -543,6 +575,35 @@ namespace BanSupport
 			}
 		}
 
+		private float GetScrollDataLineStartPos(ScrollData aScrollData)
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				switch (startCorner)
+				{
+					case 0:
+					case 1:
+						return aScrollData.Up;
+					case 2:
+					case 3:
+						return aScrollData.Down;
+				}
+			}
+			else
+			{
+				switch (startCorner)
+				{
+					case 0:
+					case 2:
+						return aScrollData.Left;
+					case 1:
+					case 3:
+						return aScrollData.Right;
+				}
+			}
+			return 0;
+		}
+
 		/// <summary>
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
@@ -595,38 +656,69 @@ namespace BanSupport
 			if (found)
 			{
 				listNextVisibleScrollData.Add(listData[foundIndex]);
-				float curLineTop = listData[foundIndex].top;
+				float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 				//向上
 				for (int i = foundIndex - 1; i >= 0; i--)
 				{
 					var curData = listData[i];
-					curData.CheckVisible(updateFrame);
-					if (curData.isVisible)
+					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					if (lastLineStartPos != curLineStartPos)
 					{
-						listNextVisibleScrollData.Add(curData);
+						if (found)
+						{
+							if (curData.IsVisible(updateFrame))
+							{
+								listNextVisibleScrollData.Add(curData);
+							}
+							found = curData.isVisible;
+							lastLineStartPos = curLineStartPos;
+						}
+						else
+						{
+							break;
+						}
 					}
-					else if (curData.top != curLineTop)
+					else
 					{
-						break;
+						if (curData.IsVisible(updateFrame))
+						{
+							listNextVisibleScrollData.Add(curData);
+							found = true;
+						}
 					}
-					curLineTop = curData.top;
 				}
 
 				//向下
-				curLineTop = listData[foundIndex].top;
+				lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
+				found = true;
 				for (int i = foundIndex + 1; i < listData.Count; i++)
 				{
 					var curData = listData[i];
-					curData.CheckVisible(updateFrame);
-					if (curData.isVisible)
+					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					if (lastLineStartPos != curLineStartPos)
 					{
-						listNextVisibleScrollData.Add(curData);
+						if (found)
+						{
+							if (curData.IsVisible(updateFrame))
+							{
+								listNextVisibleScrollData.Add(curData);
+							}
+							found = curData.isVisible;
+							lastLineStartPos = curLineStartPos;
+						}
+						else
+						{
+							break;
+						}
 					}
-					else if (curData.top != curLineTop)
+					else
 					{
-						break;
+						if (curData.IsVisible(updateFrame))
+						{
+							listNextVisibleScrollData.Add(curData);
+							found = true;
+						}
 					}
-					curLineTop = curData.top;
 				}
 
 				bool refreshPosition = false;
@@ -1171,6 +1263,10 @@ namespace BanSupport
 		}
 
 #endif
+
+		/// <summary>
+		/// applyLocate 表示保持界面固定不动
+		/// </summary>
 		private void SetAllData(bool applyLocate)
 		{
 			bool locateScrollDataEnable = applyLocate;
@@ -1483,12 +1579,12 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 当什么点击出现后，都应该停止跳转
+		/// 当任何点击出现后，都应该停止跳转
 		/// </summary>
 		/// <param name="eventData"></param>
 		public void OnInitializePotentialDrag(PointerEventData eventData)
 		{
-			StopJumpTo();
+			jumpState = JumpState.None;
 		}
 
 		private float oldLocatePosition = 0;
@@ -1581,59 +1677,17 @@ namespace BanSupport
 					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans, scrollBounds), this.transform.position.z, Color.green);
 					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
 					{
-						//if (scrollDirection == ScrollDirection.Horizontal)
-						//{
-						//	Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
-						//		contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2,
-						//		contentTrans.position + border.x * Vector3.right * contentTrans.lossyScale.x, scrollBounds), this.transform.position.z, Color.green
-						//	);
-						//}
-						//else if (scrollDirection == ScrollDirection.Vertical)
-						//{
-						//	Tools.DrawRectRange(Tools.GetRectBounds(contentTrans.pivot, contentTrans.lossyScale,
-						//		contentTrans.rect.width - border.x * 2, contentTrans.rect.height - border.y * 2, 
-						//		contentTrans.position + border.y * Vector3.down * contentTrans.lossyScale.y, scrollBounds),this.transform.position.z, Color.green
-						//	);
-						//}
 						scrollBounds.left += contentTrans.lossyScale.x * border.x;
 						scrollBounds.right -= contentTrans.lossyScale.x * border.x;
 						scrollBounds.up -= contentTrans.lossyScale.y * border.y;
 						scrollBounds.down += contentTrans.lossyScale.y * border.y;
 						Tools.DrawRectRange(scrollBounds, this.transform.position.z, Color.green);
-
 					}
 				}
 			}
 		}
 
 #endif
-
-		private void StopJumpTo()
-		{
-			if (jumpToCoroutine != null)
-			{
-				StopCoroutine(jumpToCoroutine);
-				jumpToCoroutine = null;
-			}
-		}
-
-		private void StopMovement()
-		{
-			scrollRect.StopMovement();
-			StopJumpTo();
-		}
-
-		private IEnumerator StartJumpTo(float normalizedPosition)
-		{
-			while (true)
-			{
-				yield return null;
-				if (jumpToAction(normalizedPosition))
-				{
-					break;
-				}
-			}
-		}
 
 		#endregion
 
@@ -1755,7 +1809,7 @@ namespace BanSupport
 					listVisibleScrollData.Remove(removedScrollData);
 				}
 				//标记当前数据更改过
-				if (dataChanged < DataChange.ResetRemoved)
+				if (dataChanged < DataChange.Removed)
 				{
 					dataChanged = DataChange.Removed;
 				}
@@ -1788,7 +1842,7 @@ namespace BanSupport
 					listVisibleScrollData.Remove(removedScrollData);
 				}
 				//标记当前数据更改过
-				if (this.dataChanged < DataChange.ResetRemoved)
+				if (this.dataChanged < DataChange.Removed)
 				{
 					dataChanged = DataChange.Removed;
 				}
@@ -1810,7 +1864,7 @@ namespace BanSupport
 				return;
 			}
 			listData.Reverse();
-			if (this.dataChanged < DataChange.ResetRemoved)
+			if (this.dataChanged < DataChange.Removed)
 			{
 				this.dataChanged = DataChange.Removed;
 			}
@@ -1835,14 +1889,41 @@ namespace BanSupport
 				return;
 			}
 			var scrollData = this.dic_DataSource_ScrollData[dataSource];
-			float normalizedPosition;
+			float normalizedPosition = 0;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				normalizedPosition = (scrollData.originPosition.y + border.y - scrollData.height / 2) / (this.contentSize - Height);
+				float offset = this.contentSize - Height;
+				if (offset > 0)
+				{
+					switch (startCorner)
+					{
+						case 0: //Left Up
+						case 1: //Right Up
+							normalizedPosition = (scrollData.originPosition.y - scrollData.height / 2) / offset;
+							break;
+						case 2: //Left Down
+						case 3: //Right Down
+							normalizedPosition = 1 - (scrollData.originPosition.y - scrollData.height / 2) / offset;
+							break;
+					}
+				}
 			}
 			else
 			{
-				normalizedPosition = (scrollData.originPosition.x + border.x - scrollData.width / 2) / (this.contentSize - Height);
+				float offset = this.contentSize - Width;
+				if (offset > 0) {
+					switch (startCorner)
+					{
+						case 0: //Left Up
+						case 2: //Left Down
+							normalizedPosition = (scrollData.originPosition.x - scrollData.width / 2) / offset;
+							break;
+						case 1: //Right Up
+						case 3: //Right Down
+							normalizedPosition = 1 - (scrollData.originPosition.x - scrollData.width / 2) / offset;
+							break;
+					}
+				}
 			}
 			Jump(normalizedPosition, animated);
 		}
@@ -1857,7 +1938,7 @@ namespace BanSupport
 		{
 			if (!this.gameObject.activeSelf) { return; }
 			//自身应该停止移动
-			StopMovement();
+			scrollRect.StopMovement();
 			//然后由程序控制移动
 			normalizedPosition = Mathf.Clamp01(normalizedPosition);
 			if (scrollDirection == ScrollDirection.Vertical)
@@ -1865,23 +1946,16 @@ namespace BanSupport
 				//为了确保最上方是0，最下方是1
 				normalizedPosition = 1 - normalizedPosition;
 			}
+			jumpTargetNormalizedPosition = normalizedPosition;
 			if (animated)
 			{
-				jumpToCoroutine = StartCoroutine(StartJumpTo(normalizedPosition));
+				jumpState = JumpState.Animated;
 			}
 			else
 			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					scrollRect.verticalNormalizedPosition = normalizedPosition;
-				}
-				else if (scrollDirection == ScrollDirection.Horizontal)
-				{
-					scrollRect.horizontalNormalizedPosition = normalizedPosition;
-				}
+				jumpState = JumpState.Directly;
 			}
 		}
-
 
 		/// <summary>
 		/// 遍历预制体，用于结合lua代码

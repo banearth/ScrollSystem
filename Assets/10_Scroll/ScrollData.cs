@@ -40,11 +40,14 @@ namespace BanSupport
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
-		public float top { get { return rectBounds.up; } }
-
 		private RectBounds rectBounds = new RectBounds();
 		private uint lastUpdateFrame = 0;
 		private RectTransform targetTrans = null;
+
+		public float Left { get { return rectBounds.left; } }
+		public float Right { get { return rectBounds.right; } }
+		public float Up { get { return rectBounds.up; } }
+		public float Down { get { return rectBounds.down; } }
 
 		public Vector2 Size
 		{
@@ -165,13 +168,14 @@ namespace BanSupport
 		/// <summary>
 		/// 只检查是否可见
 		/// </summary>
-		public void CheckVisible(uint frame)
+		public bool IsVisible(uint frame)
 		{
 			if (frame > lastUpdateFrame)
 			{
 				lastUpdateFrame = frame;
 				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
 			}
+			return this.isVisible;
 		}
 
 		/// <summary>
