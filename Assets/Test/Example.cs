@@ -250,7 +250,7 @@ public class Example : MonoBehaviour
 		{
 			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
 			{
-				scrollSystem.JumpDataIndex(result, true);
+				scrollSystem.JumpDataByIndex(result, true);
 			}
 		});
 		buttonLastOne.onClick.AddListener(() =>
@@ -261,7 +261,7 @@ public class Example : MonoBehaviour
 				{
 					result--;
 					inputField_JumpDataIndex.text = result.ToString();
-					scrollSystem.JumpDataIndex(result, true);
+					scrollSystem.JumpDataByIndex(result, true);
 				}
 			}
 		});
@@ -273,7 +273,7 @@ public class Example : MonoBehaviour
 				{
 					result++;
 					inputField_JumpDataIndex.text = result.ToString();
-					scrollSystem.JumpDataIndex(result, true);
+					scrollSystem.JumpDataByIndex(result, true);
 				}
 			}
 		});

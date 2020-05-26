@@ -8,6 +8,7 @@ using BanSupport;
 public class ItemD : MonoBehaviour
 {
 
+    public ScrollSystem scrollSystem;
     private Text label;
     private Button button;
     private SimpleData data;
@@ -27,7 +28,8 @@ public class ItemD : MonoBehaviour
 
     public void OnClick()
     {
-        Debug.Log("itemD:" + data.index);
-    }
+		//Debug.Log("itemD:" + data.index);
+		scrollSystem.JumpData(this.data,true);
+	}
 
 }
