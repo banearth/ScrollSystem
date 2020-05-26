@@ -39,6 +39,8 @@ public class Example : MonoBehaviour
 	public Button buttonJumpData;
 	public Button buttonLastOne;
 	public Button buttonNextOne;
+	public Button buttonJumpBegin;
+	public Button buttonJumpEnd;
 	public Slider sliderJumpProgress;
 	public Text textJumpProgress;
 
@@ -279,6 +281,14 @@ public class Example : MonoBehaviour
 		{
 			textJumpProgress.text = progress.ToString("0.00");
 			scrollSystem.Jump(progress);
+		});
+		buttonJumpBegin.onClick.AddListener(() =>
+		{
+			scrollSystem.Jump(0,true);
+		});
+		buttonJumpEnd.onClick.AddListener(() =>
+		{
+			scrollSystem.Jump(1, true);
 		});
 	}
 

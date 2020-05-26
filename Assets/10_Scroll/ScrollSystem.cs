@@ -208,21 +208,10 @@ namespace BanSupport
 		/// </summary>
 		private DataChange dataChanged = DataChange.None;
 
-		private enum JumpState { None, Directly, Animated }
 		/// <summary>
 		/// 跳转状态
 		/// </summary>
-		private JumpState jumpState = JumpState.None;
-
-		/// <summary>
-		/// 要跳转的位置
-		/// </summary>
-		private float jumpToTargetNormalizedPos = 0;
-
-		/// <summary>
-		/// 返回是否跳转结束
-		/// </summary>
-		private Func<float, bool> jumpToTargetAction;
+		private JumpState jumpState = null;
 
 		/// <summary>
 		/// 获得距离中心点的距离
@@ -261,7 +250,7 @@ namespace BanSupport
 
 		#region 内部类
 
-		internal class SearchGroup : IPoolObject
+		public class SearchGroup : IPoolObject
 		{
 			public int left;
 			public int right;
@@ -304,6 +293,151 @@ namespace BanSupport
 			public void ExitStorage() { }
 
 			public void Release() { }
+
+		}
+
+		public class JumpState
+		{
+			private enum State { None, Directly, Animated }
+			private State state = State.None;
+			private float targetNormalizedPos;
+			private ScrollData targetScrollData;
+			private Action<float> setNormalizedPos;
+			private Func<float> getNormalizedPos;
+			private ScrollSystem scrollSystem;
+
+			public JumpState(ScrollSystem scrollSystem, Action<float> setNormalizedPos, Func<float> getNormalizedPos)
+			{
+				this.scrollSystem = scrollSystem;
+				this.setNormalizedPos = setNormalizedPos;
+				this.getNormalizedPos = getNormalizedPos;
+			}
+
+			public void Update()
+			{
+				if (state != State.None)
+				{
+					//根据data来计算normalizedPos
+					if (this.targetScrollData != null)
+					{
+						if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
+						{
+							float offset = scrollSystem.contentSize - scrollSystem.Height;
+							if (offset > 0)
+							{
+								switch (scrollSystem.startCorner)
+								{
+									case 0: //Left Up
+									case 1: //Right Up
+										this.targetNormalizedPos = (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
+										break;
+									case 2: //Left Down
+									case 3: //Right Down
+										this.targetNormalizedPos = 1 - (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
+										break;
+								}
+							}
+						}
+						else
+						{
+							float offset = scrollSystem.contentSize - scrollSystem.Width;
+							if (offset > 0)
+							{
+								switch (scrollSystem.startCorner)
+								{
+									case 0: //Left Up
+									case 2: //Left Down
+										this.targetNormalizedPos = (this.targetScrollData.originPosition.x - this.targetScrollData.width / 2) / offset;
+										break;
+									case 1: //Right Up
+									case 3: //Right Down
+										this.targetNormalizedPos = 1 - (this.targetScrollData.originPosition.x - this.targetScrollData.width / 2) / offset;
+										break;
+								}
+							}
+						}
+						this.targetScrollData = null;
+					}
+
+					switch (state)
+					{
+						case State.Directly:
+							this.setNormalizedPos(targetNormalizedPos);
+							state = State.None;
+							break;
+						case State.Animated:
+							float lerpNormalizedPos = Mathf.Lerp(this.getNormalizedPos(), targetNormalizedPos, Time.deltaTime * scrollSystem.jumpToSpeed);
+							var pixelDistance = Mathf.Abs(lerpNormalizedPos - targetNormalizedPos) * scrollSystem.contentSize;
+							if (pixelDistance < 1)
+							{
+								this.setNormalizedPos(this.targetNormalizedPos);
+								state = State.None;
+							}
+							else
+							{
+								this.setNormalizedPos(lerpNormalizedPos);
+							}
+							break;
+					}
+				}
+			}
+
+			public void Stop()
+			{
+				state = State.None;
+			}
+
+			public void Do(float targetNormalizedPos, bool animated)
+			{
+				scrollSystem.scrollRect.StopMovement();
+				state = animated ? State.Animated : State.Directly;
+				this.targetScrollData = null;
+				targetNormalizedPos = Mathf.Clamp01(targetNormalizedPos);
+				if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
+				{
+					float offset = scrollSystem.contentSize - scrollSystem.Height;
+					if (offset > 0)
+					{
+						switch (scrollSystem.startCorner)
+						{
+							case 0: //Left Up
+							case 1: //Right Up
+								this.targetNormalizedPos = 1 - targetNormalizedPos;
+								break;
+							case 2: //Left Down
+							case 3: //Right Down
+								this.targetNormalizedPos = targetNormalizedPos;
+								break;
+						}
+					}
+				}
+				else
+				{
+					float offset = scrollSystem.contentSize - scrollSystem.Width;
+					if (offset > 0)
+					{
+						switch (scrollSystem.startCorner)
+						{
+							case 0: //Left Up
+							case 2: //Left Down
+								this.targetNormalizedPos = targetNormalizedPos;
+								break;
+							case 1: //Right Up
+							case 3: //Right Down
+								this.targetNormalizedPos = 1 - targetNormalizedPos;
+								break;
+						}
+					}
+				}
+			}
+
+			public void Do(ScrollData targetScrollData, bool animated)
+			{
+				scrollSystem.scrollRect.StopMovement();
+				state = animated ? State.Animated : State.Directly;
+				this.targetScrollData = targetScrollData;
+				this.targetNormalizedPos = 0;
+			}
 
 		}
 
@@ -416,14 +550,14 @@ namespace BanSupport
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
 					setSingleDataAction = SetSingleContentDataWhenVertical;
-					jumpToTargetAction = JumpToWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
+					jumpState = new JumpState(this,SetScrollRectNormalizedPosWhenVertical, GetScrollRectNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
 					setSingleDataAction = SetSingleContentDataWhenHorizontal;
-					jumpToTargetAction = JumpToWhenHorizontal;
 					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
+					jumpState = new JumpState(this, SetScrollRectNormalizedPosWhenHorizontal, GetScrollRectNormalizedPosWhenHorizontal);
 				}
 			}
 		}
@@ -486,33 +620,11 @@ namespace BanSupport
 						SetAllData();
 						break;
 				}
+				Show();
 				dataChanged = DataChange.None;
 			}
 			//跳转相关
-			if (jumpState != JumpState.None)
-			{
-				//haha
-				switch (jumpState) {
-					case JumpState.Directly:
-						if (scrollDirection == ScrollDirection.Vertical)
-						{
-							scrollRect.verticalNormalizedPosition = jumpToTargetNormalizedPos;
-						}
-						else
-						{
-							scrollRect.horizontalNormalizedPosition = jumpToTargetNormalizedPos;
-						}
-						jumpState = JumpState.None;
-						break;
-					case JumpState.Animated:
-						if (jumpToTargetAction(jumpToTargetNormalizedPos))
-						{
-							jumpState = JumpState.None;
-						}
-						break;
-				}
-			}
-			Show();
+			jumpState.Update();
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
@@ -1287,34 +1399,24 @@ namespace BanSupport
 			this.addModeStartIndex = 0;
 		}
 
-		private bool JumpToWhenVertical(float target)
+		private float GetScrollRectNormalizedPosWhenVertical()
 		{
-			scrollRect.verticalNormalizedPosition = Mathf.Lerp(scrollRect.verticalNormalizedPosition, target, Time.deltaTime * this.jumpToSpeed);
-			var pixelDistance = Mathf.Abs(scrollRect.verticalNormalizedPosition - target) * this.contentSize;
-			if (pixelDistance < 1)
-			{
-				scrollRect.verticalNormalizedPosition = target;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return scrollRect.verticalNormalizedPosition;
 		}
 
-		private bool JumpToWhenHorizontal(float target)
+		private float GetScrollRectNormalizedPosWhenHorizontal()
 		{
-			scrollRect.horizontalNormalizedPosition = Mathf.Lerp(scrollRect.horizontalNormalizedPosition, target, Time.deltaTime * this.jumpToSpeed);
-			var pixelDistance = Mathf.Abs(scrollRect.horizontalNormalizedPosition - target) * this.contentSize;
-			if (pixelDistance < 1)
-			{
-				scrollRect.horizontalNormalizedPosition = target;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return scrollRect.horizontalNormalizedPosition;
+		}
+
+		private void SetScrollRectNormalizedPosWhenVertical(float normalizedPos)
+		{
+			scrollRect.verticalNormalizedPosition = normalizedPos;
+		}
+
+		private void SetScrollRectNormalizedPosWhenHorizontal(float normalizedPos)
+		{
+			scrollRect.horizontalNormalizedPosition = normalizedPos;
 		}
 
 		private void SetSingleContentDataWhenVertical(ScrollData data)
@@ -1543,7 +1645,7 @@ namespace BanSupport
 		/// <param name="eventData"></param>
 		public void OnInitializePotentialDrag(PointerEventData eventData)
 		{
-			jumpState = JumpState.None;
+			jumpState.Stop();
 		}
 
 		#endregion
@@ -1832,10 +1934,13 @@ namespace BanSupport
 		/// </summary>
 		public void JumpDataIndex(int index,bool animated = false)
 		{
-			//haha
 			if (index >= 0 && index < listData.Count)
 			{
 				JumpData(listData[index].dataSource, animated);
+			}
+			else
+			{
+				Debug.LogWarning("无法找到该Index:" + index);
 			}
 		}
 
@@ -1850,43 +1955,7 @@ namespace BanSupport
 				return;
 			}
 			var scrollData = this.dic_DataSource_ScrollData[dataSource];
-			float normalizedPosition = 0;
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				float offset = this.contentSize - Height;
-				if (offset > 0)
-				{
-					switch (startCorner)
-					{
-						case 0: //Left Up
-						case 1: //Right Up
-							normalizedPosition = (scrollData.originPosition.y - scrollData.height / 2) / offset;
-							break;
-						case 2: //Left Down
-						case 3: //Right Down
-							normalizedPosition = 1 - (scrollData.originPosition.y - scrollData.height / 2) / offset;
-							break;
-					}
-				}
-			}
-			else
-			{
-				float offset = this.contentSize - Width;
-				if (offset > 0) {
-					switch (startCorner)
-					{
-						case 0: //Left Up
-						case 2: //Left Down
-							normalizedPosition = (scrollData.originPosition.x - scrollData.width / 2) / offset;
-							break;
-						case 1: //Right Up
-						case 3: //Right Down
-							normalizedPosition = 1 - (scrollData.originPosition.x - scrollData.width / 2) / offset;
-							break;
-					}
-				}
-			}
-			Jump(normalizedPosition, animated);
+			jumpState.Do(scrollData, animated);
 		}
 
 		/// <summary>
@@ -1897,25 +1966,7 @@ namespace BanSupport
 		/// </summary>
 		public void Jump(float normalizedPosition, bool animated = false)
 		{
-			if (!this.gameObject.activeSelf) { return; }
-			//自身应该停止移动
-			scrollRect.StopMovement();
-			//然后由程序控制移动
-			normalizedPosition = Mathf.Clamp01(normalizedPosition);
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				//为了确保最上方是0，最下方是1
-				normalizedPosition = 1 - normalizedPosition;
-			}
-			jumpToTargetNormalizedPos = normalizedPosition;
-			if (animated)
-			{
-				jumpState = JumpState.Animated;
-			}
-			else
-			{
-				jumpState = JumpState.Directly;
-			}
+			jumpState.Do(normalizedPosition,animated);
 		}
 
 		/// <summary>
