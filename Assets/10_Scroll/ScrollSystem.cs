@@ -313,7 +313,7 @@ namespace BanSupport
 				this.getNormalizedPos = getNormalizedPos;
 			}
 
-			public void Update()
+			public bool Update()
 			{
 				if (state != State.None)
 				{
@@ -329,11 +329,11 @@ namespace BanSupport
 								{
 									case 0: //Left Up
 									case 1: //Right Up
-										this.targetNormalizedPos = (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
+										this.targetNormalizedPos = 1 - (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
 										break;
 									case 2: //Left Down
 									case 3: //Right Down
-										this.targetNormalizedPos = 1 - (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
+										this.targetNormalizedPos = (this.targetScrollData.originPosition.y - this.targetScrollData.height / 2) / offset;
 										break;
 								}
 							}
@@ -380,7 +380,13 @@ namespace BanSupport
 							}
 							break;
 					}
+					return true;
 				}
+				else
+				{
+					return false;
+				}
+
 			}
 
 			public void Stop()
@@ -603,8 +609,10 @@ namespace BanSupport
 			{
 				return;
 			}
+			bool willUpdateShow = false;
 			if (dataChanged != DataChange.None)
 			{
+				willUpdateShow = true;
 				switch (dataChanged)
 				{
 					case DataChange.Added:
@@ -621,11 +629,15 @@ namespace BanSupport
 						SetAllData();
 						break;
 				}
-				Show();
 				dataChanged = DataChange.None;
 			}
 			//跳转相关
-			jumpState.Update();
+			willUpdateShow |= jumpState.Update();
+			if (willUpdateShow)
+			{
+				Show();
+			}
+
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
@@ -831,14 +843,7 @@ namespace BanSupport
 					}
 				}
 
-				bool refreshPosition = false;
-				switch (dataChanged)
-				{
-					case DataChange.Added:
-					case DataChange.Removed:
-						refreshPosition = true;
-						break;
-				}
+				bool refreshPosition = (dataChanged != DataChange.None);
 
 				//方法一（这个效率更高一些）
 				//var watch = Tools.StartWatch();
@@ -1933,7 +1938,7 @@ namespace BanSupport
 		/// <summary>
 		/// 通过一个索引来跳转倒某个位置
 		/// </summary>
-		public void JumpDataIndex(int index,bool animated = false)
+		public void JumpDataByIndex(int index,bool animated = false)
 		{
 			if (index >= 0 && index < listData.Count)
 			{
