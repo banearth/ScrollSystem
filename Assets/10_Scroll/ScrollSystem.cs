@@ -357,8 +357,9 @@ namespace BanSupport
 							}
 						}
 						this.targetScrollData = null;
+						this.targetNormalizedPos = Mathf.Clamp01(this.targetNormalizedPos);
 					}
-
+					//根据state来判断如何跳转
 					switch (state)
 					{
 						case State.Directly:
