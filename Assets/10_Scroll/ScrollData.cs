@@ -65,9 +65,12 @@ namespace BanSupport
 		/// <summary>
 		/// 设置宽度和高度
 		/// </summary>
-		public bool CalculateSize()
+		public void CalculateSize()
 		{
-			bool changed = false;
+			if (this.width > 0 && this.height > 0)
+			{
+				return;
+			}
 			if (getSize != null)
 			{
 				var newSize = getSize(dataSource);
@@ -76,7 +79,6 @@ namespace BanSupport
 					if (this.width != newSize.x)
 					{
 						this.width = newSize.x;
-						changed = true;
 					}
 				}
 				else
@@ -88,7 +90,6 @@ namespace BanSupport
 					if (this.height != newSize.y)
 					{
 						this.height = newSize.y;
-						changed = true;
 					}
 				}
 				else
@@ -102,7 +103,6 @@ namespace BanSupport
 				this.width = rectTrans.sizeDelta.x;
 				this.height = rectTrans.sizeDelta.y;
 			}
-			return changed;
 		}
 
 		public void Hide()

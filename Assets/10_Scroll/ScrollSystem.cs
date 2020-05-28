@@ -577,6 +577,11 @@ namespace BanSupport
 			Show();
 		}
 
+		private void OnDestroy()
+		{
+			this.listData.Clear();
+		}
+
 		/// <summary>
 		/// 用于检测一些关键值得改变
 		/// </summary>
@@ -2056,7 +2061,6 @@ namespace BanSupport
 				return;
 			}
 			ScrollData scrollData = new ScrollData(this, prefabName, dataSource, getSize);
-			scrollData.CalculateSize();
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0)
 			{
@@ -2100,7 +2104,6 @@ namespace BanSupport
 				return;
 			}
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
-			newScrollData.CalculateSize();
 			listData.Insert(insertIndex, newScrollData);
 			if (this.dataChanged < DataChange.Removed)
 			{
