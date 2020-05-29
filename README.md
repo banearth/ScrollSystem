@@ -29,7 +29,8 @@ wechat:bandingyue
 （1）在对应的UI层级下，创建一个空的子物体
 （2）把ScrollSystem.cs拖拽到空物体上，拖拽完成之后会自动创建所需的其他控件，ScrollRect，Image，mask			等，并且会创建一个名字为Content Transform的子物体作为ScrollRect的Content
 
-![微信截图_20200529144147](Image\微信截图_20200529144147.png)
+
+![微信截图_20200529144147](https://github.com/banearth/ScrollSystem/blob/master/Image/微信截图_20200529144147.png)
 
 ![微信截图_20200529144216](Image\微信截图_20200529144216.png)
 
