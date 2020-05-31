@@ -151,9 +151,9 @@ namespace BanSupport
 		private RectBounds _scrollRange = new RectBounds();
 
 		/// <summary>
-		/// 帧数，scrollSystem帧数大于对应data的帧数，才会进行刷新
+		/// 上一帧
 		/// </summary>
-		private uint updateFrame = 0;
+		private int lastFrameCount = 0;
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -268,9 +268,8 @@ namespace BanSupport
 				result.right = right;
 				result.middle = (left + right) / 2;
 				var curData = scrollSystem.listData[result.middle];
-				curData.IsVisible(scrollSystem.updateFrame);
 				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
-				result.found = curData.isVisible;
+				result.found = curData.IsVisible();
 				return result;
 			}
 
@@ -634,13 +633,13 @@ namespace BanSupport
 						SetAllData();
 						break;
 				}
-				dataChanged = DataChange.None;
 			}
 			//跳转相关
 			willUpdateShow |= jumpState.Update();
 			if (willUpdateShow)
 			{
 				Show();
+				dataChanged = DataChange.None;
 			}
 
 		}
@@ -735,15 +734,14 @@ namespace BanSupport
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
 		private void Show()
-		{
-			updateFrame++;
+		{	
+			if (Time.frameCount == lastFrameCount){return;}
+			lastFrameCount = Time.frameCount;
 			UpdateBounds();
-
 			if (listData.Count <= 0)
 			{
 				return;
 			}
-
 			searchList.Add(SearchGroup.Get(0, listData.Count - 1, this));
 			bool found = false;
 			int foundIndex = -1;
@@ -793,7 +791,7 @@ namespace BanSupport
 					{
 						if (found)
 						{
-							if (curData.IsVisible(updateFrame))
+							if (curData.IsVisible())
 							{
 								listNextVisibleScrollData.Add(curData);
 							}
@@ -807,7 +805,7 @@ namespace BanSupport
 					}
 					else
 					{
-						if (curData.IsVisible(updateFrame))
+						if (curData.IsVisible())
 						{
 							listNextVisibleScrollData.Add(curData);
 							found = true;
@@ -826,7 +824,7 @@ namespace BanSupport
 					{
 						if (found)
 						{
-							if (curData.IsVisible(updateFrame))
+							if (curData.IsVisible())
 							{
 								listNextVisibleScrollData.Add(curData);
 							}
@@ -840,7 +838,7 @@ namespace BanSupport
 					}
 					else
 					{
-						if (curData.IsVisible(updateFrame))
+						if (curData.IsVisible())
 						{
 							listNextVisibleScrollData.Add(curData);
 							found = true;

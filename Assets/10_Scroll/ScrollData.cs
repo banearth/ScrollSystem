@@ -35,13 +35,13 @@ namespace BanSupport
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
 		public Vector2 originPosition;
+		private int lastFrameCount;
 
 		private Func<object, Vector2> getSize;
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
 		private RectBounds rectBounds = new RectBounds();
-		private uint lastUpdateFrame = 0;
 		private RectTransform targetTrans = null;
 
 		public float Left { get { return rectBounds.left; } }
@@ -168,13 +168,11 @@ namespace BanSupport
 		/// <summary>
 		/// 只检查是否可见
 		/// </summary>
-		public bool IsVisible(uint frame)
+		public bool IsVisible()
 		{
-			if (frame > lastUpdateFrame)
-			{
-				lastUpdateFrame = frame;
-				isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
-			}
+			if (Time.frameCount == lastFrameCount) { return this.isVisible; }
+			this.lastFrameCount = Time.frameCount;
+			this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);	
 			return this.isVisible;
 		}
 
