@@ -573,7 +573,9 @@ namespace BanSupport
 		/// </summary>
 		private void OnValueChanged(Vector2 newPos)
 		{
-			Show();
+			if (dataChanged == DataChange.None) {
+				Show();
+			}
 		}
 
 		private void OnDestroy()

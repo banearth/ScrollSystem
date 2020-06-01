@@ -1260,7 +1260,7 @@ MonoBehaviour:
   - B
   - C
   - D
-  prefabSelected: 01010101
+  prefabSelected: 00010000
   scrollSystem: {fileID: 696805606}
   inputField_ChatContent: {fileID: 1223263003}
   setWorldPosEnable: 1
@@ -1540,7 +1540,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 772662760}
   m_HandleRect: {fileID: 772662759}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2647,7 +2647,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 5
+  m_Text: 20
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -2755,7 +2755,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 5
+  m_Text: 20
 --- !u!222 &535739907
 CanvasRenderer:
   m_ObjectHideFlags: 0
