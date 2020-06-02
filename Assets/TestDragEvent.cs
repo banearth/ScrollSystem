@@ -14,22 +14,22 @@ public class TestDragEvent : MonoBehaviour
 	void Start()
 	{
 
-		//var listener1 = scrollRect.gameObject.AddComponent<EventTriggerListener>();
-		//listener1.onDrag += go =>
-		//{
-		//	Debug.Log("onDrag EventTriggerListener");
-		//};
-
-		//listener1.onClick += go =>
-		//{
-		//	Debug.Log("onClick EventTriggerListener");
-		//};
-
-		var listener2 = scrollRect.gameObject.AddComponent<DragListener>();
-		listener2.onDrag += go =>
+		var listener1 = scrollRect.gameObject.AddComponent<EventTriggerListener>();
+		listener1.onDrag += go =>
 		{
-			Debug.Log("onDrag DragListener");
+			Debug.Log("onDrag EventTriggerListener");
 		};
+
+		listener1.onClick += go =>
+		{
+			Debug.Log("onClick EventTriggerListener");
+		};
+
+		//var listener2 = scrollRect.gameObject.AddComponent<DragListener>();
+		//listener2.onDrag += go =>
+		//{
+		//	Debug.Log("onDrag DragListener");
+		//};
 
 		button.AddComponent<ClickListener>().onClick += go =>
 		{
