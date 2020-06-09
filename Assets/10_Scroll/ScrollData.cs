@@ -9,8 +9,6 @@ namespace BanSupport
 	public class ScrollData
 	{
 
-		public ScrollData() { }
-
 		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
 			Init(scrollSystem, prefabName, dataSource, getSize);
