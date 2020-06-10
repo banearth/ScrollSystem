@@ -164,9 +164,6 @@ namespace BanSupport
 		{
 #if UNITY_EDITOR
 			if (Application.isPlaying) { return; }
-
-			//这里有一些创建初始裁切的操作，但我发现没有很大必要
-
 			bool isNew;
 			var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
 			if (isNew)
@@ -174,11 +171,6 @@ namespace BanSupport
 				image.sprite = null;
 				image.color = new Color(1, 1, 1, 0.2f);
 			}
-			//var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
-			//if (isNew)
-			//{
-			//	mask.showMaskGraphic = true;
-			//}
 #endif
 		}
 
@@ -432,6 +424,11 @@ namespace BanSupport
 				}
 				scrollState = ScrollState.None;
 				dataChanged = DataChange.None;
+				if (wantSelectGalleryData != null)
+				{
+					Select(wantSelectGalleryData.dataSource);
+					wantSelectGalleryData = null;
+				}
 			}
 
 			if (scrollState != ScrollState.None) {
@@ -715,35 +712,56 @@ namespace BanSupport
 			listData.Add(new GalleryData(this, dataSource));
 		}
 
+		private GalleryData wantSelectGalleryData = null;
+
 		public void Select(object dataSource, bool animated = false)
 		{
 			var find = listData.Find(temp => temp.dataSource == dataSource);
 			if (find == null) { Debug.LogWarning("无法找到这个dataSource"); return; }
 			if (find.isSelected) { return; }
-			if (animated)
+			if (dataChanged == DataChange.None)
 			{
-				var offset = mainIndex - find.normalizedPos;
-				listData.ForEach(temp => {
-					temp.returnNormalizedPos = temp.normalizedPos + offset;
-				});
-				scrollState = ScrollState.Return;
+				if (animated)
+				{
+					var offset = mainIndex - find.normalizedPos;
+					listData.ForEach(temp =>
+					{
+						temp.returnNormalizedPos = temp.normalizedPos + offset;
+					});
+					scrollState = ScrollState.Return;
+				}
+				else
+				{
+					var offset = mainIndex - find.normalizedPos;
+					listData.ForEach(temp =>
+					{
+						temp.normalizedPos = temp.normalizedPos + offset;
+					});
+				}
 			}
 			else
 			{
-				var offset = mainIndex - find.normalizedPos;
-				listData.ForEach(temp => {
-					temp.normalizedPos = temp.normalizedPos + offset;
-				});
+				wantSelectGalleryData = find;
 			}
 		}
 
-		public void Remove(object dataSource)
+		public void Clear()
 		{
-			//int
+			wantSelectGalleryData = null;
+			scrollState = ScrollState.None;
+			listData.ForEach(temp =>
+			{
+				temp.isVisible = false;
+				temp.Update(false, false);
+			});
+			listData.Clear();
 		}
 
-		public void Set(object dataSource) { 
-			
+		public void Set(object dataSource)
+		{
+			var find = listData.Find(temp => temp.dataSource == dataSource);
+			if (find == null) { Debug.LogWarning("无法找到这个dataSource"); return; }
+			find.Update(true, false);
 		}
 
 		#endregion

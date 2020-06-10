@@ -43,6 +43,7 @@ public class TestScrollGallery : MonoBehaviour
 			datas[i] = new SimpleData { number = i };
 			scrollGallery.Add(datas[i]);
 		}
+		scrollGallery.Select(datas[1]);
 
 	}
 
@@ -73,6 +74,16 @@ public class TestScrollGallery : MonoBehaviour
 			scrollGallery.Select(this.datas[4]);
 		}
 
+		if (Input.GetKeyDown(KeyCode.C))
+		{
+			scrollGallery.Clear();
+		}
+
+		if (Input.GetKeyDown(KeyCode.B))
+		{
+			datas[0].number += 10;
+			scrollGallery.Set(datas[0]);
+		}
 
 		//var str = (item != null) ? item.normalizedPos.ToString("0.00") : "";
 		//label.text = str;
