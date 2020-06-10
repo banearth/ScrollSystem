@@ -8,13 +8,13 @@ namespace BanSupport
 	{
 		public float normalizedPos;
 		public float recordNormalizedPos;
+		public float returnNormalizedPos;
 		public object dataSource;
 		public Vector3 worldPosition;
 		public Vector2 sizeDelta;
 		public Vector3 scale;
 		public bool isVisible;
 		public ScrollGallery scrollGallery;
-
 
 		private RectBounds rectBounds = new RectBounds();
 		private RectTransform targetTrans = null;
@@ -25,14 +25,38 @@ namespace BanSupport
 			this.dataSource = dataSource;
 		}
 
+		public void SetReturnPos()
+		{
+			this.returnNormalizedPos = Mathf.RoundToInt(this.normalizedPos);
+		}
+
 		public void RecordPos()
 		{
 			this.recordNormalizedPos = this.normalizedPos;
 		}
 
-		public void Move(float normalizedOffset)
+		public void Move(float offset)
+		{
+			this.normalizedPos += offset;
+		}
+
+		public void MoveByRecord(float normalizedOffset)
 		{
 			this.normalizedPos = this.recordNormalizedPos + normalizedOffset;
+		}
+
+		public bool DoReturn(float progress)
+		{
+			this.normalizedPos = Mathf.Lerp(this.normalizedPos, this.returnNormalizedPos, progress);
+			if (Mathf.Abs(this.normalizedPos - this.returnNormalizedPos) < 0.001)
+			{
+				this.normalizedPos = this.returnNormalizedPos;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 
 		public void Update(bool refreshContent, bool refreshPosition)

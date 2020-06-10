@@ -11,6 +11,54 @@ namespace BanSupport
 	public class ScrollGallery : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 	{
 
+		public class ObjectPool
+		{
+			public GameObject origin;
+			public List<GameObject> list;
+			public ScrollGallery scrollGallery;
+
+			public ObjectPool(GameObject origin, ScrollGallery scrollGallery)
+			{
+				this.origin = origin;
+				this.list = new List<GameObject>();
+				this.scrollGallery = scrollGallery;
+				origin.SetActive(false);
+				for (int i = 0; i < scrollGallery.registPoolCount; i++)
+				{
+					this.list.Add(GameObject.Instantiate(origin, scrollGallery.rectTransform) as GameObject);
+				}
+			}
+
+			public GameObject Get()
+			{
+				GameObject getObject;
+				if (this.list.Count > 0)
+				{
+					getObject = this.list[0];
+					list.RemoveAt(0);
+				}
+				else
+				{
+					getObject = GameObject.Instantiate(this.origin, scrollGallery.transform);
+					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
+				}
+				getObject.SetActive(true);
+				return getObject;
+			}
+
+			public void Recycle(GameObject obj)
+			{
+				if (obj == null)
+				{
+					Debug.LogWarning("回收的对象为空！");
+					return;
+				}
+				obj.SetActive(false);
+				this.list.Add(obj);
+			}
+
+		}
+
 		#region 编辑器
 
 		private Transform splitParent
@@ -35,6 +83,9 @@ namespace BanSupport
 		[ContextMenu("Create Split")]
 		public void CreateSplits()
 		{
+
+			mainIndex = splitCount / 2;
+
 			foreach (var split in splits)
 			{
 				if (split != null)
@@ -187,77 +238,178 @@ namespace BanSupport
 		[SerializeField]
 		private int registPoolCount = 3;
 
-		#endregion
+		/// <summary>
+		/// 分割的数量
+		/// </summary>
+		[Tooltip("分割的数量")]
+		[SerializeField]
+		private int splitCount = 5;
 
+		/// <summary>
+		/// 主Index，这个非常重要
+		/// </summary>
+		[Tooltip("主Index，这个非常重要")]
+		[SerializeField]
+		private int mainIndex = 0;
 
-		public RectTransform[] splits;
+		/// <summary>
+		/// 最多超出主index多少距离
+		/// </summary>
+		[Tooltip("最多超出主index多少距离")]
+		[SerializeField]
+		private float maxDistanceBeyondMainIndex = 0.2f;
 
-		public int splitCount = 5;
+		/// <summary>
+		/// 滑动低于这个时间是return否则是move
+		/// </summary>
+		[Tooltip("滑动低于这个时间是return否则是move")]
+		[SerializeField]
+		private float releaseReturnOrMoveTime = 0.5f;
 
-		public RectBounds scrollBounds
-		{
-			get
-			{
-				return _scrollRange;
-			}
-		}
-		private RectBounds _scrollRange = new RectBounds();
+		/// <summary>
+		/// 用这些来进行区域划分，这个不需要手动设置
+		/// </summary>
+		[Tooltip("用这些来进行区域划分，这个不需要手动设置")]
+		[SerializeField]
+		private RectTransform[] splits;
 
-		public int mainIndex = 0;
+		public enum ScrollState { None, Drag, Move, Return }
+		/// <summary>
+		/// 当前的滚动状态
+		/// </summary>
+		[SerializeField]
+		private ScrollState scrollState = ScrollState.None;
 
-		
-
-		public enum State { None, Drag, Move, Return }
-		private State state = State.None;
+		/// <summary>
+		/// 按下的事件数据
+		/// </summary>
 		private PointerEventData pressData = null;
+
+		/// <summary>
+		/// 按下的时间
+		/// </summary>
+		private float pressTime;
+
+		/// <summary>
+		/// 主数据
+		/// </summary>
 		private List<GalleryData> listData = new List<GalleryData>();
 
-		public enum DataChange
-		{
-			None,
-			Changed,
-		}
+		public enum DataChange { None, Changed, }
+		/// <summary>
+		/// 数据是否发生改变
+		/// </summary>
 		private DataChange dataChanged = DataChange.None;
 
+		/// <summary>
+		/// 是否初始化过
+		/// </summary>
+		private bool inited = false;
+
+		/// <summary>
+		/// 对象池
+		/// </summary>
+		public ObjectPool objectPool { private set; get; }
+
+		/// <summary>
+		/// 创建打开回调
+		/// </summary>
+		public Action<GameObject, GalleryData> onItemOpen { get; private set; }
+
+		/// <summary>
+		/// 关闭回调
+		/// </summary>
+		public Action<GameObject, GalleryData> onItemClose { get; private set; }
+
+		/// <summary>
+		/// 刷新数据回调
+		/// </summary>
+		public Action<GameObject, GalleryData> onItemRefresh { get; private set; }
+
+
+		/// <summary>
+		/// 返回速度
+		/// </summary>
+		[Tooltip("主Index，这个非常重要")]
+		[SerializeField]
+		private float returnSpeed = 10;
+
+		private float minRecordNormalizedPos;
+
+		private float maxRecordNormalizedPos;
+
+		private float moveSpeed;
+
+		/// <summary>
+		/// 摩擦力，在松手惯性滑动的时候生效
+		/// </summary>
+		[Tooltip("摩擦力，在松手惯性滑动的时候生效")]
+		[SerializeField]
+		private float moveFriction = 10;
+
+		//haha
+		//private 
+
+		#endregion
+
+		#region 系统方法
 		public void OnPointerDown(PointerEventData eventData)
 		{
-			Debug.Log("OnPointerDown:" + eventData.position);
 			if (pressData != null) { return; }
 			pressData = eventData;
-			state = State.Drag;
+			scrollState = ScrollState.Drag;
 			listData.ForEach(temp => temp.RecordPos());
-
+			minRecordNormalizedPos = GetMinRecordNormalizedPos();
+			maxRecordNormalizedPos = GetMaxRecordNormalizedPos();
+			pressTime = Time.time;
 		}
 
 		public void OnPointerUp(PointerEventData eventData)
 		{
-			Debug.Log("OnPointerUp:" + eventData.position);
 			if (pressData != eventData) { return; }
-			state = State.None;
 			pressData = null;
+			//haha
+			if (Time.time - pressTime > releaseReturnOrMoveTime)
+			{
+				scrollState = ScrollState.Return;
+				listData.ForEach(temp => temp.SetReturnPos());
+			}
+			else
+			{
+				scrollState = ScrollState.Move;
+				moveSpeed = (GetMinNormalizedPos() - minRecordNormalizedPos) / (Time.time - pressTime);
+				Debug.Log("moveSpeed:"+ moveSpeed);
+			}
+
 		}
 
 		public void OnDrag(PointerEventData eventData)
 		{
-			Debug.Log("OnDrag:" + eventData.position);
 			if (pressData != eventData) { return; }
-			//Debug.Log(pressData == eventData);
 			float scrollDelta;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
 				scrollDelta = (eventData.pressPosition.y - eventData.position.y) / height * splitCount;
-				Debug.Log("scrollDelta:" + scrollDelta + " pressPosition:"+ eventData.pressPosition.y+ " eventData.position.y:"+ eventData.position.y);
-				listData.ForEach(temp => temp.Move(scrollDelta));
 			}
 			else
 			{
-
+				Debug.LogWarning("something need to do");
+				scrollDelta = 0;
 			}
+			if (minRecordNormalizedPos + scrollDelta > mainIndex + maxDistanceBeyondMainIndex)
+			{
+				scrollDelta = mainIndex + maxDistanceBeyondMainIndex - minRecordNormalizedPos;
+			}
+			else if (maxRecordNormalizedPos + scrollDelta < mainIndex - maxDistanceBeyondMainIndex)
+			{
+				scrollDelta = mainIndex - maxDistanceBeyondMainIndex - maxRecordNormalizedPos;
+			}
+			listData.ForEach(temp => temp.MoveByRecord(scrollDelta));
 		}
 
 		private void OnDisable()
 		{
-			state = State.None;
+			scrollState = ScrollState.None;
 			pressData = null;
 		}
 
@@ -277,9 +429,90 @@ namespace BanSupport
 						SetAllData();
 						break;
 				}
+				scrollState = ScrollState.None;
 				dataChanged = DataChange.None;
 			}
+
+			if (scrollState != ScrollState.None) {
+				switch (scrollState) {
+					case ScrollState.Move:
+						{
+							var dir = Mathf.Sign(moveSpeed);
+							moveSpeed -= dir * moveFriction * Time.deltaTime;
+							bool willReturn = false;
+							//haha
+							if (dir * moveSpeed < 0 || )
+							{
+								willReturn = true;
+							}
+							else
+							{
+								float moveDelta = moveSpeed * Time.deltaTime;
+								var minNormalizedPos = GetMinNormalizedPos();
+								var maxNormalizedPos = GetMaxNormalizedPos();
+								if (minNormalizedPos + moveDelta > mainIndex + maxDistanceBeyondMainIndex)
+								{
+									moveDelta = mainIndex + maxDistanceBeyondMainIndex - minNormalizedPos;
+									willReturn = true;
+								}
+								else if (maxNormalizedPos + moveDelta < mainIndex - maxDistanceBeyondMainIndex)
+								{
+									moveDelta = mainIndex - maxDistanceBeyondMainIndex - maxNormalizedPos;
+									willReturn = true;
+								}
+								listData.ForEach(temp => temp.Move(moveDelta));
+							}
+							
+							if (willReturn)
+							{
+								listData.ForEach(temp=>temp.SetReturnPos());
+								scrollState = ScrollState.Return;
+							}
+						}
+						break;
+					case ScrollState.Return:
+						bool returnEnd = false;
+						listData.ForEach(temp =>
+						{
+							returnEnd |= temp.DoReturn(Time.deltaTime * returnSpeed);
+						});
+						if (returnEnd)
+						{
+							Debug.Log("ScrollState.None");
+							scrollState = ScrollState.None;
+						}
+						break;
+				}
+			}
+
 			Show();
+		}
+
+		#endregion
+
+		#region 内部方法
+		
+		private void Init()
+		{
+			if (inited) { return; }
+			inited = true;
+			//注册对象池（找到第一个名字不是SplitParent的子物体）
+			Transform findOrigin = null;
+			for (int i = 0; i < this.transform.childCount; i++)
+			{
+				var curChild = this.transform.GetChild(i);
+				if (curChild.name != "SplitParent")
+				{
+					findOrigin = curChild;
+					break;
+				}
+			}
+			if (findOrigin == null)
+			{
+				Debug.LogError("无法找到模板预制体");
+				return;
+			}
+			this.objectPool = new ObjectPool(findOrigin.gameObject, this);
 		}
 
 		private void SetAllData()
@@ -321,30 +554,66 @@ namespace BanSupport
 			}
 		}
 
-		private bool inited = false;
-		private void Init()
-		{
-			if (inited) { return; }
-			inited = true;
-			//注册对象池（找到第一个名字不是SplitParent的子物体）
-			Transform findOrigin = null;
-			for (int i = 0; i < this.transform.childCount; i++)
-			{
-				var curChild = this.transform.GetChild(i);
-				if (curChild.name != "SplitParent")
-				{
-					findOrigin = curChild;
-					break;
-				}
-			}
-			if (findOrigin == null) {
-				Debug.LogError("无法找到模板预制体");
-				return;
-			}
-			this.objectPool = new ObjectPool(findOrigin.gameObject, this);
-		}
+
+		#endregion
 
 		#region Get Pos Scale Size
+
+		public float GetMinNormalizedPos()
+		{
+			if (listData.Count > 0)
+			{
+				float minPos = float.MaxValue;
+				listData.ForEach(temp => { if (minPos > temp.normalizedPos) { minPos = temp.normalizedPos; } });
+				return minPos;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		public float GetMaxNormalizedPos()
+		{
+			if (listData.Count > 0)
+			{
+				float maxPos = float.MinValue;
+				listData.ForEach(temp => { if (maxPos < temp.normalizedPos) { maxPos = temp.normalizedPos; } });
+				return maxPos;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		public float GetMinRecordNormalizedPos()
+		{
+			if (listData.Count > 0)
+			{
+				float minPos = float.MaxValue;
+				listData.ForEach(temp => { if (minPos > temp.recordNormalizedPos) { minPos = temp.recordNormalizedPos; } });
+				return minPos;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+
+		public float GetMaxRecordNormalizedPos()
+		{
+			if (listData.Count > 0)
+			{
+				float maxPos = float.MinValue;
+				listData.ForEach(temp => { if (maxPos < temp.recordNormalizedPos) { maxPos = temp.recordNormalizedPos; } });
+				return maxPos;
+			}
+			else
+			{
+				return 0;
+			}
+		}
 
 		public Vector3 GetPos(int pos)
 		{
@@ -417,65 +686,16 @@ namespace BanSupport
 
 		#endregion
 
-		public ObjectPool objectPool { private set; get; }
-
-		public class ObjectPool
-		{
-			public GameObject origin;
-			public List<GameObject> list;
-			public ScrollGallery scrollGallery;
-
-			public ObjectPool(GameObject origin, ScrollGallery scrollGallery)
-			{
-				this.origin = origin;
-				this.list = new List<GameObject>();
-				this.scrollGallery = scrollGallery;
-				origin.SetActive(false);
-				for (int i = 0; i < scrollGallery.registPoolCount; i++)
-				{
-					this.list.Add(GameObject.Instantiate(origin, scrollGallery.rectTransform) as GameObject);
-				}
-			}
-
-			public GameObject Get()
-			{
-				GameObject getObject;
-				if (this.list.Count > 0)
-				{
-					getObject = this.list[0];
-					list.RemoveAt(0);
-				}
-				else
-				{
-					getObject = GameObject.Instantiate(this.origin, scrollGallery.transform);
-					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
-				}
-				getObject.SetActive(true);
-				return getObject;
-			}
-
-			public void Recycle(GameObject obj)
-			{
-				if (obj == null)
-				{
-					Debug.LogWarning("回收的对象为空！");
-					return;
-				}
-				obj.SetActive(false);
-				this.list.Add(obj);
-			}
-
-		}
-
-		#region Public
-
-		public Action<GameObject, GalleryData> onItemOpen { get; private set; }
-		public Action<GameObject, GalleryData> onItemClose { get; private set; }
-		public Action<GameObject, GalleryData> onItemRefresh { get; private set; }
+		#region 外部调用
 
 		public void SetOnItemOpen(Action<GameObject, GalleryData> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
+		}
+
+		public void SetOnItemClose(Action<GameObject, GalleryData> onItemClose)
+		{
+			this.onItemClose = onItemClose;
 		}
 
 		public void SetOnItemRefresh(Action<GameObject, GalleryData> onItemRefresh)
@@ -492,12 +712,14 @@ namespace BanSupport
 
 		public void Remove(object dataSource)
 		{
-
+			//int
 		}
 
 		public void Set(object dataSource) { 
 			
 		}
+
+		#endregion
 
 	}
 }

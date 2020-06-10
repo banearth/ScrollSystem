@@ -338,6 +338,10 @@ MonoBehaviour:
   scrollDirection: 0
   jumpToSpeed: 10
   registPoolCount: 3
+  splitCount: 5
+  mainIndex: 2
+  maxDistanceBeyondMainIndex: 0.2
+  releaseReturnOrMoveTime: 0.5
   splits:
   - {fileID: 929864085}
   - {fileID: 644133994}
@@ -346,7 +350,9 @@ MonoBehaviour:
   - {fileID: 1764621627}
   - {fileID: 852207100}
   - {fileID: 1412793671}
-  splitCount: 5
+  scrollState: 0
+  returnSpeed: 10
+  moveFriction: 10
 --- !u!1 &363799932
 GameObject:
   m_ObjectHideFlags: 0

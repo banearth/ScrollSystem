@@ -23,7 +23,11 @@ public class TestScrollGallery : MonoBehaviour
 	{
 		scrollGallery.SetOnItemRefresh((aGo, item) =>
 		{
-			this.item = item;
+			if (this.item == null)
+			{
+				this.item = item;
+			}
+
 			aGo.GetComponentInChildren<Text>().text = "" + item.normalizedPos.ToString("0.00");
 		});
 		for (int i = 0; i < 10; i++)
