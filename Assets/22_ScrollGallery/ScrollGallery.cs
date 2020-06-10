@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 namespace BanSupport
 {
 	[ExecuteInEditMode]
-	public class ScrollGallery : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
+	public class ScrollGallery : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
 		public class ObjectPool
@@ -25,7 +25,9 @@ namespace BanSupport
 				origin.SetActive(false);
 				for (int i = 0; i < scrollGallery.registPoolCount; i++)
 				{
-					this.list.Add(GameObject.Instantiate(origin, scrollGallery.rectTransform) as GameObject);
+					var getObject = GameObject.Instantiate(origin, scrollGallery.rectTransform) as GameObject;
+					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
+					this.list.Add(getObject);
 				}
 			}
 
@@ -225,13 +227,6 @@ namespace BanSupport
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
 
 		/// <summary>
-		/// 跳转的速度
-		/// </summary>
-		[Tooltip("跳转的速度")]
-		[SerializeField]
-		private float jumpToSpeed = 10;
-
-		/// <summary>
 		/// 注册数量
 		/// </summary>
 		[Tooltip("注册数量")]
@@ -265,6 +260,14 @@ namespace BanSupport
 		[Tooltip("滑动低于这个时间是return否则是move")]
 		[SerializeField]
 		private float releaseReturnOrMoveTime = 0.5f;
+
+		
+		[Tooltip("速度过慢会自动触发这个")]
+		[SerializeField]
+		/// <summary>
+		/// 速度过慢会自动触发这个
+		/// </summary>
+		private float lowSpeedTriggerReturn = 1;
 
 		/// <summary>
 		/// 用这些来进行区域划分，这个不需要手动设置
@@ -314,17 +317,17 @@ namespace BanSupport
 		/// <summary>
 		/// 创建打开回调
 		/// </summary>
-		public Action<GameObject, GalleryData> onItemOpen { get; private set; }
+		public Action<GameObject, object> onItemOpen { get; private set; }
 
 		/// <summary>
 		/// 关闭回调
 		/// </summary>
-		public Action<GameObject, GalleryData> onItemClose { get; private set; }
+		public Action<GameObject, object> onItemClose { get; private set; }
 
 		/// <summary>
 		/// 刷新数据回调
 		/// </summary>
-		public Action<GameObject, GalleryData> onItemRefresh { get; private set; }
+		public Action<GameObject, object, bool> onItemRefresh { get; private set; }
 
 
 		/// <summary>
@@ -334,27 +337,26 @@ namespace BanSupport
 		[SerializeField]
 		private float returnSpeed = 10;
 
+		/// <summary>
+		/// 摩擦力，在松手惯性滑动的时候生效
+		/// </summary>
+		[Tooltip("摩擦力，在松手惯性滑动的时候生效")]
+		[SerializeField]
+		private float moveFriction = 25;
+
 		private float minRecordNormalizedPos;
 
 		private float maxRecordNormalizedPos;
 
 		private float moveSpeed;
 
-		/// <summary>
-		/// 摩擦力，在松手惯性滑动的时候生效
-		/// </summary>
-		[Tooltip("摩擦力，在松手惯性滑动的时候生效")]
-		[SerializeField]
-		private float moveFriction = 10;
-
-		//haha
-		//private 
-
 		#endregion
 
 		#region 系统方法
-		public void OnPointerDown(PointerEventData eventData)
+
+		public void OnBeginDrag(PointerEventData eventData)
 		{
+			Debug.Log("OnBeginDrag");
 			if (pressData != null) { return; }
 			pressData = eventData;
 			scrollState = ScrollState.Drag;
@@ -364,11 +366,11 @@ namespace BanSupport
 			pressTime = Time.time;
 		}
 
-		public void OnPointerUp(PointerEventData eventData)
+		public void OnEndDrag(PointerEventData eventData)
 		{
+			Debug.Log("OnPointerUp");
 			if (pressData != eventData) { return; }
 			pressData = null;
-			//haha
 			if (Time.time - pressTime > releaseReturnOrMoveTime)
 			{
 				scrollState = ScrollState.Return;
@@ -378,13 +380,12 @@ namespace BanSupport
 			{
 				scrollState = ScrollState.Move;
 				moveSpeed = (GetMinNormalizedPos() - minRecordNormalizedPos) / (Time.time - pressTime);
-				Debug.Log("moveSpeed:"+ moveSpeed);
 			}
-
 		}
 
 		public void OnDrag(PointerEventData eventData)
 		{
+			Debug.Log("OnDrag");
 			if (pressData != eventData) { return; }
 			float scrollDelta;
 			if (scrollDirection == ScrollDirection.Vertical)
@@ -440,8 +441,7 @@ namespace BanSupport
 							var dir = Mathf.Sign(moveSpeed);
 							moveSpeed -= dir * moveFriction * Time.deltaTime;
 							bool willReturn = false;
-							//haha
-							if (dir * moveSpeed < 0 || )
+							if ((dir * moveSpeed < 0) || (Mathf.Abs(moveSpeed) < lowSpeedTriggerReturn))
 							{
 								willReturn = true;
 							}
@@ -478,7 +478,6 @@ namespace BanSupport
 						});
 						if (returnEnd)
 						{
-							Debug.Log("ScrollState.None");
 							scrollState = ScrollState.None;
 						}
 						break;
@@ -529,6 +528,12 @@ namespace BanSupport
 		private void Show()
 		{
 			var totalCount = listData.Count;
+			var selectedChanged = false;
+			for (int i = 0; i < totalCount; i++)
+			{
+				var aData = listData[i];
+				selectedChanged |= aData.UpdateSelect(mainIndex);
+			}
 			//先处理Hide
 			for (int i = 0; i < totalCount; i++)
 			{
@@ -537,7 +542,7 @@ namespace BanSupport
 				{
 					aData.isVisible = false;
 				}
-				aData.Update(true, true);
+				aData.Update(selectedChanged, true);
 			}
 			//在处理Show
 			for (int i = 0; i < totalCount; i++)
@@ -550,7 +555,7 @@ namespace BanSupport
 					aData.sizeDelta = GetSize(aData.normalizedPos);
 					aData.scale = GetScale(aData.normalizedPos);
 				}
-				aData.Update(true, true);
+				aData.Update(selectedChanged, true);
 			}
 		}
 
@@ -688,17 +693,17 @@ namespace BanSupport
 
 		#region 外部调用
 
-		public void SetOnItemOpen(Action<GameObject, GalleryData> onItemOpen)
+		public void SetOnItemOpen(Action<GameObject, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
 		}
 
-		public void SetOnItemClose(Action<GameObject, GalleryData> onItemClose)
+		public void SetOnItemClose(Action<GameObject, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
 
-		public void SetOnItemRefresh(Action<GameObject, GalleryData> onItemRefresh)
+		public void SetOnItemRefresh(Action<GameObject, object, bool> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
 		}
@@ -708,6 +713,28 @@ namespace BanSupport
 			Init();
 			dataChanged = DataChange.Changed;
 			listData.Add(new GalleryData(this, dataSource));
+		}
+
+		public void Select(object dataSource, bool animated = false)
+		{
+			var find = listData.Find(temp => temp.dataSource == dataSource);
+			if (find == null) { Debug.LogWarning("无法找到这个dataSource"); return; }
+			if (find.isSelected) { return; }
+			if (animated)
+			{
+				var offset = mainIndex - find.normalizedPos;
+				listData.ForEach(temp => {
+					temp.returnNormalizedPos = temp.normalizedPos + offset;
+				});
+				scrollState = ScrollState.Return;
+			}
+			else
+			{
+				var offset = mainIndex - find.normalizedPos;
+				listData.ForEach(temp => {
+					temp.normalizedPos = temp.normalizedPos + offset;
+				});
+			}
 		}
 
 		public void Remove(object dataSource)
@@ -723,59 +750,3 @@ namespace BanSupport
 
 	}
 }
-
-
-//private void ApplyFriction()
-//{
-//	var dir = Mathf.Sign(f_Speed);
-//	float newSpeed = f_Speed - dir * (f_Friction + f_SpeedFriction * Mathf.Abs(f_Speed)) * Time.deltaTime;
-//	if (newSpeed * f_Speed <= 0)
-//	{
-//		newSpeed = 0;
-//	}
-//	f_Speed = newSpeed;
-//}
-
-//private void ApplyEdge()
-//{
-//	if (list_Item.Count > 0)
-//	{
-//		var firstItem = list_Item[0];
-//		float tempProcess = firstItem.GetProcess();
-//		if (tempProcess > 0)
-//		{
-//			foreach (var item in list_Item)
-//			{
-//				item.MoveOffset(-tempProcess);
-//			}
-//		}
-//		var lastItem = list_Item[list_Item.Count - 1];
-//		tempProcess = lastItem.GetProcess();
-//		if (tempProcess < 0)
-//		{
-//			foreach (var item in list_Item)
-//			{
-//				item.MoveOffset(-tempProcess);
-//			}
-//		}
-//	}
-//}
-
-//private void ApplyLoop()
-//{
-//	int spaceCount = list_Item.Count - totalCount;
-//	int rightLimit = spaceCount + extraCount;
-//	int leftLimit = -spaceCount - extraCount;
-//	foreach (var item in list_Item)
-//	{
-//		var tempProcess = item.GetProcess();
-//		if (tempProcess > rightLimit)
-//		{
-//			item.MoveOffset(-list_Item.Count);
-//		}
-//		else if (tempProcess < leftLimit)
-//		{
-//			item.MoveOffset(list_Item.Count);
-//		}
-//	}
-//}

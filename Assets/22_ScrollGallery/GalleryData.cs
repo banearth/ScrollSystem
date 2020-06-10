@@ -15,6 +15,7 @@ namespace BanSupport
 		public Vector3 scale;
 		public bool isVisible;
 		public ScrollGallery scrollGallery;
+		public bool isSelected;
 
 		private RectBounds rectBounds = new RectBounds();
 		private RectTransform targetTrans = null;
@@ -23,6 +24,14 @@ namespace BanSupport
 		{
 			this.scrollGallery = scrollGallery;
 			this.dataSource = dataSource;
+		}
+
+		public bool UpdateSelect(int mainIndex)
+		{
+			var i = Mathf.RoundToInt(this.normalizedPos);
+			var oldSelected = this.isSelected;
+			this.isSelected = (i == mainIndex);
+			return oldSelected == isSelected;
 		}
 
 		public void SetReturnPos()
@@ -70,7 +79,7 @@ namespace BanSupport
 					refreshPosition = true;
 					if (this.scrollGallery.onItemOpen != null)
 					{
-						this.scrollGallery.onItemOpen(this.targetTrans.gameObject, this);
+						this.scrollGallery.onItemOpen(this.targetTrans.gameObject, this.dataSource);
 					}
 				}
 				if (refreshPosition)
@@ -83,7 +92,7 @@ namespace BanSupport
 				{
 					if (this.scrollGallery.onItemRefresh != null)
 					{
-						this.scrollGallery.onItemRefresh(this.targetTrans.gameObject, this);
+						this.scrollGallery.onItemRefresh(this.targetTrans.gameObject, this.dataSource, this.isSelected);
 					}
 				}
 			}
@@ -94,7 +103,7 @@ namespace BanSupport
 					//离开视野
 					if (this.scrollGallery.onItemClose != null)
 					{
-						this.scrollGallery.onItemClose(this.targetTrans.gameObject, this);
+						this.scrollGallery.onItemClose(this.targetTrans.gameObject, this.dataSource);
 					}
 					scrollGallery.objectPool.Recycle(this.targetTrans.gameObject);
 					this.targetTrans = null;

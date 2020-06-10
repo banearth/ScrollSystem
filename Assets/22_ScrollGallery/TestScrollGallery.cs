@@ -16,31 +16,66 @@ public class TestScrollGallery : MonoBehaviour
 		public int number;
 	}
 
-	private GalleryData item;
-
 	// Start is called before the first frame update
 	void Start()
 	{
-		scrollGallery.SetOnItemRefresh((aGo, item) =>
+		scrollGallery.SetOnItemOpen((aGo, aData) =>
 		{
-			if (this.item == null)
+			aGo.GetComponentInChildren<Button>().onClick.AddListener(() =>
 			{
-				this.item = item;
-			}
-
-			aGo.GetComponentInChildren<Text>().text = "" + item.normalizedPos.ToString("0.00");
+				Debug.Log("OnOpen:" + (aData as SimpleData).number.ToString());
+				scrollGallery.Select(aData);
+			});
 		});
+		scrollGallery.SetOnItemClose((aGo, aData) =>
+		{
+			aGo.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
+		});
+		scrollGallery.SetOnItemRefresh((aGo, aData, isSelected) =>
+		{
+			aGo.GetComponentInChildren<Text>().text = "number:" + (aData as SimpleData).number + (isSelected ? "√" : "");
+		});
+
+		this.datas = new SimpleData[10];
+
 		for (int i = 0; i < 10; i++)
 		{
-			scrollGallery.Add(new SimpleData { number = i });
+			datas[i] = new SimpleData { number = i };
+			scrollGallery.Add(datas[i]);
 		}
+
 	}
+
+	private SimpleData[] datas;
 
 	// Update is called once per frame
 	void Update()
 	{
-		var str = (item != null) ? item.normalizedPos.ToString("0.00") : "";
-		label.text = str;
+		if (Input.GetKeyDown(KeyCode.Alpha1))
+		{
+			Debug.Log("111");
+			scrollGallery.Select(this.datas[0]);
+		}
+		if (Input.GetKeyDown(KeyCode.Alpha2))
+		{
+			scrollGallery.Select(this.datas[1]);
+		}
+		if (Input.GetKeyDown(KeyCode.Alpha3))
+		{
+			scrollGallery.Select(this.datas[2]);
+		}
+		if (Input.GetKeyDown(KeyCode.Alpha4))
+		{
+			scrollGallery.Select(this.datas[3]);
+		}
+		if (Input.GetKeyDown(KeyCode.Alpha5))
+		{
+			scrollGallery.Select(this.datas[4]);
+		}
+
+
+		//var str = (item != null) ? item.normalizedPos.ToString("0.00") : "";
+		//label.text = str;
 	}
 
 
