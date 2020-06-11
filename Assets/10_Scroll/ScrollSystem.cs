@@ -573,7 +573,8 @@ namespace BanSupport
 		/// </summary>
 		private void OnValueChanged(Vector2 newPos)
 		{
-			if (dataChanged == DataChange.None) {
+			if (dataChanged == DataChange.None)
+			{
 				Show();
 			}
 		}
@@ -1988,7 +1989,9 @@ namespace BanSupport
 			Init();
 			foreach (var prefabName in objectPoolDic.Keys)
 			{
-				foreachFunc(prefabName, objectPoolDic[prefabName].origin);
+				var luaGameObject = Instantiate(objectPoolDic[prefabName].origin, this.transform);
+				luaGameObject.name = luaGameObject.name.Substring(0, luaGameObject.name.Length - 7) + "_BindScript";
+				foreachFunc(prefabName, luaGameObject);
 			}
 		}
 
