@@ -24,7 +24,7 @@ public class TestScrollGallery : MonoBehaviour
 			aGo.GetComponentInChildren<Button>().onClick.AddListener(() =>
 			{
 				Debug.Log("OnOpen:" + (aData as SimpleData).number.ToString());
-				scrollGallery.Select(aData);
+				scrollGallery.Select(aData, true);
 			});
 		});
 		scrollGallery.SetOnItemClose((aGo, aData) =>
@@ -54,24 +54,23 @@ public class TestScrollGallery : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.Alpha1))
 		{
-			Debug.Log("111");
-			scrollGallery.Select(this.datas[0]);
+			scrollGallery.Select(this.datas[0],true);
 		}
 		if (Input.GetKeyDown(KeyCode.Alpha2))
 		{
-			scrollGallery.Select(this.datas[1]);
+			scrollGallery.Select(this.datas[1], true);
 		}
 		if (Input.GetKeyDown(KeyCode.Alpha3))
 		{
-			scrollGallery.Select(this.datas[2]);
+			scrollGallery.Select(this.datas[2], true);
 		}
 		if (Input.GetKeyDown(KeyCode.Alpha4))
 		{
-			scrollGallery.Select(this.datas[3]);
+			scrollGallery.Select(this.datas[3], true);
 		}
 		if (Input.GetKeyDown(KeyCode.Alpha5))
 		{
-			scrollGallery.Select(this.datas[4]);
+			scrollGallery.Select(this.datas[4], true);
 		}
 
 		if (Input.GetKeyDown(KeyCode.C))

@@ -109,7 +109,7 @@ namespace BanSupport
 			{
 				var splitWidth = width;
 				var splitHeight = height / 5;
-				for (int i = -1; i < splits.Length; i++)
+				for (int i = -1; i <= splitCount; i++)
 				{
 					string name;
 					if (i == -1)
@@ -135,13 +135,26 @@ namespace BanSupport
 			{
 				var splitWidth = width / 5;
 				var splitHeight = height;
-				for (int i = 0; i < splitCount; i++)
+				for (int i = -1; i <= splitCount; i++)
 				{
-					var split = new GameObject("split_" + i, typeof(RectTransform)).transform as RectTransform;
-					split.SetParent(this.transform);
+					string name;
+					if (i == -1)
+					{
+						name = "split_Start";
+					}
+					else if (i == splits.Length - 1)
+					{
+						name = "split_End";
+					}
+					else
+					{
+						name = "split_" + i;
+					}
+					var split = new GameObject(name, typeof(RectTransform)).transform as RectTransform;
+					split.SetParent(this.splitParent);
 					split.sizeDelta = new Vector2(splitWidth, splitHeight);
 					split.anchoredPosition = new Vector2(i * splitWidth - width / 2 + splitWidth / 2, 0);
-					splits[i] = split;
+					splits[i + 1] = split;
 				}
 			}
 
@@ -150,12 +163,15 @@ namespace BanSupport
 		private void OnDrawGizmos()
 		{
 			Gizmos.color = new Color(0, 1, 0, 0.2f);
-			foreach (var split in splits)
+			if (splits != null)
 			{
-				if (split != null)
+				foreach (var split in splits)
 				{
-					var size = new Vector3(split.lossyScale.x * split.sizeDelta.x, split.lossyScale.y * split.sizeDelta.y, 0);
-					Gizmos.DrawWireCube(split.position, size);
+					if (split != null)
+					{
+						var size = new Vector3(split.lossyScale.x * split.sizeDelta.x, split.lossyScale.y * split.sizeDelta.y, 0);
+						Gizmos.DrawWireCube(split.position, size);
+					}
 				}
 			}
 		}
@@ -348,7 +364,6 @@ namespace BanSupport
 
 		public void OnBeginDrag(PointerEventData eventData)
 		{
-			Debug.Log("OnBeginDrag");
 			if (pressData != null) { return; }
 			pressData = eventData;
 			scrollState = ScrollState.Drag;
@@ -360,7 +375,6 @@ namespace BanSupport
 
 		public void OnEndDrag(PointerEventData eventData)
 		{
-			Debug.Log("OnPointerUp");
 			if (pressData != eventData) { return; }
 			pressData = null;
 			if (Time.time - pressTime > releaseReturnOrMoveTime)
@@ -377,7 +391,6 @@ namespace BanSupport
 
 		public void OnDrag(PointerEventData eventData)
 		{
-			Debug.Log("OnDrag");
 			if (pressData != eventData) { return; }
 			float scrollDelta;
 			if (scrollDirection == ScrollDirection.Vertical)
@@ -386,8 +399,7 @@ namespace BanSupport
 			}
 			else
 			{
-				Debug.LogWarning("something need to do");
-				scrollDelta = 0;
+				scrollDelta = (eventData.position.x - eventData.pressPosition.x) / width * splitCount;
 			}
 			if (minRecordNormalizedPos + scrollDelta > mainIndex + maxDistanceBeyondMainIndex)
 			{

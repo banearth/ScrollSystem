@@ -17,7 +17,6 @@ namespace BanSupport
 		public ScrollGallery scrollGallery;
 		public bool isSelected;
 
-		private RectBounds rectBounds = new RectBounds();
 		private RectTransform targetTrans = null;
 
 		public GalleryData(ScrollGallery scrollGallery, object dataSource)
