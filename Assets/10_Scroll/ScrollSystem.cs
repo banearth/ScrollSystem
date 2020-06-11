@@ -2115,6 +2115,53 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 最后一个元素是否可见
+		/// </summary>
+		public bool IsVisible(object dataSource)
+		{
+			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
+			{
+				var scrollData = dic_DataSource_ScrollData[dataSource];
+				return scrollData.isVisible;
+			}
+			else
+			{
+				Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 第一个元素是否可见
+		/// </summary>
+		public bool IsFirstVIsible()
+		{
+			if (listData.Count > 0)
+			{
+				return IsVisible(listData[0].dataSource);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 最后一个元素可否可见
+		/// </summary>
+		public bool IsLastVisible()
+		{
+			if (listData.Count > 0)
+			{
+				return IsVisible(listData[listData.Count - 1].dataSource);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
 		#endregion
 
 		#region 一些辅助方法
