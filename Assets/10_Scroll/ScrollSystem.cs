@@ -2138,7 +2138,7 @@ namespace BanSupport
 		/// <summary>
 		/// 第一个元素是否可见
 		/// </summary>
-		public bool IsFirstVIsible()
+		public bool IsFirstVisible()
 		{
 			if (listData.Count > 0)
 			{
