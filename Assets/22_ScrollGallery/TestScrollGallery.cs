@@ -84,6 +84,14 @@ public class TestScrollGallery : MonoBehaviour
 			scrollGallery.Set(datas[0]);
 		}
 
+		if (Input.GetKeyDown(KeyCode.S))
+		{
+			for (int i = 0; i < datas.Length; i++)
+			{
+				Debug.Log(string.Format("data index:{0} isSelected:{1}",i, scrollGallery.IsSelected(datas[i])) );
+			}
+		}
+
 		//var str = (item != null) ? item.normalizedPos.ToString("0.00") : "";
 		//label.text = str;
 	}

@@ -88,11 +88,13 @@ namespace BanSupport
 
 			mainIndex = splitCount / 2;
 
-			foreach (var split in splits)
-			{
-				if (split != null)
+			if (splits != null) {
+				foreach (var split in splits)
 				{
-					DestroyImmediate(split.gameObject);
+					if (split != null)
+					{
+						DestroyImmediate(split.gameObject);
+					}
 				}
 			}
 			if (splitParent.childCount > 0)
@@ -774,6 +776,13 @@ namespace BanSupport
 			var find = listData.Find(temp => temp.dataSource == dataSource);
 			if (find == null) { Debug.LogWarning("无法找到这个dataSource"); return; }
 			find.Update(true, false);
+		}
+
+		public bool IsSelected(object dataSource)
+		{
+			var find = listData.Find(temp => temp.dataSource == dataSource);
+			if (find == null) { Debug.LogWarning("无法找到这个dataSource"); return false; }
+			return find.isSelected;
 		}
 
 		#endregion
