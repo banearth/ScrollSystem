@@ -316,13 +316,16 @@ namespace BanSupport
 			{
 				if (state != State.None)
 				{
-					//根据data来计算normalizedPos
-					if (this.targetScrollData != null)
+					if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
 					{
-						if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
+						float offset = scrollSystem.contentSize - scrollSystem.Height;
+						if (offset <= 0)
 						{
-							float offset = scrollSystem.contentSize - scrollSystem.Height;
-							if (offset > 0)
+							this.targetNormalizedPos = 0;
+						}
+						else
+						{
+							if (this.targetScrollData != null)
 							{
 								switch (scrollSystem.startCorner)
 								{
@@ -337,10 +340,17 @@ namespace BanSupport
 								}
 							}
 						}
+					}
+					else
+					{
+						float offset = scrollSystem.contentSize - scrollSystem.Width;
+						if (offset <= 0)
+						{
+							this.targetNormalizedPos = 0;
+						}
 						else
 						{
-							float offset = scrollSystem.contentSize - scrollSystem.Width;
-							if (offset > 0)
+							if (this.targetScrollData != null)
 							{
 								switch (scrollSystem.startCorner)
 								{
@@ -355,9 +365,10 @@ namespace BanSupport
 								}
 							}
 						}
-						this.targetScrollData = null;
-						this.targetNormalizedPos = Mathf.Clamp01(this.targetNormalizedPos);
 					}
+					this.targetScrollData = null;
+					this.targetNormalizedPos = Mathf.Clamp01(this.targetNormalizedPos);
+
 					//根据state来判断如何跳转
 					switch (state)
 					{
@@ -395,44 +406,37 @@ namespace BanSupport
 
 			public void Do(float targetNormalizedPos, bool animated)
 			{
+				//Debug.Break();
 				scrollSystem.scrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = null;
 				targetNormalizedPos = Mathf.Clamp01(targetNormalizedPos);
 				if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
 				{
-					float offset = scrollSystem.contentSize - scrollSystem.Height;
-					if (offset > 0)
+					switch (scrollSystem.startCorner)
 					{
-						switch (scrollSystem.startCorner)
-						{
-							case 0: //Left Up
-							case 1: //Right Up
-								this.targetNormalizedPos = 1 - targetNormalizedPos;
-								break;
-							case 2: //Left Down
-							case 3: //Right Down
-								this.targetNormalizedPos = targetNormalizedPos;
-								break;
-						}
+						case 0: //Left Up
+						case 1: //Right Up
+							this.targetNormalizedPos = 1 - targetNormalizedPos;
+							break;
+						case 2: //Left Down
+						case 3: //Right Down
+							this.targetNormalizedPos = targetNormalizedPos;
+							break;
 					}
 				}
 				else
 				{
-					float offset = scrollSystem.contentSize - scrollSystem.Width;
-					if (offset > 0)
+					switch (scrollSystem.startCorner)
 					{
-						switch (scrollSystem.startCorner)
-						{
-							case 0: //Left Up
-							case 2: //Left Down
-								this.targetNormalizedPos = targetNormalizedPos;
-								break;
-							case 1: //Right Up
-							case 3: //Right Down
-								this.targetNormalizedPos = 1 - targetNormalizedPos;
-								break;
-						}
+						case 0: //Left Up
+						case 2: //Left Down
+							this.targetNormalizedPos = targetNormalizedPos;
+							break;
+						case 1: //Right Up
+						case 3: //Right Down
+							this.targetNormalizedPos = 1 - targetNormalizedPos;
+							break;
 					}
 				}
 			}
@@ -639,11 +643,11 @@ namespace BanSupport
 			}
 			//跳转相关
 			willUpdateShow |= jumpState.Update();
-			if (willUpdateShow)
-			{
+			//if (willUpdateShow)
+			//{
 				Show();
 				dataChanged = DataChange.None;
-			}
+			//}
 
 		}
 
@@ -737,8 +741,8 @@ namespace BanSupport
 		/// 根据ListData内容展示所需展示的，这里经过了优化以确保在运行时保持较高效率
 		/// </summary>
 		private void Show()
-		{	
-			if (Time.frameCount == lastFrameCount){return;}
+		{
+			if (Time.frameCount == lastFrameCount) { return; }
 			lastFrameCount = Time.frameCount;
 			UpdateBounds();
 			if (listData.Count <= 0)
@@ -860,7 +864,7 @@ namespace BanSupport
 				listNextVisibleScrollData.Clear();
 				foreach (var visibleData in listVisibleScrollData)
 				{
-					visibleData.Update(false, refreshPosition);
+					visibleData.Update(false, false);
 				}
 				//Debug.Log(Tools.StopWatch(watch));
 
@@ -1837,8 +1841,8 @@ namespace BanSupport
 			if (removedAny)
 			{
 				dataChanged = DataChange.Removed;
+				Jump(this.resetNormalizedPosition);
 			}
-			Jump(this.resetNormalizedPosition, false);
 		}
 
 		/// <summary>
@@ -2068,7 +2072,7 @@ namespace BanSupport
 			if (listData.Count <= 0)
 			{
 				dataChanged = DataChange.Removed;
-				Jump(this.resetNormalizedPosition);
+				this.Jump(this.resetNormalizedPosition);
 			}
 			listData.Add(scrollData);
 			if (dataChanged < DataChange.Added)
@@ -2111,6 +2115,7 @@ namespace BanSupport
 			if (this.dataChanged < DataChange.Removed)
 			{
 				this.dataChanged = DataChange.Removed;
+				this.Jump(this.resetNormalizedPosition);
 			}
 			if (newDataSource != null)
 			{
