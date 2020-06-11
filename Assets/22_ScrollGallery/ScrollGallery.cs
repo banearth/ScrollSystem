@@ -72,6 +72,7 @@ namespace BanSupport
 				{
 					find = new GameObject("SplitParent", typeof(RectTransform)).transform as RectTransform;
 					find.SetParent(this.transform);
+					find.localScale = Vector3.one;
 					find.SetAsLastSibling();
 					find.anchorMin = Vector2.zero;
 					find.anchorMax = Vector2.one;
@@ -118,7 +119,7 @@ namespace BanSupport
 					{
 						name = "split_Start";
 					}
-					else if (i == splits.Length - 1)
+					else if (i == splitCount)
 					{
 						name = "split_End";
 					}
@@ -128,6 +129,7 @@ namespace BanSupport
 					}
 					var split = new GameObject(name, typeof(RectTransform)).transform as RectTransform;
 					split.SetParent(this.splitParent);
+					split.localScale = Vector3.zero;
 					split.sizeDelta = new Vector2(splitWidth, splitHeight);
 					split.anchoredPosition = new Vector2(0, -i * splitHeight + height / 2 - splitHeight / 2);
 					splits[i + 1] = split;
@@ -144,7 +146,7 @@ namespace BanSupport
 					{
 						name = "split_Start";
 					}
-					else if (i == splits.Length - 1)
+					else if (i == splitCount)
 					{
 						name = "split_End";
 					}
@@ -154,6 +156,7 @@ namespace BanSupport
 					}
 					var split = new GameObject(name, typeof(RectTransform)).transform as RectTransform;
 					split.SetParent(this.splitParent);
+					split.localScale = Vector3.one;
 					split.sizeDelta = new Vector2(splitWidth, splitHeight);
 					split.anchoredPosition = new Vector2(i * splitWidth - width / 2 + splitWidth / 2, 0);
 					splits[i + 1] = split;
@@ -180,14 +183,20 @@ namespace BanSupport
 
 		private void Start()
 		{
-#if UNITY_EDITOR
-			if (Application.isPlaying) { return; }
-			bool isNew;
-			var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
-			if (isNew)
+			if (Application.isPlaying)
 			{
-				image.sprite = null;
-				image.color = new Color(1, 1, 1, 0.2f);
+				Init();
+			}
+#if UNITY_EDITOR
+			else
+			{
+				bool isNew;
+				var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
+				if (isNew)
+				{
+					image.sprite = null;
+					image.color = new Color(1, 1, 1, 0.2f);
+				}
 			}
 #endif
 		}
