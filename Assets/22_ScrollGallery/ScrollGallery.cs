@@ -129,7 +129,7 @@ namespace BanSupport
 					}
 					var split = new GameObject(name, typeof(RectTransform)).transform as RectTransform;
 					split.SetParent(this.splitParent);
-					split.localScale = Vector3.zero;
+					split.localScale = Vector3.one;
 					split.sizeDelta = new Vector2(splitWidth, splitHeight);
 					split.anchoredPosition = new Vector2(0, -i * splitHeight + height / 2 - splitHeight / 2);
 					splits[i + 1] = split;
