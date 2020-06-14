@@ -864,7 +864,7 @@ namespace BanSupport
 				listNextVisibleScrollData.Clear();
 				foreach (var visibleData in listVisibleScrollData)
 				{
-					visibleData.Update(false, false);
+					visibleData.Update(refreshPosition, false);
 				}
 				//Debug.Log(Tools.StopWatch(watch));
 
