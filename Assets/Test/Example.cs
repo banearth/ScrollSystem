@@ -294,11 +294,11 @@ public class Example : MonoBehaviour
 		});
 		ButtonIsFirstVisible.onClick.AddListener(() =>
 		{
-			Debug.Log("IsFirstVIsible:"+ scrollSystem.IsFirstVIsible());
+			Debug.Log("IsFirstVIsible:"+ scrollSystem.IsFirstVisible().ToString());
 		});
 		ButtonIsLastVisible.onClick.AddListener(() =>
 		{
-			Debug.Log("IsLastVIsible:" + scrollSystem.IsLastVisible());
+			Debug.Log("IsLastVIsible:" + scrollSystem.IsLastVisible().ToString());
 		});
 	}
 
