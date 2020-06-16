@@ -151,11 +151,6 @@ namespace BanSupport
 		private RectBounds _scrollRange = new RectBounds();
 
 		/// <summary>
-		/// 上一帧
-		/// </summary>
-		private int lastFrameCount = 0;
-
-		/// <summary>
 		/// 运行时用的Data，核心数据
 		/// </summary>
 		private List<ScrollData> listData = new List<ScrollData>();
@@ -207,6 +202,15 @@ namespace BanSupport
 		/// 用于决定是否在show的时候进行数据操作
 		/// </summary>
 		private DataChange dataChanged = DataChange.None;
+
+		public enum WillShowState
+		{
+			None,//表示不需要进行操作
+			OnlyPosition,//仅仅位置更新
+			BothPositionAndContent,//位置和内容都更新
+		}
+
+		public WillShowState willShowState = WillShowState.None;
 
 		/// <summary>
 		/// 跳转状态
@@ -577,9 +581,9 @@ namespace BanSupport
 		/// </summary>
 		private void OnValueChanged(Vector2 newPos)
 		{
-			if (dataChanged == DataChange.None)
+			if (willShowState == WillShowState.OnlyPosition)
 			{
-				Show();
+				willShowState = WillShowState.OnlyPosition;
 			}
 		}
 
@@ -593,62 +597,63 @@ namespace BanSupport
 		/// </summary>
 		private void Update()
 		{
-#if UNITY_EDITOR
 			if (Application.isPlaying)
 			{
-				return;
-			}
-			if (CheckSetComponent())
-			{
-				SetComponent();
-			}
-			if (CheckSetContentChildren())
-			{
-				SetContentChildren();
-			}
-			if (m_TurnSameAction != null)
-			{
-				m_TurnSameAction();
-				m_TurnSameAction = null;
-			}
-#endif
-		}
 
-		private void LateUpdate()
-		{
-			if (!Application.isPlaying)
-			{
-				return;
-			}
-			bool willUpdateShow = false;
-			if (dataChanged != DataChange.None)
-			{
-				willUpdateShow = true;
-				switch (dataChanged)
+				if (dataChanged != DataChange.None)
 				{
-					case DataChange.Added:
-						{
+					switch (dataChanged)
+					{
+						case DataChange.Added:
 							for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
 							{
 								var scrollData = this.listData[i];
 								this.setSingleDataAction(scrollData);
 							}
 							EndSetData();
-						}
-						break;
-					case DataChange.Removed:
-						SetAllData();
-						break;
+							break;
+						case DataChange.Removed:
+							SetAllData();
+							break;
+					}
+					dataChanged = DataChange.None;
+					if (willShowState < WillShowState.OnlyPosition)
+					{
+						willShowState = WillShowState.OnlyPosition;
+					}
+				}
+
+				//跳转相关
+				if (jumpState.Update())
+				{
+					if (willShowState < WillShowState.OnlyPosition)
+					{
+						willShowState = WillShowState.OnlyPosition;
+					}
+				}
+				if (willShowState != WillShowState.None)
+				{
+					Show();
 				}
 			}
-			//跳转相关
-			willUpdateShow |= jumpState.Update();
-			//if (willUpdateShow)
-			//{
-				Show();
-				dataChanged = DataChange.None;
-			//}
-
+#if UNITY_EDITOR
+			else
+			{
+				if (CheckSetComponent())
+				{
+					SetComponent();
+				}
+				if (CheckSetContentChildren())
+				{
+					SetContentChildren();
+				}
+				if (m_TurnSameAction != null)
+				{
+					m_TurnSameAction();
+					m_TurnSameAction = null;
+				}
+			}
+#endif
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
@@ -742,8 +747,6 @@ namespace BanSupport
 		/// </summary>
 		private void Show()
 		{
-			if (Time.frameCount == lastFrameCount) { return; }
-			lastFrameCount = Time.frameCount;
 			UpdateBounds();
 			if (listData.Count <= 0)
 			{
@@ -853,8 +856,6 @@ namespace BanSupport
 					}
 				}
 
-				bool refreshPosition = (dataChanged != DataChange.None);
-
 				//方法一（这个效率更高一些）
 				//var watch = Tools.StartWatch();
 				foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
@@ -864,7 +865,7 @@ namespace BanSupport
 				listNextVisibleScrollData.Clear();
 				foreach (var visibleData in listVisibleScrollData)
 				{
-					visibleData.Update(refreshPosition, false);
+					visibleData.Update(willShowState);
 				}
 				//Debug.Log(Tools.StopWatch(watch));
 
@@ -1802,7 +1803,14 @@ namespace BanSupport
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
 				var scrollData = dic_DataSource_ScrollData[dataSource];
-				scrollData.Update(true, false);
+				if (scrollData.CalculateSize(false))
+				{
+					dataChanged = DataChange.Removed;
+				}
+				else
+				{
+					scrollData.Update(WillShowState.BothPositionAndContent);
+				}
 			}
 			else
 			{
@@ -1819,10 +1827,7 @@ namespace BanSupport
 			{
 				return;
 			}
-			foreach (var aVisibleScrollData in listVisibleScrollData)
-			{
-				aVisibleScrollData.Update(true, false);
-			}
+			dataChanged = DataChange.Removed;
 		}
 
 		/// <summary>

@@ -61,46 +61,59 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 设置宽度和高度
+		/// 设置宽度和高度，返回是否发生过改变
 		/// </summary>
-		public void CalculateSize()
+		public bool CalculateSize(bool onlyCalculateWhenZero = true)
 		{
-			if (this.width > 0 && this.height > 0)
+			float oldWidth = this.width;
+			float oldHeight = this.height;
+			bool doCalculate = false;
+			if (onlyCalculateWhenZero)
 			{
-				return;
-			}
-			if (getSize != null)
-			{
-				var newSize = getSize(dataSource);
-				if (newSize.x > 0)
+				if (this.width == 0 || this.height == 0)
 				{
-					if (this.width != newSize.x)
+					doCalculate = true;
+				}
+			}
+			else
+			{
+				doCalculate = true;
+			}
+			if (doCalculate)
+			{
+				if (getSize != null)
+				{
+					var newSize = getSize(dataSource);
+					if (newSize.x > 0)
 					{
-						this.width = newSize.x;
+						if (this.width != newSize.x)
+						{
+							this.width = newSize.x;
+						}
+					}
+					else
+					{
+						this.width = objectPool.prefabWidth;
+					}
+					if (newSize.y > 0)
+					{
+						if (this.height != newSize.y)
+						{
+							this.height = newSize.y;
+						}
+					}
+					else
+					{
+						this.height = objectPool.prefabHeight;
 					}
 				}
 				else
 				{
 					this.width = objectPool.prefabWidth;
-				}
-				if (newSize.y > 0)
-				{
-					if (this.height != newSize.y)
-					{
-						this.height = newSize.y;
-					}
-				}
-				else
-				{
 					this.height = objectPool.prefabHeight;
 				}
 			}
-			else
-			{
-				var rectTrans = objectPool.origin.transform as RectTransform;
-				this.width = rectTrans.sizeDelta.x;
-				this.height = rectTrans.sizeDelta.y;
-			}
+			return (oldWidth == this.width) && (oldHeight == this.height);
 		}
 
 		public void Hide()
@@ -121,7 +134,7 @@ namespace BanSupport
 		/// <summary>
 		/// 更新内容
 		/// </summary>
-		public void Update(bool refreshContent, bool refreshPosition)
+		public void Update(ScrollSystem.WillShowState willShowState)
 		{
 			if (isVisible)
 			{
@@ -129,22 +142,22 @@ namespace BanSupport
 				{
 					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
-					refreshContent = true;
-					refreshPosition = true;
-					if (this.scrollSystem.onItemOpen!= null)
+					willShowState = ScrollSystem.WillShowState.BothPositionAndContent;
+					//OnOpen
+					if (this.scrollSystem.onItemOpen != null)
 					{
 						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 					}
-				}
-				if (refreshPosition)
-				{
-					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
-					this.targetTrans.anchoredPosition = anchoredPosition;
 #if UNITY_EDITOR
 					ShowGizmosBounds();
 #endif
 				}
-				if (refreshContent)
+				if (willShowState >= ScrollSystem.WillShowState.OnlyPosition)
+				{
+					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
+					this.targetTrans.anchoredPosition = anchoredPosition;
+				}
+				if (willShowState >= ScrollSystem.WillShowState.BothPositionAndContent)
 				{
 					//根据data刷新
 					if (this.scrollSystem.onItemRefresh != null)
