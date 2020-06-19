@@ -1823,6 +1823,25 @@ namespace BanSupport
 		}
 
 		/// <summary>
+		/// 替换
+		/// </summary>
+		public void Replace(object fromDataSource, object toDataSource)
+		{
+			if (dic_DataSource_ScrollData.ContainsKey(fromDataSource))
+			{
+				var referScrollData = dic_DataSource_ScrollData[fromDataSource];
+				dic_DataSource_ScrollData.Remove(fromDataSource);
+				referScrollData.dataSource = toDataSource;
+				dic_DataSource_ScrollData.Add(toDataSource, referScrollData);
+				referScrollData.Update(WillShowState.BothPositionAndContent);
+			}
+			else
+			{
+				Debug.LogWarning("无法找到该dataSource:" + toDataSource.ToString());
+			}
+		}
+
+		/// <summary>
 		/// 刷新可见元素
 		/// </summary>
 		public void Refresh()

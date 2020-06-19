@@ -75,9 +75,8 @@ namespace BanSupport
 		private void SetHeight()
 		{
 			var rectTransform = scrollSystem.transform as RectTransform;
-			float width = rowCount * tileHeight + (rowCount - 1) * scrollSystem.Spacing.y + scrollSystem.Border.y * 2;
-			rectTransform.sizeDelta = new Vector2(width, rectTransform.sizeDelta.y);
-
+			float height = rowCount * tileHeight + (rowCount - 1) * scrollSystem.Spacing.y + scrollSystem.Border.y * 2;
+			rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, height);
 		}
 
 	}
