@@ -34,6 +34,28 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 扩展使得自身可以包含某个点
+		/// </summary>
+		public void Encapsulate(Vector2 pos)
+		{
+			if (pos.x < left)
+			{
+				left = pos.x;
+			}
+			else if (pos.x > right)
+			{
+				right = pos.x;
+			}
+			if (pos.y < down)
+			{
+				down = pos.y;
+			}
+			else if (pos.y > up)
+			{
+				up = pos.y;
+			}
+		}
 		public bool Contains(Vector2 pos)
 		{
 			if (pos.x >= left && pos.x <= right && pos.y <= up && pos.y >= down)

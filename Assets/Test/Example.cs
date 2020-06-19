@@ -286,11 +286,11 @@ public class Example : MonoBehaviour
 		});
 		buttonJumpBegin.onClick.AddListener(() =>
 		{
-			scrollSystem.Jump(0,true);
+			scrollSystem.Jump(0, !Input.GetKey(KeyCode.S));
 		});
 		buttonJumpEnd.onClick.AddListener(() =>
 		{
-			scrollSystem.Jump(1, true);
+			scrollSystem.Jump(1, !Input.GetKey(KeyCode.S));
 		});
 		ButtonIsFirstVisible.onClick.AddListener(() =>
 		{

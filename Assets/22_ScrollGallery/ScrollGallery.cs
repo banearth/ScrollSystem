@@ -83,7 +83,6 @@ namespace BanSupport
 			}
 		}
 
-		[ContextMenu("Create Split")]
 		public void CreateSplits()
 		{
 
@@ -108,7 +107,7 @@ namespace BanSupport
 			}
 
 			splits = new RectTransform[splitCount + 2];
-			if (scrollDirection == ScrollDirection.Vertical)
+			if (direction == ScrollDirection.Vertical)
 			{
 				var splitWidth = width;
 				var splitHeight = height / 5;
@@ -164,7 +163,6 @@ namespace BanSupport
 			}
 
 		}
-
 		private void OnDrawGizmos()
 		{
 			Gizmos.color = new Color(0, 1, 0, 0.2f);
@@ -181,6 +179,15 @@ namespace BanSupport
 			}
 		}
 
+		private void OnValidate()
+		{
+			int oldMainIndex = this.mainIndex;
+			this.mainIndex = Mathf.Clamp(this.mainIndex, 0, splitCount - 1);
+			if (oldMainIndex != this.mainIndex)
+			{
+				Debug.LogWarning("mainIndex不符合规定");
+			}
+		}
 		private void Start()
 		{
 			if (Application.isPlaying)
@@ -243,7 +250,9 @@ namespace BanSupport
 		/// </summary>
 		public enum ScrollDirection { Vertical, Horizontal }
 		[SerializeField]
-		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
+		private ScrollDirection direction = ScrollDirection.Vertical;
+
+		public ScrollDirection Direction { get { return direction; } }
 
 		/// <summary>
 		/// 注册数量
@@ -265,6 +274,8 @@ namespace BanSupport
 		[Tooltip("主Index，这个非常重要")]
 		[SerializeField]
 		private int mainIndex = 0;
+
+		public int MainIndex { get { return mainIndex; } }
 
 		/// <summary>
 		/// 最多超出主index多少距离
@@ -295,11 +306,12 @@ namespace BanSupport
 		[SerializeField]
 		private RectTransform[] splits;
 
+		public RectTransform[] Splits { get { return this.splits; } }
+
 		public enum ScrollState { None, Drag, Move, Return }
 		/// <summary>
 		/// 当前的滚动状态
 		/// </summary>
-		[SerializeField]
 		private ScrollState scrollState = ScrollState.None;
 
 		/// <summary>
@@ -404,7 +416,7 @@ namespace BanSupport
 		{
 			if (pressData != eventData) { return; }
 			float scrollDelta;
-			if (scrollDirection == ScrollDirection.Vertical)
+			if (direction == ScrollDirection.Vertical)
 			{
 				scrollDelta = (eventData.pressPosition.y - eventData.position.y) / height * splitCount;
 			}

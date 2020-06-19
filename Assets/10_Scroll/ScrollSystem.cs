@@ -14,11 +14,11 @@ namespace BanSupport
 
 		#region 众多参数
 
-		public bool Centered { get { return centered; } }
-
 		[Tooltip("尽量保持剧中")]
 		[SerializeField]
 		private bool centered = false;
+
+		public bool Centered { get { return centered; } }
 
 		[HideInInspector]
 		public int startCorner = 0;
@@ -27,11 +27,15 @@ namespace BanSupport
 		[SerializeField]
 		private Vector2 border = Vector2.zero;
 
+		public Vector2 Border { get { return border; } }
+
 		/// <summary>
 		/// 元素之间的间隔
 		/// </summary>
 		[SerializeField]
 		private Vector2 spacing = Vector2.one * 10;
+
+		public Vector2 Spacing { get { return spacing; } }
 
 		[Range(0, 1)]
 		/// <summary>

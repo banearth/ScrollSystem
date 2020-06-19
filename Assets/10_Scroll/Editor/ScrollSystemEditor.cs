@@ -10,7 +10,6 @@ namespace BanSupport
 	{
 
 		private ScrollSystem script { get { return target as ScrollSystem; } }
-
 		public override void OnInspectorGUI()
 		{
 
@@ -21,17 +20,29 @@ namespace BanSupport
 				foreach (var key in dic.Keys)
 				{
 					GUILayout.BeginHorizontal();
-					GUILayout.Label("预制体:"+key);
-					GUILayout.Label("库存数量:"+dic[key].list.Count.ToString());
+					GUILayout.Label("预制体:" + key);
+					GUILayout.Label("库存数量:" + dic[key].list.Count.ToString());
 					GUILayout.EndHorizontal();
 				}
 			}
 			else
 			{
+
+				GUILayout.BeginHorizontal();
+
+				if (GUILayout.Button("根据几乘几设置宽高"))
+				{
+					ScrollSystemSetSizeWindow.ShowWindow(script);
+				}
+
 				if (GUILayout.Button("子物体手动刷新"))
 				{
 					script.SetContentChildren();
 				}
+
+				GUILayout.EndHorizontal();
+
+				
 
 				//默认排列
 				GUILayout.BeginHorizontal();
@@ -46,7 +57,7 @@ namespace BanSupport
 				}
 				GUILayout.EndHorizontal();
 			}
-			
+
 			DrawDefaultInspector();
 		}
 
