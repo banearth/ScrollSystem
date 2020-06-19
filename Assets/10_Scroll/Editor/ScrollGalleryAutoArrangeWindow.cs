@@ -87,13 +87,13 @@ namespace BanSupport
 			}
 			GUILayout.EndHorizontal();
 
-			GUILayout.BeginHorizontal();
-			this.maskTransform = EditorGUILayout.ObjectField("Mask:", this.maskTransform, typeof(RectTransform), true) as RectTransform;
-			if (this.maskTransform != null && GUILayout.Button("匹配内容"))
-			{
-				FitMask();
-			}
-			GUILayout.EndHorizontal();
+			//GUILayout.BeginHorizontal();
+			//this.maskTransform = EditorGUILayout.ObjectField("Mask:", this.maskTransform, typeof(RectTransform), true) as RectTransform;
+			//if (this.maskTransform != null && GUILayout.Button("匹配内容"))
+			//{
+			//	FitMask();
+			//}
+			//GUILayout.EndHorizontal();
 
 		}
 
