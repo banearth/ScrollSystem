@@ -12,12 +12,27 @@ namespace BanSupport
 	{
 		//左边界的位置
 		public float left;
-		//右边界的位置
+		//右边界的位置（更大的那个）
 		public float right;
-		//上边界的位置
+		//上边界的位置（更大的那个）
 		public float up;
 		//下边界的位置
 		public float down;
+
+		public float width { get { return Mathf.Max(0, right - left); } }
+
+		public float height { get { return Mathf.Max(0, up - down); } }
+
+		public Vector2 size { get { return new Vector2(width, height); } }
+
+		public Vector2 center { get { return new Vector2((left + right) / 2, (up + down) / 2); } }
+
+		public RectBounds() { }
+
+		public RectBounds(RectTransform rectTransfrom)
+		{
+			ParseRectTransform(rectTransfrom,out left,out right,out up,out down);
+		}
 
 		public bool Overlaps(RectBounds other)
 		{
@@ -56,6 +71,24 @@ namespace BanSupport
 				up = pos.y;
 			}
 		}
+
+		public void Encapsulate(RectTransform rectTransform)
+		{
+			ParseRectTransform(rectTransform,out float left, out float right, out float up, out float down);
+			var pos1 = new Vector2(left, up);
+			var pos2 = new Vector2(right, down);
+			Encapsulate(pos1);
+			Encapsulate(pos2);
+		}
+
+		private void ParseRectTransform(RectTransform rectTransform, out float left, out float right, out float up, out float down)
+		{
+			left = rectTransform.anchoredPosition.x - rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
+			right = rectTransform.anchoredPosition.x + rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
+			up = rectTransform.anchoredPosition.y + rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
+			down = rectTransform.anchoredPosition.y - rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
+		}
+
 		public bool Contains(Vector2 pos)
 		{
 			if (pos.x >= left && pos.x <= right && pos.y <= up && pos.y >= down)

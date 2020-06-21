@@ -10,7 +10,7 @@ namespace BanSupport
 		private ScrollGallery scrollGallery;
 
 		private float spacing = 10;
-		private Vector2 scaleDelta = new Vector2(-0.1f,-0.1f);
+		private Vector2 scaleDelta = new Vector2(-0.1f, -0.1f);
 		private Vector2 widthAndHeightDelta = new Vector2(-10, -10);
 		private RectTransform maskTransform = null;
 		public static void ShowWindow(ScrollGallery scrollGallery)
@@ -18,6 +18,7 @@ namespace BanSupport
 			var window = GetWindow<ScrollGalleryAutoArrangeWindow>("ScrollGalleryAutoArrangeWindow");
 			window.scrollGallery = scrollGallery;
 			var r = window.position;
+			r.width = 500;
 			r.x = Screen.currentResolution.width / 2 - r.width / 2;
 			r.y = Screen.currentResolution.height / 2 - r.height / 2;
 			window.position = r;
@@ -71,7 +72,7 @@ namespace BanSupport
 
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Scale Delta:");
-			this.scaleDelta = EditorGUILayout.Vector2Field("",this.scaleDelta);
+			this.scaleDelta = EditorGUILayout.Vector2Field("", this.scaleDelta);
 			if (GUILayout.Button("等差调整"))
 			{
 				DoScale();
@@ -87,13 +88,13 @@ namespace BanSupport
 			}
 			GUILayout.EndHorizontal();
 
-			//GUILayout.BeginHorizontal();
-			//this.maskTransform = EditorGUILayout.ObjectField("Mask:", this.maskTransform, typeof(RectTransform), true) as RectTransform;
-			//if (this.maskTransform != null && GUILayout.Button("匹配内容"))
-			//{
-			//	FitMask();
-			//}
-			//GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			this.maskTransform = EditorGUILayout.ObjectField("Mask:", this.maskTransform, typeof(RectTransform), true) as RectTransform;
+			if (this.maskTransform != null && GUILayout.Button("匹配内容"))
+			{
+				FitMask();
+			}
+			GUILayout.EndHorizontal();
 
 		}
 
@@ -230,7 +231,7 @@ namespace BanSupport
 				}
 			}
 		}
-		
+
 		private void DoScale()
 		{
 			var mainTransform = scrollGallery.Splits[scrollGallery.MainIndex + 1];
@@ -252,7 +253,8 @@ namespace BanSupport
 			}
 		}
 
-		private void DoWidthAndHeight() {
+		private void DoWidthAndHeight()
+		{
 			var mainTransform = scrollGallery.Splits[scrollGallery.MainIndex + 1];
 			var curWidthAndHeight = mainTransform.sizeDelta;
 			for (int i = scrollGallery.MainIndex; i >= 0; i--)
@@ -274,15 +276,24 @@ namespace BanSupport
 
 		private void FitMask()
 		{
-
-			//ObjectPoolManager.Get<>()
-			//var sss = ObjectPoolManager.Get<RectBounds>();
-			//Rect rect = new Rect(scrollGallery.Splits[1].rect);
-			//for (int i = 1; i < scrollGallery.Splits.Length - 1; i++)
-			//{
-			//	Rect
-			//}
-
+			RectBounds rectBounds = new RectBounds(scrollGallery.Splits[1]);
+			for (int i = 2; i < scrollGallery.Splits.Length - 1; i++)
+			{
+				var curSplit = scrollGallery.Splits[i];
+				rectBounds.Encapsulate(curSplit);
+			}
+			Undo.RecordObject(this.maskTransform, "FitMask");
+			List<RectTransform> listChildren = new List<RectTransform>();
+			foreach (var aTrans in this.maskTransform)
+			{
+				listChildren.Add(aTrans as RectTransform);
+			}
+			listChildren.ForEach(temp => temp.SetParent(null));
+			this.maskTransform.anchoredPosition = rectBounds.center;
+			this.maskTransform.sizeDelta = rectBounds.size;
+			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
+			listChildren.Clear();
+			Debug.Log("FitMask");
 		}
 
 	}
