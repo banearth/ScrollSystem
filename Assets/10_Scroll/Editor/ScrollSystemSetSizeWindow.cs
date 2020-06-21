@@ -16,9 +16,6 @@ namespace BanSupport
 		private int colCount = 0;
 		public static void ShowWindow(ScrollSystem scrollSystem)
 		{
-			//ScrollSystemSetSizeWindow window = ScriptableObject.CreateInstance<ScrollSystemSetSizeWindow>();
-			//window.position = new Rect(Screen.width / 2, Screen.height / 2, 250, 150);
-			//window.ShowPopup();
 			if (scrollSystem.contentTrans.childCount <= 0)
 			{
 				Debug.LogError("ScrollSystem至少需要放置一个模板预制体");
@@ -26,6 +23,12 @@ namespace BanSupport
 			}
 			var window = GetWindow<ScrollSystemSetSizeWindow>("ScrollSystemSetSizeWindow");
 			window.scrollSystem = scrollSystem;
+
+			var r = window.position;
+			r.x = Screen.currentResolution.width / 2 - r.width / 2;
+			r.y = Screen.currentResolution.height / 2 - r.height / 2;
+			window.position = r;
+
 			var originTransform = scrollSystem.contentTrans.GetChild(0) as RectTransform;
 			window.tileWidth = originTransform.sizeDelta.x;
 			window.tileHeight = originTransform.sizeDelta.y;

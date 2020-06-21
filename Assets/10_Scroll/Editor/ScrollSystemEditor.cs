@@ -30,14 +30,14 @@ namespace BanSupport
 
 				GUILayout.BeginHorizontal();
 
-				if (GUILayout.Button("根据几乘几设置宽高"))
-				{
-					ScrollSystemSetSizeWindow.ShowWindow(script);
-				}
-
 				if (GUILayout.Button("子物体手动刷新"))
 				{
 					script.SetContentChildren();
+				}
+
+				if (GUILayout.Button("打开几乘几设置窗口"))
+				{
+					ScrollSystemSetSizeWindow.ShowWindow(script);
 				}
 
 				GUILayout.EndHorizontal();

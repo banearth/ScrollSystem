@@ -321,6 +321,13 @@ public class Example : MonoBehaviour
 		return new Vector2(0, height);
 	}
 
+	private void OnGUI()
+	{
+		GUILayout.Label("countAll:"+ ObjectPool<ScrollSystem.SearchGroup>.countAll);
+		GUILayout.Label("countActive:" + ObjectPool<ScrollSystem.SearchGroup>.countActive);
+		GUILayout.Label("countInactive:" + ObjectPool<ScrollSystem.SearchGroup>.countInactive);
+	}
+
 }
 
 public class SimpleData

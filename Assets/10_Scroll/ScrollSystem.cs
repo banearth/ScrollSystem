@@ -258,7 +258,7 @@ namespace BanSupport
 
 		#region 内部类
 
-		public class SearchGroup : IPoolObject
+		public class SearchGroup
 		{
 			public int left;
 			public int right;
@@ -271,7 +271,7 @@ namespace BanSupport
 
 			public static SearchGroup Get(int left, int right, ScrollSystem scrollSystem)
 			{
-				var result = ObjectPoolManager.Get<SearchGroup>();
+				var result = ObjectPool<SearchGroup>.Get();
 				result.left = left;
 				result.right = right;
 				result.middle = (left + right) / 2;
@@ -558,8 +558,6 @@ namespace BanSupport
 				InitCursor();
 				InitContentTrans();
 
-				//注册搜索对象池
-				if (!ObjectPoolManager.IsRegisted<SearchGroup>()) { ObjectPoolManager.Regist(() => new SearchGroup()); }
 				//注册预制体对象池
 				RegistObjectPool();
 				//注册滚动监听
@@ -764,7 +762,7 @@ namespace BanSupport
 			while (searchList.Count > 0 && (--maxSearchTimes > 0)) {
 				var curSearch = searchList[0];
 				searchList.RemoveAt(0);
-				ObjectPoolManager.Recycle(curSearch);
+				ObjectPool<SearchGroup>.Release(curSearch);
 				if (curSearch.found)
 				{
 					found = true;
@@ -787,7 +785,7 @@ namespace BanSupport
 
 			if (searchList.Count > 0)
 			{
-				foreach (var aSearch in searchList) { ObjectPoolManager.Recycle(aSearch); }
+				foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
 				searchList.Clear();
 			}
 

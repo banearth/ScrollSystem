@@ -282,21 +282,22 @@ namespace BanSupport
 				var curSplit = scrollGallery.Splits[i];
 				rectBounds.Encapsulate(curSplit);
 			}
-			//Undo.RecordObject(this.maskTransform, "FitMask");
 
-			//foreach (var split in scrollGallery.Splits) { split.transform.SetParent(null); }
-			var listChildren = new List<Transform>();
-			foreach (Transform aTrans in this.maskTransform) { listChildren.Add(aTrans); }
+			var listChildren = ListPool<Transform>.Get();
+			foreach (Transform aTrans in this.maskTransform)
+			{
+				Undo.RecordObject(aTrans, "FitMask Children");
+				listChildren.Add(aTrans);
+			}
 
 			listChildren.ForEach(temp => temp.SetParent(null));
 
+			Undo.RecordObject(this.maskTransform, "FitMask Main");
 			this.maskTransform.position = rectBounds.center;
 			this.maskTransform.sizeDelta = rectBounds.size;
 
-			//foreach (var split in scrollGallery.Splits) { split.transform.SetParent(scrollGallery.splitParent); }
-
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
-			listChildren.Clear();
+			ListPool<Transform>.Release(listChildren);
 
 			Debug.Log("FitMask");
 		}
