@@ -63,7 +63,7 @@ namespace BanSupport
 
 		#region 编辑器
 
-		private Transform splitParent
+		public Transform splitParent
 		{
 			get
 			{

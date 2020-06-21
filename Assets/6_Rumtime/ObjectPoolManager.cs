@@ -30,7 +30,7 @@ namespace BanSupport
 			var type = typeof(T);
 			if (!database.ContainsKey(type))
 			{
-				var objectPool = new ObjectPool<T>(createFunction, capacity);
+				var objectPool = new Pool<T>(createFunction, capacity);
 				database.Add(type, objectPool);
 			}
 			else
@@ -47,7 +47,7 @@ namespace BanSupport
 			var type = typeof(T);
 			if (database.ContainsKey(type))
 			{
-				(database[type] as ObjectPool<T>).Release();
+				(database[type] as Pool<T>).Release();
 				database.Remove(type);
 			}
 			else
@@ -65,7 +65,7 @@ namespace BanSupport
 			if (database.ContainsKey(type))
 			{
 				//如果存在对应容器
-				(database[type] as ObjectPool<T>).Recycle(t);
+				(database[type] as Pool<T>).Recycle(t);
 			}
 			else
 			{
@@ -84,7 +84,7 @@ namespace BanSupport
 			if (database.ContainsKey(type))
 			{
 				//如果存在对应容器
-				return (database[type] as ObjectPool<T>).Get();
+				return (database[type] as Pool<T>).Get();
 			}
 			else
 			{

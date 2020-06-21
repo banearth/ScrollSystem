@@ -90,7 +90,7 @@ namespace BanSupport
 
 			GUILayout.BeginHorizontal();
 			this.maskTransform = EditorGUILayout.ObjectField("Mask:", this.maskTransform, typeof(RectTransform), true) as RectTransform;
-			if (this.maskTransform != null && GUILayout.Button("匹配内容"))
+			if (this.maskTransform != null && GUILayout.Button("匹配大小和位置"))
 			{
 				FitMask();
 			}
@@ -282,17 +282,22 @@ namespace BanSupport
 				var curSplit = scrollGallery.Splits[i];
 				rectBounds.Encapsulate(curSplit);
 			}
-			Undo.RecordObject(this.maskTransform, "FitMask");
-			List<RectTransform> listChildren = new List<RectTransform>();
-			foreach (var aTrans in this.maskTransform)
-			{
-				listChildren.Add(aTrans as RectTransform);
-			}
+			//Undo.RecordObject(this.maskTransform, "FitMask");
+
+			//foreach (var split in scrollGallery.Splits) { split.transform.SetParent(null); }
+			var listChildren = new List<Transform>();
+			foreach (Transform aTrans in this.maskTransform) { listChildren.Add(aTrans); }
+
 			listChildren.ForEach(temp => temp.SetParent(null));
-			this.maskTransform.anchoredPosition = rectBounds.center;
+
+			this.maskTransform.position = rectBounds.center;
 			this.maskTransform.sizeDelta = rectBounds.size;
+
+			//foreach (var split in scrollGallery.Splits) { split.transform.SetParent(scrollGallery.splitParent); }
+
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
 			listChildren.Clear();
+
 			Debug.Log("FitMask");
 		}
 

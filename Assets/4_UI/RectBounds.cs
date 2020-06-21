@@ -83,10 +83,10 @@ namespace BanSupport
 
 		private void ParseRectTransform(RectTransform rectTransform, out float left, out float right, out float up, out float down)
 		{
-			left = rectTransform.anchoredPosition.x - rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
-			right = rectTransform.anchoredPosition.x + rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
-			up = rectTransform.anchoredPosition.y + rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
-			down = rectTransform.anchoredPosition.y - rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
+			left = rectTransform.position.x - rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
+			right = rectTransform.position.x + rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
+			up = rectTransform.position.y + rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
+			down = rectTransform.position.y - rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
 		}
 
 		public bool Contains(Vector2 pos)
