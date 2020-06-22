@@ -491,7 +491,7 @@ namespace BanSupport
 				Debug.LogError("无法找到模板预制体");
 				return;
 			}
-			this.pool = new GameObjectPool(findOrigin.gameObject, this.transform);
+			this.pool = new GameObjectPool(findOrigin.gameObject, this.transform, registPoolCount);
 		}
 
 		private void SetAllData()
@@ -508,11 +508,10 @@ namespace BanSupport
 		private void Show()
 		{
 			var totalCount = listData.Count;
-			var selectedChanged = false;
 			for (int i = 0; i < totalCount; i++)
 			{
 				var aData = listData[i];
-				selectedChanged |= aData.UpdateSelect(mainIndex);
+				aData.UpdateSelect(mainIndex);
 			}
 			//先处理Hide
 			for (int i = 0; i < totalCount; i++)
@@ -521,10 +520,11 @@ namespace BanSupport
 				if (aData.normalizedPos <= -1 || aData.normalizedPos >= splitCount)
 				{
 					aData.isVisible = false;
+					aData.Update(aData.selectedChange, true);
+					aData.selectedChange = false;
 				}
-				aData.Update(selectedChanged, true);
 			}
-			//在处理Show
+			//再处理Show
 			for (int i = 0; i < totalCount; i++)
 			{
 				var aData = listData[i];
@@ -534,8 +534,9 @@ namespace BanSupport
 					aData.worldPosition = GetPos(aData.normalizedPos);
 					aData.sizeDelta = GetSize(aData.normalizedPos);
 					aData.scale = GetScale(aData.normalizedPos);
+					aData.Update(aData.selectedChange, true);
+					aData.selectedChange = false;
 				}
-				aData.Update(selectedChanged, true);
 			}
 		}
 

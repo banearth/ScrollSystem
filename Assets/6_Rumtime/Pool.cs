@@ -16,6 +16,20 @@ namespace BanSupport
 				element => element.gameObject.SetActive(true),
 				element => element.gameObject.SetActive(false));
 		}
+
+		public GameObjectPool(GameObject prefab, Transform parent, int poolCount) : this(prefab, parent)
+		{
+			var list = ListPool<GameObject>.Get();
+			for (int i = 0; i < poolCount; i++)
+			{
+				list.Add(pool.Get());
+			}
+			for (int i = 0; i < poolCount; i++)
+			{
+				pool.Release(list[i]);
+			}
+			ListPool<GameObject>.Release(list);
+		}
 		public GameObject Get()
 		{
 			return pool.Get();
@@ -66,11 +80,10 @@ namespace BanSupport
 			s_ObjectPool.Release(element);
 		}
 
-		public static int countAll { get { return s_ObjectPool.countAll; } }
-
-		public static int countActive { get { return s_ObjectPool.countActive; } }
-
-		public static int countInactive { get { return s_ObjectPool.countInactive; } }
+		public static string GetState()
+		{
+			return s_ObjectPool.GetState();
+		}
 
 	}
 
@@ -119,6 +132,15 @@ namespace BanSupport
 			if (m_ActionOnRelease != null)
 				m_ActionOnRelease(element);
 			m_Storage.Add(element);
+		}
+
+		public string GetState()
+		{
+			string result = typeof(T).ToString() + " Pool\n";
+			result += "countAll:" + this.countAll + "\n";
+			result += "countActive:" + this.countActive + "\n";
+			result += "countInactive:" + this.countInactive + "\n";
+			return result;
 		}
 
 	}

@@ -323,9 +323,7 @@ public class Example : MonoBehaviour
 
 	private void OnGUI()
 	{
-		GUILayout.Label("countAll:"+ ObjectPool<ScrollSystem.SearchGroup>.countAll);
-		GUILayout.Label("countActive:" + ObjectPool<ScrollSystem.SearchGroup>.countActive);
-		GUILayout.Label("countInactive:" + ObjectPool<ScrollSystem.SearchGroup>.countInactive);
+		GUILayout.Label(ObjectPool<ScrollSystem.SearchGroup>.GetState());
 	}
 
 }

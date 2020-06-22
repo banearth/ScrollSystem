@@ -16,6 +16,7 @@ namespace BanSupport
 		public bool isVisible;
 		public ScrollGallery scrollGallery;
 		public bool isSelected;
+		public bool selectedChange = false;
 
 		private RectTransform targetTrans = null;
 
@@ -26,12 +27,12 @@ namespace BanSupport
 		}
 
 		//return true means need update
-		public bool UpdateSelect(int mainIndex)
+		public void UpdateSelect(int mainIndex)
 		{
 			var i = Mathf.RoundToInt(this.normalizedPos);
 			var oldSelected = this.isSelected;
 			this.isSelected = (i == mainIndex);
-			return oldSelected != isSelected;
+			this.selectedChange = (oldSelected != isSelected);
 		}
 
 		public void SetReturnPos()
