@@ -762,7 +762,7 @@ namespace BanSupport
 			while (searchList.Count > 0 && (--maxSearchTimes > 0)) {
 				var curSearch = searchList[0];
 				searchList.RemoveAt(0);
-				ObjectPool<SearchGroup>.Recycle(curSearch);
+				ObjectPool<SearchGroup>.Release(curSearch);
 				if (curSearch.found)
 				{
 					found = true;
@@ -785,7 +785,7 @@ namespace BanSupport
 
 			if (searchList.Count > 0)
 			{
-				foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Recycle(aSearch); }
+				foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
 				searchList.Clear();
 			}
 
