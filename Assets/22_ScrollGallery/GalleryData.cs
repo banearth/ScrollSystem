@@ -25,12 +25,13 @@ namespace BanSupport
 			this.dataSource = dataSource;
 		}
 
+		//return true means need update
 		public bool UpdateSelect(int mainIndex)
 		{
 			var i = Mathf.RoundToInt(this.normalizedPos);
 			var oldSelected = this.isSelected;
 			this.isSelected = (i == mainIndex);
-			return oldSelected == isSelected;
+			return oldSelected != isSelected;
 		}
 
 		public void SetReturnPos()

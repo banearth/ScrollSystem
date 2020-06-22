@@ -33,6 +33,7 @@ public class TestScrollGallery : MonoBehaviour
 		});
 		scrollGallery.SetOnItemRefresh((aGo, aData, isSelected) =>
 		{
+			Debug.Log("OnRefresh:" + (aData as SimpleData).number + " isSelected:" + isSelected);
 			aGo.GetComponentInChildren<Text>().text = "number:" + (aData as SimpleData).number + (isSelected ? "√" : "");
 		});
 
