@@ -113,7 +113,7 @@ namespace BanSupport
 					this.height = objectPool.prefabHeight;
 				}
 			}
-			return (oldWidth == this.width) && (oldHeight == this.height);
+			return !((oldWidth == this.width) && (oldHeight == this.height));
 		}
 
 		public void Hide()
