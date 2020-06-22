@@ -5,23 +5,32 @@ using UnityEngine;
 
 namespace BanSupport
 {
-
-	public static class GameObjectPool<T> where T : MonoBehaviour
+	public class GameObjectPool
 	{
 
-		private static readonly Pool<GameObject> s_GameObjectPool = new Pool<GameObject>(() => GameObject.Instantiate(originPrefab, generateParent), null, null);
-
-		private static GameObject originPrefab;
-
-		private static Transform generateParent;
-		public static void Set(GameObject prefab, Transform parent)
+		private Pool<GameObject> pool;
+		public GameObjectPool(GameObject prefab, Transform parent)
 		{
-			originPrefab = prefab;
-			generateParent = parent;
+			prefab.SetActive(false);
+			this.pool = new Pool<GameObject>(() => GameObject.Instantiate(prefab, parent) as GameObject,
+				element => element.gameObject.SetActive(true),
+				element => element.gameObject.SetActive(false));
+		}
+		public GameObject Get()
+		{
+			return pool.Get();
+		}
+
+		public void Release(GameObject element)
+		{
+			pool.Release(element);
 		}
 
 	}
 
+	/// <summary>
+	/// 这是一个工厂类
+	/// </summary>
 	public static class ListPool<T>
 	{
 
@@ -32,13 +41,16 @@ namespace BanSupport
 			return s_ListPool.Get();
 		}
 
-		public static void Release(List<T> toRelease)
+		public static void Recycle(List<T> toRelease)
 		{
 			s_ListPool.Release(toRelease);
 		}
 
 	}
 
+	/// <summary>
+	/// 这是一个工厂类
+	/// </summary>
 	public static class ObjectPool<T> where T : new()
 	{
 
@@ -49,7 +61,7 @@ namespace BanSupport
 			return s_ObjectPool.Get();
 		}
 
-		public static void Release(T element)
+		public static void Recycle(T element)
 		{
 			s_ObjectPool.Release(element);
 		}
@@ -68,7 +80,6 @@ namespace BanSupport
 		private readonly Func<T> m_ActionOnCreate;
 		private readonly Action<T> m_ActionOnGet;
 		private readonly Action<T> m_ActionOnRelease;
-
 		public int countAll { get; private set; }
 		public int countActive { get { return countAll - countInactive; } }
 		public int countInactive { get { return m_Storage.Count; } }

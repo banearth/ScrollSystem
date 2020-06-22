@@ -74,7 +74,7 @@ namespace BanSupport
 			{
 				if (this.targetTrans == null)
 				{
-					this.targetTrans = scrollGallery.objectPool.Get().transform as RectTransform;
+					this.targetTrans = scrollGallery.pool.Get().transform as RectTransform;
 					refreshContent = true;
 					refreshPosition = true;
 					if (this.scrollGallery.onItemOpen != null)
@@ -105,7 +105,7 @@ namespace BanSupport
 					{
 						this.scrollGallery.onItemClose(this.targetTrans.gameObject, this.dataSource);
 					}
-					scrollGallery.objectPool.Recycle(this.targetTrans.gameObject);
+					scrollGallery.pool.Release(this.targetTrans.gameObject);
 					this.targetTrans = null;
 				}
 			}

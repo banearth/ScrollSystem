@@ -297,7 +297,7 @@ namespace BanSupport
 			this.maskTransform.sizeDelta = rectBounds.size;
 
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
-			ListPool<Transform>.Release(listChildren);
+			ListPool<Transform>.Recycle(listChildren);
 
 			Debug.Log("FitMask");
 		}

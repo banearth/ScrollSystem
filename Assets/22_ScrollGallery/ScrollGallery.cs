@@ -11,56 +11,6 @@ namespace BanSupport
 	public class ScrollGallery : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
-		public class ObjectPool
-		{
-			public GameObject origin;
-			public List<GameObject> list;
-			public ScrollGallery scrollGallery;
-
-			public ObjectPool(GameObject origin, ScrollGallery scrollGallery)
-			{
-				this.origin = origin;
-				this.list = new List<GameObject>();
-				this.scrollGallery = scrollGallery;
-				origin.SetActive(false);
-				for (int i = 0; i < scrollGallery.registPoolCount; i++)
-				{
-					var getObject = GameObject.Instantiate(origin, scrollGallery.rectTransform) as GameObject;
-					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
-					this.list.Add(getObject);
-				}
-			}
-
-			public GameObject Get()
-			{
-				GameObject getObject;
-				if (this.list.Count > 0)
-				{
-					getObject = this.list[0];
-					list.RemoveAt(0);
-				}
-				else
-				{
-					getObject = GameObject.Instantiate(this.origin, scrollGallery.transform);
-					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
-				}
-				getObject.SetActive(true);
-				return getObject;
-			}
-
-			public void Recycle(GameObject obj)
-			{
-				if (obj == null)
-				{
-					Debug.LogWarning("回收的对象为空！");
-					return;
-				}
-				obj.SetActive(false);
-				this.list.Add(obj);
-			}
-
-		}
-
 		#region 编辑器
 
 		public Transform splitParent
@@ -73,11 +23,9 @@ namespace BanSupport
 					find = new GameObject("SplitParent", typeof(RectTransform)).transform as RectTransform;
 					find.SetParent(this.transform);
 					find.localScale = Vector3.one;
+					find.sizeDelta = Vector2.zero;
+					find.anchoredPosition = Vector2.zero;
 					find.SetAsLastSibling();
-					find.anchorMin = Vector2.zero;
-					find.anchorMax = Vector2.one;
-					find.offsetMin = Vector2.zero;
-					find.offsetMax = Vector2.zero;
 				}
 				return find;
 			}
@@ -343,7 +291,7 @@ namespace BanSupport
 		/// <summary>
 		/// 对象池
 		/// </summary>
-		public ObjectPool objectPool { private set; get; }
+		public GameObjectPool pool { private set; get; }
 
 		/// <summary>
 		/// 创建打开回调
@@ -543,7 +491,7 @@ namespace BanSupport
 				Debug.LogError("无法找到模板预制体");
 				return;
 			}
-			this.objectPool = new ObjectPool(findOrigin.gameObject, this);
+			this.pool = new GameObjectPool(findOrigin.gameObject, this.transform);
 		}
 
 		private void SetAllData()
