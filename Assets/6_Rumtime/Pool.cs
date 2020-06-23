@@ -39,6 +39,11 @@ namespace BanSupport
 		{
 			pool.Release(element);
 		}
+		public int countAll { get { return pool.countAll; } }
+
+		public int countActive { get { return pool.countActive; } }
+
+		public int countInactive { get { return pool.countInactive; } }
 
 	}
 

@@ -28,7 +28,7 @@ namespace BanSupport
 		public float width;
 		public float height;
 		public ScrollLayout.NewLine newLine;
-		public ScrollSystem.ObjectPool objectPool;
+		public ScrollSystem.PrefabGroup objectPool;
 		public System.Object dataSource;
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
@@ -126,7 +126,7 @@ namespace BanSupport
 				{
 					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 				}
-				objectPool.Recycle(this.targetTrans.gameObject);
+				objectPool.Release(this.targetTrans.gameObject);
 				this.targetTrans = null;
 			}
 		}

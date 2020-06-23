@@ -21,7 +21,7 @@ namespace BanSupport
 				{
 					GUILayout.BeginHorizontal();
 					GUILayout.Label("预制体:" + key);
-					GUILayout.Label("库存数量:" + dic[key].list.Count.ToString());
+					GUILayout.Label("库存数量:" + dic[key].pool.countInactive.ToString());
 					GUILayout.EndHorizontal();
 				}
 			}

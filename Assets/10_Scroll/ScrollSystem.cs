@@ -14,6 +14,8 @@ namespace BanSupport
 
 		#region 众多参数
 
+		private static string[] ignorePrefabNames = new string[] { "BackGround", "background", "Background" };
+
 		[Tooltip("尽量保持剧中")]
 		[SerializeField]
 		private bool centered = false;
@@ -167,7 +169,7 @@ namespace BanSupport
 		/// <summary>
 		/// 用于缓存物体对象
 		/// </summary>
-		private Dictionary<string, ObjectPool> objectPoolDic = new Dictionary<string, ObjectPool>();
+		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
 		/// <summary>
 		/// 光标的位置
@@ -229,7 +231,7 @@ namespace BanSupport
 		/// <summary>
 		/// 用于更直观展示剩余缓存数量
 		/// </summary>
-		public Dictionary<string, ObjectPool> ObjectPoolDic
+		public Dictionary<string, PrefabGroup> ObjectPoolDic
 		{
 			get
 			{
@@ -459,11 +461,11 @@ namespace BanSupport
 
 		}
 
-		public class ObjectPool
+		public class PrefabGroup
 		{
 			public string prefabName { get; private set; }
 			public GameObject origin;
-			public List<GameObject> list;
+			public GameObjectPool pool;
 			public ScrollLayout.NewLine newLine { private set; get; }
 
 			public float prefabWidth { private set; get; }
@@ -472,11 +474,10 @@ namespace BanSupport
 
 			private ScrollSystem scrollSystem;
 
-			public ObjectPool(GameObject origin, List<GameObject> list, ScrollSystem scrollSystem)
+			public PrefabGroup(GameObject origin, ScrollSystem scrollSystem,int registPoolCount)
 			{
 				this.prefabName = origin.name;
 				this.origin = origin;
-				this.list = list;
 				this.scrollSystem = scrollSystem;
 				var prefabRectTransform = origin.transform as RectTransform;
 				this.prefabWidth = prefabRectTransform.sizeDelta.x;
@@ -490,37 +491,17 @@ namespace BanSupport
 				{
 					this.newLine = ScrollLayout.NewLine.None;
 				}
+				this.pool = new GameObjectPool(origin, scrollSystem.contentTrans, registPoolCount);
 			}
 
 			public GameObject Get()
 			{
-				GameObject getObject;
-				if (this.list.Count > 0)
-				{
-					getObject = this.list[0];
-					list.RemoveAt(0);
-					//getObject.transform.SetParent(scrollSystem.contentTrans.transform);
-				}
-				else
-				{
-					//没有库存需要生成
-					getObject = GameObject.Instantiate(this.origin, scrollSystem.contentTrans.transform);
-					getObject.name = getObject.name.Substring(0, getObject.name.Length - 7);
-				}
-				getObject.SetActive(true);
-				return getObject;
+				return this.pool.Get();
 			}
 
-			public void Recycle(GameObject obj)
+			public void Release(GameObject obj)
 			{
-				if (obj == null)
-				{
-					Debug.LogWarning("回收的对象为空！");
-					return;
-				}
-				//obj.transform.SetParent(scrollSystem.transform);
-				obj.SetActive(false);
-				this.list.Add(obj);
+				this.pool.Release(obj);
 			}
 
 		}
@@ -1161,6 +1142,7 @@ namespace BanSupport
 				for (int i = 0; i < childCount; i++)
 				{
 					var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
+					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
 					formatPrefabRectTransform(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
@@ -1245,6 +1227,7 @@ namespace BanSupport
 				for (int i = 0; i < childCount; i++)
 				{
 					var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
+					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
 					formatPrefabRectTransform(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
@@ -1630,19 +1613,9 @@ namespace BanSupport
 			}
 			foreach (var originRectTransform in allChildren)
 			{
+				if (IsPrefabNameIgnored(originRectTransform.name)) { continue; }
 				//确保提前格式化
 				formatPrefabRectTransform(originRectTransform);
-				//注册之前确保这份预制体已经是我们想要的格式
-				//originRectTransform.SetParent(this.transform);
-				originRectTransform.gameObject.SetActive(false);
-				//生成对应数量的缓存
-				List<GameObject> list = new List<GameObject>();
-				for (int i = 0; i < registPoolCount; i++)
-				{
-					var clone = GameObject.Instantiate(originRectTransform.gameObject, this.contentTrans);
-					clone.name = clone.name.Substring(0, clone.name.Length - 7);
-					list.Add(clone);
-				}
 				if (objectPoolDic.ContainsKey(originRectTransform.name))
 				{
 					Debug.LogWarning("请确保缓存对象没有重名情况！");
@@ -1650,7 +1623,7 @@ namespace BanSupport
 				}
 				else
 				{
-					objectPoolDic.Add(originRectTransform.name, new ObjectPool(originRectTransform.gameObject, list, this));
+					objectPoolDic.Add(originRectTransform.name, new PrefabGroup(originRectTransform.gameObject, this, registPoolCount));
 				}
 			}
 			allChildren.Clear();
@@ -2199,6 +2172,18 @@ namespace BanSupport
 		#endregion
 
 		#region 一些辅助方法
+
+		private static bool IsPrefabNameIgnored(string prefabName)
+		{
+			foreach (var ignoreName in ignorePrefabNames)
+			{
+				if (ignoreName == prefabName)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
 
 		/// <summary>
 		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
