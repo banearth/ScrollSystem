@@ -12,9 +12,15 @@ namespace BanSupport
 		public GameObjectPool(GameObject prefab, Transform parent)
 		{
 			prefab.SetActive(false);
-			this.pool = new Pool<GameObject>(() => GameObject.Instantiate(prefab, parent) as GameObject,
+			this.pool = new Pool<GameObject>(() =>
+				{
+					var createGo = GameObject.Instantiate(prefab, parent) as GameObject;
+					createGo.name = createGo.name.Substring(0, createGo.name.Length - 7);
+					return createGo;
+				},
 				element => element.gameObject.SetActive(true),
-				element => element.gameObject.SetActive(false));
+				element => element.gameObject.SetActive(false)
+			);
 		}
 
 		public GameObjectPool(GameObject prefab, Transform parent, int poolCount) : this(prefab, parent)
