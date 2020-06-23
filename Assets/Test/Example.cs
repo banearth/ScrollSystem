@@ -321,10 +321,10 @@ public class Example : MonoBehaviour
 		return new Vector2(0, height);
 	}
 
-	private void OnGUI()
-	{
-		GUILayout.Label(ObjectPool<ScrollSystem.SearchGroup>.GetState());
-	}
+	//private void OnGUI()
+	//{
+	//	GUILayout.Label(ObjectPool<ScrollSystem.SearchGroup>.GetState());
+	//}
 
 }
 

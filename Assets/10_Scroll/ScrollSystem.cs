@@ -14,7 +14,7 @@ namespace BanSupport
 
 		#region 众多参数
 
-		private static string[] ignorePrefabNames = new string[] { "BackGround", "background", "Background" };
+		private static string[] ignorePrefabNames = new string[] { "background"};
 
 		[Tooltip("尽量保持剧中")]
 		[SerializeField]
@@ -2173,11 +2173,14 @@ namespace BanSupport
 
 		#region 一些辅助方法
 
+		/// <summary>
+		/// 不区分大小写
+		/// </summary>
 		private static bool IsPrefabNameIgnored(string prefabName)
 		{
 			foreach (var ignoreName in ignorePrefabNames)
 			{
-				if (ignoreName == prefabName)
+				if (ignoreName == prefabName.ToLower())
 				{
 					return true;
 				}
