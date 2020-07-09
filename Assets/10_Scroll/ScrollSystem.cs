@@ -218,6 +218,8 @@ namespace BanSupport
 
 		public WillShowState willShowState = WillShowState.None;
 
+		private bool moveEnable = true;
+
 		/// <summary>
 		/// 跳转状态
 		/// </summary>
@@ -416,7 +418,7 @@ namespace BanSupport
 
 			public void Do(float targetNormalizedPos, bool animated)
 			{
-				//Debug.Break();
+				if (!scrollSystem.moveEnable) { return; }
 				scrollSystem.scrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = null;
@@ -453,6 +455,7 @@ namespace BanSupport
 
 			public void Do(ScrollData targetScrollData, bool animated)
 			{
+				if (!scrollSystem.moveEnable) { return; }
 				scrollSystem.scrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = targetScrollData;
@@ -1348,7 +1351,7 @@ namespace BanSupport
 			if (isNew) {
 				scrollRect.decelerationRate = 0.04f;
 			}
-			EnableScrollByScrollDirection();
+			EnableScrollDirection();
 			scrollRect.viewport = this.transform as RectTransform;
 			scrollRect.content = contentTrans;
 
@@ -1548,39 +1551,39 @@ namespace BanSupport
 				{
 					if ((this.contentTrans as RectTransform).sizeDelta.y > Height)
 					{
-						EnableScrollByScrollDirection();
+						EnableScrollDirection();
 					}
 					else
 					{
-						DisableScroll();
+						DisableScrollDirection();
 					}
 				}
 				else
 				{
 					if ((this.contentTrans as RectTransform).sizeDelta.x > Width)
 					{
-						EnableScrollByScrollDirection();
+						EnableScrollDirection();
 					}
 					else
 					{
-						DisableScroll();
+						DisableScrollDirection();
 					}
 				}
 			}
 			else
 			{
-				EnableScrollByScrollDirection();
+				EnableScrollDirection();
 			}
 		}
 
-		private void DisableScroll()
+		private void DisableScrollDirection()
 		{
 			scrollRect.horizontal = false;
 			scrollRect.vertical = false;
 			scrollRect.enabled = false;
 		}
 
-		private void EnableScrollByScrollDirection()
+		private void EnableScrollDirection()
 		{
 			scrollRect.enabled = true;
 			if (scrollDirection == ScrollDirection.Vertical)
@@ -2265,6 +2268,20 @@ namespace BanSupport
 		{
 			this.scrollRect.horizontal = isHorOrVer;
 			this.scrollRect.vertical = !isHorOrVer;
+		}
+
+		public void DisableMovement()
+		{
+			this.jumpState.Stop();
+			this.scrollRect.StopMovement();
+			this.scrollRect.enabled = false;
+			this.moveEnable = false;
+		}
+
+		public void EnableMovement()
+		{
+			this.scrollRect.enabled = true;
+			this.moveEnable = true;
 		}
 
 		#endregion

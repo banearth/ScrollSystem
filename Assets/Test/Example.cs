@@ -43,6 +43,8 @@ public class Example : MonoBehaviour
 	public Button buttonJumpEnd;
 	public Button ButtonIsFirstVisible;
 	public Button ButtonIsLastVisible;
+	public Button ButtonEnableMovement;
+	public Button ButtonDisableMovement;
 
 	public Slider sliderJumpProgress;
 	public Text textJumpProgress;
@@ -299,6 +301,12 @@ public class Example : MonoBehaviour
 		ButtonIsLastVisible.onClick.AddListener(() =>
 		{
 			Debug.Log("IsLastVIsible:" + scrollSystem.IsLastVisible().ToString());
+		});
+		ButtonEnableMovement.onClick.AddListener(()=> {
+			scrollSystem.EnableMovement();
+		});
+		ButtonDisableMovement.onClick.AddListener(() => {
+			scrollSystem.DisableMovement();
 		});
 	}
 
