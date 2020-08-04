@@ -75,11 +75,13 @@ namespace BanSupport
 		private void OnDrawGizmos()
 		{
 			if (Application.isPlaying) { return; }
-			if (!this.transform.ContainsOneOf(Selection.transforms)) { return; }
-			var rectTransform = this.transform as RectTransform;
-			var size = new Vector3(this.transform.lossyScale.x * rectTransform.sizeDelta.x, this.transform.lossyScale.y * rectTransform.sizeDelta.y, 0);
-			Gizmos.color = new Color(0, 1, 0, 0.2f);
-			Gizmos.DrawCube(this.transform.position, size);
+			if (Selection.transforms.Contains(this.transform) || Selection.transforms.Contains())
+			{
+				var rectTransform = this.transform as RectTransform;
+				var size = new Vector3(this.transform.lossyScale.x * rectTransform.sizeDelta.x, this.transform.lossyScale.y * rectTransform.sizeDelta.y, 0);
+				Gizmos.color = new Color(0, 1, 0, 0.2f);
+				Gizmos.DrawCube(this.transform.position, size);
+			}
 		}
 
 		private void ResetScrollSystem()

@@ -873,27 +873,51 @@ namespace BanSupport
 
 		#region 扩展
 
-		public static bool ContainsOneOf(this Transform self, params Transform[] trans)
+		public static bool Contains<T>(this IEnumerable<T> set, T t)
 		{
-			foreach (var aTrans in trans) {
-				if (self == aTrans || aTrans.IsChildOf(self)) {
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public static bool Contains(this string[] strs, string targetStr)
-		{
-			foreach (var aStr in strs)
+			foreach (var aT in set)
 			{
-				if (aStr == targetStr)
+				if (ReferenceEquals(aT, t))
 				{
 					return true;
 				}
 			}
 			return false;
 		}
+
+		public static bool Contains<T>(this IEnumerable<T> set, T t)
+		{
+			foreach (var aT in set)
+			{
+				if (ReferenceEquals(aT, t))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		//public static bool ContainsOneOf(this Transform self, params Transform[] trans)
+		//{
+		//	foreach (var aTrans in trans) {
+		//		if (self == aTrans || aTrans.IsChildOf(self)) {
+		//			return true;
+		//		}
+		//	}
+		//	return false;
+		//}
+
+		//public static bool Contains(this string[] strs, string targetStr)
+		//{
+		//	foreach (var aStr in strs)
+		//	{
+		//		if (aStr == targetStr)
+		//		{
+		//			return true;
+		//		}
+		//	}
+		//	return false;
+		//}
 
 		public static bool NotContains(this string[] strs, string targetStr)
 		{
@@ -907,17 +931,6 @@ namespace BanSupport
 			return true;
 		}
 
-		/*
-		public static bool Contains<T>(this IEnumerable<T> enumerable, T t) where T : UnityEngine.Object
-		{
-			if (enumerable.isNullOrEmpty()) { return false; }
-			foreach (var item in enumerable)
-			{
-				if (item.Equals(t)) { return true; }
-			}
-			return false;
-		}
-		*/
 
 		#endregion
 
@@ -930,28 +943,6 @@ namespace BanSupport
 		public static GameObject CreateObj(GameObject prefab, Transform trans, Vector3 position)
 		{
 			return GameObject.Instantiate<GameObject>(prefab, position, Quaternion.identity, trans);
-		}
-
-		public static float GetPredictedFloat(float one, float two)
-		{
-			var three = two - one + two;
-			return three;
-		}
-
-		public static Vector2 GetPredictedVector2(Vector2 one, Vector2 two)
-		{
-			var three = two - one + two;
-			return three;
-		}
-
-		public static long Max(long value1, long value2)
-		{
-			return value1 > value2 ? value1 : value2;
-		}
-
-		public static long Min(long value1, long value2)
-		{
-			return value1 < value2 ? value1 : value2;
 		}
 
 		public static Vector3 GetRandomCirclePos(Vector3 originPos, float maxRadius)
