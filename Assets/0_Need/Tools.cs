@@ -778,47 +778,6 @@ namespace BanSupport
 
 		#region Others
 
-		public static int[] GetFormatStringInts(string str) {
-
-			return null;
-			//str. 
-
-			//List<int> listInts = new List<int>();
-			//bool searchLeftOrRight = true;
-			//int leftIndex = 0;
-			//int rightIndex = 0;
-			//for (int i = 0;i<str.Length;i++) {
-			//	var curChar = str[i];
-			//	if (searchLeftOrRight) {
-			//		//寻找左边
-			//		if () {
-
-			//		}
-			//		listInts.Add()
-			//		curChar == '{';
-			//	}
-			//	else {
-			//		//寻找右边
-
-			//	}
-			//}
-			//return 
-		}
-
-		public static bool ContainsInArray(uint[] array, uint aValue)
-		{
-			if (array == null) { return false; }
-			if (array.Length == 0) { return false; }
-			foreach (var a in array)
-			{
-				if (a == aValue)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
 		public static T AddComponentIfNotExist<T>(GameObject go) where T : Component
 		{
 			var t = go.GetComponent<T>();
@@ -852,6 +811,10 @@ namespace BanSupport
 			Debug.Log(v3.x.ToString("0.00000") + " y:" + v3.y.ToString("0.00000") + " z:" + v3.z.ToString("0.00000"));
 		}
 
+		#endregion
+
+		#region Scene
+
 		/// <summary>
 		/// 重新加载关卡
 		/// </summary>
@@ -859,10 +822,6 @@ namespace BanSupport
 		{
 			SceneManager.LoadScene(SceneManager.GetActiveScene().name);
 		}
-
-		#endregion
-
-		#region Scene
 
 		public static void LoadScene(string sceneName)
 		{
@@ -885,7 +844,7 @@ namespace BanSupport
 			return false;
 		}
 
-		public static bool Contains<T>(this IEnumerable<T> set, T t)
+		public static bool Contains<T>(this IEnumerable<T> set, <>T t)
 		{
 			foreach (var aT in set)
 			{
