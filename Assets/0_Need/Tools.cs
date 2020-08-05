@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -14,12 +15,6 @@ namespace BanSupport
 
 	public static partial class Tools
 	{
-
-		#region Const
-
-		public static Vector3 MAX_VECTOR3 = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-
-		#endregion
 
 		#region 时间相关
 
@@ -81,170 +76,13 @@ namespace BanSupport
 
 		#endregion
 
-		#region UI相关
-
-		/// <summary>
-		/// 可以一次选择多个
-		/// </summary>
-		public static void SelectInGroup(GameObject[] list, params GameObject[] selects)
-		{
-			List<GameObject> selectList = new List<GameObject>();
-			selectList.AddRange(selects);
-			foreach (var temp in list)
-			{
-				if (selectList.Contains(temp))
-				{
-					temp.SetActive(true);
-				}
-				else
-				{
-					temp.SetActive(false);
-				}
-			}
-		}
-
-		/// <summary>
-		/// 按亮一个，熄灭其他
-		/// </summary>
-		public static void SelectInGroup(GameObject select, GameObject[] list)
-		{
-			foreach (var temp in list)
-			{
-				if (select == temp)
-				{
-					temp.SetActive(true);
-				}
-				else
-				{
-					temp.SetActive(false);
-				}
-			}
-		}
-
-		/// <summary>
-		/// 一个为true别的都是false
-		/// </summary>
-		public static void SelectInGroup(GameObject select, GameObject[] list, Action<GameObject, bool> a)
-		{
-			foreach (var temp in list)
-			{
-				if (select == temp)
-				{
-					a(temp, true);
-				}
-				else
-				{
-					a(temp, false);
-				}
-			}
-		}
-
-		/// <summary>
-		/// 一个为true别的都是false
-		/// </summary>
-		public static void SelectInGroup(int selectIndex, GameObject[] list, Action<GameObject, bool> a)
-		{
-			for (int i = 0; i < list.Length; i++)
-			{
-				a(list[i], i == selectIndex);
-			}
-		}
-
-		/// <summary>
-		/// Gets all components.
-		/// </summary>
-		public static T[] GetAllComponents<T>(Transform rootTrans, ContainOption containOption = ContainOption.All) where T : Component
-		{
-			List<T> returnList = new List<T>();
-			foreach (var aTrans in GetAllTransform(rootTrans, containOption))
-			{
-				var t = aTrans.GetComponent<T>();
-				if (t != null)
-				{
-					returnList.Add(t);
-				}
-			}
-			return returnList.ToArray();
-		}
-
-		public enum ContainOption
-		{
-			OnlySelf, ExceptSelf, All,
-		}
-
-		/// <summary>
-		/// 获得全部的Transform
-		/// </summary>
-		public static Transform[] GetAllTransform(Transform rootTrans, ContainOption containOption = ContainOption.All)
-		{
-			if (rootTrans == null)
-			{
-				return null;
-			}
-			if (containOption == ContainOption.OnlySelf)
-			{
-				return new Transform[] { rootTrans };
-			}
-			List<Transform> openList = new List<Transform>();
-			List<Transform> closeList = new List<Transform>();
-			openList.Add(rootTrans);
-			while (openList.Count > 0)
-			{
-				var curTrans = openList[0];
-				openList.RemoveAt(0);
-				if (curTrans.childCount > 0)
-				{
-					for (int i = curTrans.childCount - 1; i >= 0; i--)
-					{
-						openList.Add(curTrans.GetChild(i));
-					}
-				}
-				closeList.Add(curTrans);
-			}
-			if (containOption == ContainOption.ExceptSelf)
-			{
-				closeList.Remove(rootTrans);
-			}
-			return closeList.ToArray();
-		}
-
-		//设置层级
-		public static void SetLayer(Transform rootTrans, int layer, ContainOption containOption = ContainOption.All)
-		{
-			foreach (var aTrans in GetAllTransform(rootTrans, containOption))
-			{
-				aTrans.gameObject.layer = layer;
-			}
-		}
-
-		//全体设置RaycastTarget
-		public static void SetRaycastTarget(Transform rootTrans, bool b, ContainOption containOption = ContainOption.All)
-		{
-			foreach (var aTrans in GetAllTransform(rootTrans, containOption))
-			{
-				var graphic = aTrans.GetComponent<Graphic>();
-				if (graphic != null)
-				{
-					graphic.raycastTarget = b;
-				}
-			}
-		}
-
-		/// <summary>
-		/// 设置文字用于之后的替换
-		/// </summary>
-		public static void SetLabel(Text label, string str)
-		{
-			label.text = str;
-		}
+		#region UI坐标相关
 
 		//WorldPos：世界坐标
 		//UIPos：在UI层的世界坐标
 		//ScreenPos：屏幕坐标
 		//AnchoredPos：锚点坐标
-		/// <summary>
-		/// 屏幕坐标转化为UI层的世界坐标
-		/// </summary>
+		
 		public static Vector3 GetUIPosByScreenPos(Vector2 screenPos, Canvas canvas)
 		{
 			Vector3 UIPos;
@@ -255,41 +93,26 @@ namespace BanSupport
 			out UIPos);
 			return UIPos;
 		}
-
-		/// <summary>
-		/// 世界坐标转化为UI层的世界坐标
-		/// </summary>
-		public static Vector3 GetUIPosByWorldPos(Vector3 worldPos, Canvas canvas, Camera camera)
+		
+		public static Vector3 GetUIPosByWorldPos(Vector3 worldPos, Canvas canvas, Camera worldCamera)
 		{
-			Vector3 screenPos = camera.WorldToScreenPoint(worldPos);
-			Vector3 UIPos;
-			RectTransformUtility.ScreenPointToWorldPointInRectangle(
-			canvas.transform as RectTransform,
-			screenPos,
-			canvas.worldCamera,
-			out UIPos);
-			return UIPos;
+			Vector3 screenPos = worldCamera.WorldToScreenPoint(worldPos);
+			return GetUIPosByScreenPos(screenPos, canvas);
 		}
 
-		/// <summary>
-		/// 世界坐标 转 锚点坐标
-		/// </summary>
-		public static Vector2 GetAnchoredPosByWorldPos(RectTransform rectTransform, Vector3 worldPos,Vector2 anchors)
-		{
-			return new Vector2(
-				(worldPos.x - rectTransform.position.x) / rectTransform.lossyScale.x + (rectTransform.pivot.x - anchors.x) * rectTransform.rect.width,
-				(worldPos.y - rectTransform.position.y) / rectTransform.lossyScale.y + (rectTransform.pivot.y - anchors.y) * rectTransform.rect.height);
-		}
-
-		/// <summary>
-		/// 锚点坐标 转 世界坐标
-		/// </summary>
-		public static Vector3 GetWorldPosByAnchoredPos(RectTransform rectTransform, Vector2 anchoredPosition, Vector2 anchors)
+		public static Vector3 GetUIPosByAnchoredPos(RectTransform rectTransform, Vector2 anchoredPosition, Vector2 anchors)
 		{
 			return new Vector3(
 				((-rectTransform.pivot.x + anchors.x) * rectTransform.rect.width + anchoredPosition.x) * rectTransform.lossyScale.x + rectTransform.position.x,
 				((1 - rectTransform.pivot.y - (1 - anchors.y)) * rectTransform.rect.height + anchoredPosition.y) * rectTransform.lossyScale.y + rectTransform.position.y,
 				rectTransform.position.z);
+		}
+		
+		public static Vector2 GetAnchoredPosByUIPos(RectTransform rectTransform, Vector3 uiPos, Vector2 anchors)
+		{
+			return new Vector2(
+				(uiPos.x - rectTransform.position.x) / rectTransform.lossyScale.x + (rectTransform.pivot.x - anchors.x) * rectTransform.rect.width,
+				(uiPos.y - rectTransform.position.y) / rectTransform.lossyScale.y + (rectTransform.pivot.y - anchors.y) * rectTransform.rect.height);
 		}
 
 		#endregion
@@ -342,22 +165,6 @@ namespace BanSupport
 			var returnAngle = Mathf.Atan2(targetX - centerX, targetY - centerY) * 180 / Mathf.PI;
 			if (returnAngle < 0) { returnAngle += 360; }
 			return returnAngle;
-		}
-
-		/// <summary>
-		/// 勾股定理，已知c边和一条ab边，求另一条
-		/// </summary>
-		public static float GetGouGuAB(float c, float ab)
-		{
-			return Mathf.Sqrt(c * c - ab * ab);
-		}
-
-		/// <summary>
-		/// 勾股定理，已知ab边，求c边
-		/// </summary>
-		public static float GetGouGuC(float a, float b)
-		{
-			return Mathf.Sqrt(a * a + b * b);
 		}
 
 		/// <summary>
@@ -815,9 +622,6 @@ namespace BanSupport
 
 		#region Scene
 
-		/// <summary>
-		/// 重新加载关卡
-		/// </summary>
 		public static void ReloadScene()
 		{
 			SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -827,69 +631,6 @@ namespace BanSupport
 		{
 			SceneManager.LoadScene(sceneName);
 		}
-
-		#endregion
-
-		#region 扩展
-
-		public static bool Contains<T>(this IEnumerable<T> set, T t)
-		{
-			foreach (var aT in set)
-			{
-				if (ReferenceEquals(aT, t))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public static bool Contains<T>(this IEnumerable<T> set, <>T t)
-		{
-			foreach (var aT in set)
-			{
-				if (ReferenceEquals(aT, t))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		//public static bool ContainsOneOf(this Transform self, params Transform[] trans)
-		//{
-		//	foreach (var aTrans in trans) {
-		//		if (self == aTrans || aTrans.IsChildOf(self)) {
-		//			return true;
-		//		}
-		//	}
-		//	return false;
-		//}
-
-		//public static bool Contains(this string[] strs, string targetStr)
-		//{
-		//	foreach (var aStr in strs)
-		//	{
-		//		if (aStr == targetStr)
-		//		{
-		//			return true;
-		//		}
-		//	}
-		//	return false;
-		//}
-
-		public static bool NotContains(this string[] strs, string targetStr)
-		{
-			foreach (var aStr in strs)
-			{
-				if (aStr == targetStr)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
 
 		#endregion
 
