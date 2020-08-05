@@ -57,7 +57,7 @@ namespace BanSupport
 
 		public Vector3 GetWorldPosition()
 		{
-			return Tools.GetWorldPosByAnchoredPos(scrollSystem.contentTrans, anchoredPosition, scrollSystem.PrefabAnchor);
+			return Tools.GetUIPosByAnchoredPos(scrollSystem.contentTrans, anchoredPosition, scrollSystem.PrefabAnchor);
 		}
 
 		/// <summary>

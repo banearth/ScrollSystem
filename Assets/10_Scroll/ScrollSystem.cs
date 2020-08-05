@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System.Linq;
 
 namespace BanSupport
 {
@@ -2047,10 +2048,16 @@ namespace BanSupport
 			int count = 0;
 			foreach (var curData in listData)
 			{
-				if (prefabNames.NotContains(curData.objectPool.prefabName))
+				//if (prefabNames.NotContains(curData.objectPool.prefabName))
+				//{
+				//	count++;
+				//}
+
+				if (!prefabNames.Contains(curData.objectPool.prefabName))
 				{
 					count++;
 				}
+
 			}
 			return count;
 		}

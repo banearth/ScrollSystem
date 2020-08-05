@@ -75,7 +75,7 @@ namespace BanSupport
 		private void OnDrawGizmos()
 		{
 			if (Application.isPlaying) { return; }
-			if (Selection.transforms.Contains(this.transform) || Selection.transforms.Contains())
+			if (Selection.transforms.Contains(this.transform) || Selection.transforms.Contains(temp => temp.IsChildOf(this.transform)))
 			{
 				var rectTransform = this.transform as RectTransform;
 				var size = new Vector3(this.transform.lossyScale.x * rectTransform.sizeDelta.x, this.transform.lossyScale.y * rectTransform.sizeDelta.y, 0);

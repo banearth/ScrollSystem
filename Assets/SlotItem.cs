@@ -23,16 +23,16 @@ public class SlotItem : MonoBehaviour
 	{
 		switch (slotData.type) {
 			case SlotData.Type.empty:
-				Tools.SelectInGroup(empty.gameObject, all);
+				all.Select(empty.gameObject);
 				break;
 			case SlotData.Type.consume:
-				Tools.SelectInGroup(consume.gameObject, all);
+				all.Select(consume.gameObject);
 				break;
 			case SlotData.Type.equip:
-				Tools.SelectInGroup(equip.gameObject, all);
+				all.Select(equip.gameObject);
 				break;
 			case SlotData.Type.Collect:
-				Tools.SelectInGroup(collect.gameObject, all);
+				all.Select(collect.gameObject);
 				break;
 		}
 	}

@@ -46,7 +46,7 @@ namespace BanSupport
 		{
 			foreach (var aT in set)
 			{
-				if (ReferenceEquals(aT, t))
+				if (aT.Equals(t))
 				{
 					return true;
 				}
