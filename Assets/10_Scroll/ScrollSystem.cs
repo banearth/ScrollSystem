@@ -2049,7 +2049,7 @@ namespace BanSupport
 			int count = 0;
 			foreach (var curData in listData)
 			{
-				if (prefabNames.NotContains(curData.objectPool.prefabName))
+				if (!prefabNames.Contains(curData.objectPool.prefabName))
 				{
 					count++;
 				}
