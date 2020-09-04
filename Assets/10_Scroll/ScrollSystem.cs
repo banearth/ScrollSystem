@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using System.Linq;
 
 namespace BanSupport
 {
@@ -1998,6 +1997,8 @@ namespace BanSupport
 			{
 				var luaGameObject = Instantiate(objectPoolDic[prefabName].origin, this.transform);
 				luaGameObject.name = luaGameObject.name.Substring(0, luaGameObject.name.Length - 7) + "_BindScript";
+				luaGameObject.SetActive(true);
+				luaGameObject.SetActive(false);
 				foreachFunc(prefabName, luaGameObject);
 			}
 		}
@@ -2048,16 +2049,10 @@ namespace BanSupport
 			int count = 0;
 			foreach (var curData in listData)
 			{
-				//if (prefabNames.NotContains(curData.objectPool.prefabName))
-				//{
-				//	count++;
-				//}
-
-				if (!prefabNames.Contains(curData.objectPool.prefabName))
+				if (prefabNames.NotContains(curData.objectPool.prefabName))
 				{
 					count++;
 				}
-
 			}
 			return count;
 		}
