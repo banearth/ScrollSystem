@@ -34,6 +34,7 @@ public class Example : MonoBehaviour
 	public Button buttonB;
 	public Button buttonC;
 	public Button buttonD;
+	public Button buttonE;
 
 	public InputField inputField_JumpDataIndex;
 	public Button buttonJumpData;
@@ -173,7 +174,7 @@ public class Example : MonoBehaviour
 
 	private void BindEvent()
 	{
-		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD };
+		Button[] buttons = new Button[] { buttonA, buttonB, buttonC, buttonD, buttonE };
 		for (int i = 0; i < buttons.Length; i++)
 		{
 			var curButton = buttons[i];
@@ -326,7 +327,7 @@ public class Example : MonoBehaviour
 	{
 		ScrollLayout referScrollLayout = scrollSystem.GetOriginPrefab("Chat").GetComponent<ScrollLayout>();
 		var height = referScrollLayout.GetHeightByStr((data as ChatData).msg);
-		return new Vector2(0, height);
+		return new Vector2(-1, height);
 	}
 
 	//private void OnGUI()
