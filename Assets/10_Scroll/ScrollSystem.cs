@@ -468,6 +468,7 @@ namespace BanSupport
 		{
 			public string prefabName { get; private set; }
 			public GameObject origin;
+			public GameObject bindOrigin;
 			public GameObjectPool pool;
 			public ScrollLayout.NewLine newLine { private set; get; }
 
@@ -505,6 +506,18 @@ namespace BanSupport
 			public void Release(GameObject obj)
 			{
 				this.pool.Release(obj);
+			}
+
+			public void BindScript(Action<string, GameObject> bindFunc)
+			{
+				if (bindOrigin == null)
+				{
+					bindOrigin = Instantiate(origin, scrollSystem.transform);
+					bindOrigin.name = bindOrigin.name.Substring(0, bindOrigin.name.Length - 7) + "_BindScript";
+					bindOrigin.SetActive(true);
+					bindOrigin.SetActive(false);
+				}
+				bindFunc(prefabName, bindOrigin);
 			}
 
 		}
@@ -1170,11 +1183,15 @@ namespace BanSupport
 						//更新最大宽度
 						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
 						//增加间隔
-						cursorPos.x += spacing.x;
-						//更新最大高度
-						if (maxHeight < rectTransform.sizeDelta.y + spacing.y)
+						if (rectTransform.sizeDelta.x > 0)
 						{
-							maxHeight = rectTransform.sizeDelta.y + spacing.y;
+							cursorPos.x += spacing.x;
+						}
+						float curMaxHeight = rectTransform.sizeDelta.y > 0 ? (rectTransform.sizeDelta.y + spacing.y) : 0;
+						//更新最大高度
+						if (maxHeight < curMaxHeight)
+						{
+							maxHeight = curMaxHeight;
 						}
 					}
 					else
@@ -1255,11 +1272,15 @@ namespace BanSupport
 						//更新最大宽度
 						if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
 						//增加间隔
-						cursorPos.y += spacing.y;
-						//更新最大高度
-						if (maxHeight < rectTransform.sizeDelta.x + spacing.x)
+						if (rectTransform.sizeDelta.y > 0)
 						{
-							maxHeight = rectTransform.sizeDelta.x + spacing.x;
+							cursorPos.y += spacing.y;
+						}
+						//更新最大高度
+						float curMaxHeight = rectTransform.sizeDelta.x > 0 ? (rectTransform.sizeDelta.x + spacing.x) : 0;
+						if (maxHeight < curMaxHeight)
+						{
+							maxHeight = curMaxHeight;
 						}
 					}
 					else
@@ -1444,11 +1465,15 @@ namespace BanSupport
 				//更新最大宽度
 				if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
 				//增加间隔
-				cursorPos.x += spacing.x;
-				//更新最大高度
-				if (maxHeight < data.height + spacing.y)
+				if (data.width > 0)
 				{
-					maxHeight = data.height + spacing.y;
+					cursorPos.x += spacing.x;
+				}
+				//更新最大高度
+				float curMaxHeight = data.height > 0 ? (data.height + spacing.y) : 0;
+				if (maxHeight < curMaxHeight)
+				{
+					maxHeight = curMaxHeight;
 				}
 			}
 			else
@@ -1504,11 +1529,15 @@ namespace BanSupport
 				//更新最大宽度
 				if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
 				//增加间隔
-				cursorPos.y += spacing.y;
-				//更新最大高度
-				if (maxHeight < data.width + spacing.x)
+				if (data.height > 0)
 				{
-					maxHeight = data.width + spacing.x;
+					cursorPos.y += spacing.y;
+				}
+				//更新最大高度
+				var curMaxHeight = data.width > 0 ? (data.width + spacing.x) : 0;
+				if (maxHeight < curMaxHeight)
+				{
+					maxHeight = curMaxHeight;
 				}
 			}
 			else
@@ -1995,11 +2024,8 @@ namespace BanSupport
 			Init();
 			foreach (var prefabName in objectPoolDic.Keys)
 			{
-				var luaGameObject = Instantiate(objectPoolDic[prefabName].origin, this.transform);
-				luaGameObject.name = luaGameObject.name.Substring(0, luaGameObject.name.Length - 7) + "_BindScript";
-				luaGameObject.SetActive(true);
-				luaGameObject.SetActive(false);
-				foreachFunc(prefabName, luaGameObject);
+				var curGroup = objectPoolDic[prefabName];
+				curGroup.BindScript(foreachFunc);
 			}
 		}
 
