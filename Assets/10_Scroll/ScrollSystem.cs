@@ -915,6 +915,11 @@ namespace BanSupport
 		/// </summary>
 		private void InitContentTrans()
 		{
+			//防止有些人机器上找不到
+			if (contentTrans == null)
+			{
+				contentTrans = this.transform.GetChild(0) as RectTransform;
+			}
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
 				switch (startCorner) {
@@ -1810,7 +1815,7 @@ namespace BanSupport
 			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
 				var scrollData = dic_DataSource_ScrollData[dataSource];
-				if (scrollData.CalculateSize(false))
+				if (scrollData.CalculateSize(true))
 				{
 					dataChanged = DataChange.Removed;
 				}

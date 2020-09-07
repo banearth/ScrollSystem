@@ -34,6 +34,7 @@ namespace BanSupport
 		public Vector2 anchoredPosition;
 		public Vector2 originPosition;
 		private int lastFrameCount;
+		private bool sizeCalculated = false;
 
 		private Func<object, Vector2> getSize;
 		public bool isVisible { get; private set; }
@@ -63,44 +64,27 @@ namespace BanSupport
 		/// <summary>
 		/// 设置宽度和高度，返回是否发生过改变
 		/// </summary>
-		public bool CalculateSize(bool onlyCalculateWhenZero = true)
+		public bool CalculateSize(bool forceCalculate = false)
 		{
 			float oldWidth = this.width;
 			float oldHeight = this.height;
-			bool doCalculate = false;
-			if (onlyCalculateWhenZero)
+			if (forceCalculate || (sizeCalculated == false))
 			{
-				if (this.width == 0 || this.height == 0)
-				{
-					doCalculate = true;
-				}
-			}
-			else
-			{
-				doCalculate = true;
-			}
-			if (doCalculate)
-			{
+				sizeCalculated = true;
 				if (getSize != null)
 				{
 					var newSize = getSize(dataSource);
-					if (newSize.x > 0)
+					if (newSize.x >= 0)
 					{
-						if (this.width != newSize.x)
-						{
-							this.width = newSize.x;
-						}
+						this.width = newSize.x;
 					}
 					else
 					{
 						this.width = objectPool.prefabWidth;
 					}
-					if (newSize.y > 0)
+					if (newSize.y >= 0)
 					{
-						if (this.height != newSize.y)
-						{
-							this.height = newSize.y;
-						}
+						this.height = newSize.y;
 					}
 					else
 					{
@@ -112,8 +96,12 @@ namespace BanSupport
 					this.width = objectPool.prefabWidth;
 					this.height = objectPool.prefabHeight;
 				}
+				return (oldWidth != this.width) || (oldHeight != this.height);
 			}
-			return !((oldWidth == this.width) && (oldHeight == this.height));
+			else
+			{
+				return false;
+			}
 		}
 
 		public void Hide()
@@ -183,7 +171,14 @@ namespace BanSupport
 		{
 			if (Time.frameCount == lastFrameCount) { return this.isVisible; }
 			this.lastFrameCount = Time.frameCount;
-			this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);	
+			if (this.width <= 0 || this.height <= 0)
+			{
+				this.isVisible = false;
+			}
+			else
+			{
+				this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
+			}
 			return this.isVisible;
 		}
 
