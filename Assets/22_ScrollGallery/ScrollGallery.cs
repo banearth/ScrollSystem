@@ -205,9 +205,7 @@ namespace BanSupport
 		/// <summary>
 		/// 注册数量
 		/// </summary>
-		[Tooltip("注册数量")]
-		[SerializeField]
-		private int registPoolCount = 3;
+		private int registPoolCount = 0;
 
 		/// <summary>
 		/// 分割的数量

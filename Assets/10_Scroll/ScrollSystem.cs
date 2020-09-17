@@ -675,7 +675,7 @@ namespace BanSupport
 
 		private void UpdateBounds()
 		{
-			var rectTransfrom = this.contentTrans as RectTransform;
+			var rectTransfrom = this.contentTrans;
 			switch (startCorner) {
 				case 0:
 					scrollBounds.left = -rectTransfrom.anchoredPosition.x;
@@ -920,6 +920,8 @@ namespace BanSupport
 			{
 				contentTrans = this.transform.GetChild(0) as RectTransform;
 			}
+			//同步父物体Layer
+			contentTrans.gameObject.layer = this.gameObject.layer;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
 				switch (startCorner) {
@@ -1351,6 +1353,7 @@ namespace BanSupport
 			{
 				contentTrans = new GameObject("Content Transform", typeof(RectTransform)).transform as RectTransform;
 				contentTrans.SetParent(this.transform);
+				contentTrans.gameObject.layer = this.gameObject.layer;
 				contentTrans.transform.localPosition = Vector3.zero;
 				contentTrans.localScale = Vector3.one;
 			}

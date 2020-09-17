@@ -96,6 +96,22 @@ namespace BanSupport
 			}
 			GUILayout.EndHorizontal();
 
+			GUILayout.Space(20);
+			if (GUILayout.Button("创建父物体RectMask，进行裁切"))
+			{
+				var origin = scrollGallery.transform as RectTransform;
+				var temp = new GameObject("RectMask", typeof(RectTransform)).transform as RectTransform;
+				temp.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+				temp.transform.SetParent(scrollGallery.transform.parent);
+
+				temp.anchorMin = origin.anchorMin;
+				temp.anchorMax = origin.anchorMax;
+				temp.anchoredPosition = origin.anchoredPosition;
+				temp.sizeDelta = origin.sizeDelta;
+				temp.transform.localScale = origin.transform.localScale;
+				origin.transform.SetParent(temp);
+			}
+
 		}
 
 		private void AutoArrangeBySpacing()
@@ -286,15 +302,15 @@ namespace BanSupport
 			var listChildren = ListPool<Transform>.Get();
 			foreach (Transform aTrans in this.maskTransform)
 			{
-				Undo.RecordObject(aTrans, "FitMask Children");
 				listChildren.Add(aTrans);
 			}
 
-			listChildren.ForEach(temp => temp.SetParent(null));
+			listChildren.ForEach(temp => temp.SetParent(this.maskTransform.parent));
 
 			Undo.RecordObject(this.maskTransform, "FitMask Main");
 			this.maskTransform.position = rectBounds.center;
-			this.maskTransform.sizeDelta = rectBounds.size;
+			var lossyScale = this.maskTransform.lossyScale;
+			this.maskTransform.sizeDelta = new Vector2(rectBounds.width / lossyScale.x, rectBounds.height / lossyScale.y);
 
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
 			ListPool<Transform>.Release(listChildren);

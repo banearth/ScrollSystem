@@ -8,18 +8,31 @@ namespace BanSupport
 	public class GameObjectPool
 	{
 
-		private Pool<GameObject> pool;
-		public GameObjectPool(GameObject prefab, Transform parent)
+		private PoolWithObjectParam<GameObject, GameObject> pool;
+
+		public GameObjectPool(GameObject originPrefab, Transform parent)
 		{
-			prefab.SetActive(false);
-			this.pool = new Pool<GameObject>(() =>
+			originPrefab.SetActive(false);
+			this.pool = new PoolWithObjectParam<GameObject, GameObject>(
+				prefab =>
 				{
 					var createGo = GameObject.Instantiate(prefab, parent) as GameObject;
-					createGo.name = createGo.name.Substring(0, createGo.name.Length - 7);
+					createGo.name = prefab.name;
 					return createGo;
 				},
-				element => element.gameObject.SetActive(true),
-				element => element.gameObject.SetActive(false)
+				(prefab, element) =>
+				{
+					element.SetActive(true);
+				},
+				(prefab, element) =>
+				{
+					if (element.name != prefab.name)
+					{
+						element.name = prefab.name;
+					}
+					element.SetActive(false);
+				},
+				originPrefab
 			);
 		}
 
@@ -36,6 +49,7 @@ namespace BanSupport
 			}
 			ListPool<GameObject>.Release(list);
 		}
+
 		public GameObject Get()
 		{
 			return pool.Get();
@@ -96,6 +110,70 @@ namespace BanSupport
 			return s_ObjectPool.GetState();
 		}
 
+	}
+
+	public class PoolWithObjectParam<T,ParamT>
+	{
+		private readonly List<T> m_Storage = new List<T>();
+		private readonly Func<ParamT, T> m_ActionOnCreate;
+		private readonly Action<ParamT,T> m_ActionOnGet;
+		private readonly Action<ParamT,T> m_ActionOnRelease;
+		public int countAll { get; private set; }
+		public int countActive { get { return countAll - countInactive; } }
+		public int countInactive { get { return m_Storage.Count; } }
+
+		private ParamT param;
+
+		public PoolWithObjectParam(Func<ParamT, T> actionOnCreate, Action<ParamT,T> actionOnGet, Action<ParamT,T> actionOnRelease, ParamT param)
+		{
+			this.param = param;
+			m_ActionOnCreate = actionOnCreate;
+			m_ActionOnGet = actionOnGet;
+			m_ActionOnRelease = actionOnRelease;
+		}
+
+		public T Get()
+		{
+			T element;
+			if (m_Storage.Count == 0)
+			{
+				element = m_ActionOnCreate(this.param);
+				countAll++;
+			}
+			else
+			{
+				element = m_Storage[0];
+				m_Storage.RemoveAt(0);
+			}
+			if (m_ActionOnGet != null)
+			{
+				m_ActionOnGet(this.param, element);
+			}
+			return element;
+		}
+
+		public void Release(T element)
+		{
+			if (m_Storage.Count > 0 && m_Storage.Contains(element))
+			{
+				Debug.LogWarning("Trying to destroy object that is already released to pool.");
+				return;
+			}
+			if (m_ActionOnRelease != null)
+			{
+				m_ActionOnRelease(this.param, element);
+			}
+			m_Storage.Add(element);
+		}
+
+		public string GetState()
+		{
+			string result = typeof(T).ToString() + " Pool(WithObjectParam)\n";
+			result += "countAll:" + this.countAll + "\n";
+			result += "countActive:" + this.countActive + "\n";
+			result += "countInactive:" + this.countInactive + "\n";
+			return result;
+		}
 	}
 
 	public class Pool<T>
