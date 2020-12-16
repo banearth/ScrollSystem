@@ -1348,6 +1348,7 @@ namespace BanSupport
 		/// </summary>
 		private void SetComponent()
 		{
+			bool isNew;
 			//contentTrans
 			if (contentTrans == null)
 			{
@@ -1356,25 +1357,24 @@ namespace BanSupport
 				contentTrans.gameObject.layer = this.gameObject.layer;
 				contentTrans.transform.localPosition = Vector3.zero;
 				contentTrans.localScale = Vector3.one;
+
+				//Image
+				var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
+				if (isNew)
+				{
+					image.sprite = null;
+					image.color = new Color(1, 1, 1, 0.2f);
+				}
+
+
+				//Mask
+				var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
+				if (isNew)
+				{
+					mask.showMaskGraphic = true;
+				}
+
 			}
-
-			//Image
-			bool isNew;
-			var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
-			if (isNew)
-			{
-				image.sprite = null;
-				image.color = new Color(1, 1, 1, 0.2f);
-			}
-
-
-			//Mask
-			var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
-			if (isNew)
-			{
-				mask.showMaskGraphic = true;
-			}
-
 			//Scroll
 			var scrollRect = Tools.AddComponentIfNotExist<ScrollRect>(this.gameObject, out isNew);
 			if (isNew) {
