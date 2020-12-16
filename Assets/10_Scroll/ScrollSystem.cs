@@ -1789,6 +1789,7 @@ namespace BanSupport
 				//滚动区域
 				if (contentTrans != null)
 				{
+					scrollBounds = 
 					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans, scrollBounds), this.transform.position.z, Color.green);
 					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
 					{
