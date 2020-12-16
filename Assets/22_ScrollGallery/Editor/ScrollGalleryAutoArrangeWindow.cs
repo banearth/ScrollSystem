@@ -295,8 +295,8 @@ namespace BanSupport
 			RectBounds rectBounds = new RectBounds(scrollGallery.Splits[1]);
 			for (int i = 2; i < scrollGallery.Splits.Length - 1; i++)
 			{
-				var curSplit = scrollGallery.Splits[i];
-				rectBounds.Encapsulate(curSplit);
+				var curRectTransform = scrollGallery.Splits[i];
+				rectBounds.Encapsulate(new RectBounds(curRectTransform));
 			}
 
 			var listChildren = ListPool<Transform>.Get();

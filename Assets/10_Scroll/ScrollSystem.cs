@@ -14,6 +14,11 @@ namespace BanSupport
 
 		#region 众多参数
 
+		public bool useGroupMode = false;
+
+		[BoolCondition("useGroupMode")]
+		public int groupCount = 1;
+
 		private static string[] ignorePrefabNames = new string[] { "background"};
 
 		[Tooltip("尽量保持剧中")]
@@ -111,6 +116,13 @@ namespace BanSupport
 		{
 			get
 			{
+				if (useGroupMode)
+				{
+					if (scrollDirection == ScrollDirection.Vertical)
+					{
+						return selfRectTransform.rect.width / groupCount;
+					}
+				}
 				return selfRectTransform.rect.width;
 			}
 		}
@@ -122,6 +134,13 @@ namespace BanSupport
 		{
 			get
 			{
+				if (useGroupMode)
+				{
+					if (scrollDirection == ScrollDirection.Horizontal)
+					{
+						return selfRectTransform.rect.height / groupCount;
+					}
+				}
 				return selfRectTransform.rect.height;
 			}
 		}
@@ -142,19 +161,19 @@ namespace BanSupport
 		}
 		private ScrollRect _scrollRect = null;
 
+		public RectBounds ScrollBounds
+		{
+			get
+			{
+				return scrollBounds;
+			}
+		}
 
 		/// <summary>
 		/// 这个scrollRect的范围，用于检测是否超出了范围
 		/// 当位置发生改变的时候，这个值也需要更新
 		/// </summary>
-		public RectBounds scrollBounds
-		{
-			get
-			{
-				return _scrollRange;
-			}
-		}
-		private RectBounds _scrollRange = new RectBounds();
+		private RectBounds scrollBounds = new RectBounds();
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -1754,11 +1773,17 @@ namespace BanSupport
 			return result;
 		}
 
+
+
 		private void OnDrawGizmos()
 		{
 			if (drawGizmos)
 			{
 				Gizmos.color = Color.green;
+
+				//haha
+				//GetCenterOffset();
+
 				//基本点触区域
 				Tools.DrawRectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
 				//滚动区域
@@ -2322,6 +2347,32 @@ namespace BanSupport
 
 		#endregion
 
+
+		/// <summary>
+		/// groupIndex从0开始
+		/// </summary>
+		/// <param name="groupIndex"></param>
+		/// <returns></returns>
+		public RectBounds GetGroupRectBounds(int groupIndex)
+		{
+			var rectBounds = new RectBounds();
+			if (useGroupMode)
+			{
+
+			}
+			else
+			{
+
+				//this.recttrans
+				//var rectBounds = new RectBounds();
+				//rectBounds.center = 
+				return new RectBounds(this.selfRectTransform);
+				//this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
+				//haha
+				//rectBounds.center = new Vector2(this.tra);
+			}
+			return rectBounds;
+		}
 
 	}
 }

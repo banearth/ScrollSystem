@@ -177,7 +177,7 @@ namespace BanSupport
 			}
 			else
 			{
-				this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
+				this.isVisible = rectBounds.Overlaps(scrollSystem.ScrollBounds);
 			}
 			return this.isVisible;
 		}
