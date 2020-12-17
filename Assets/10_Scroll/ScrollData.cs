@@ -160,7 +160,11 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				Tools.DrawRectBounds(GetWorldPosition(), scrollSystem.contentTrans.lossyScale.x * width, scrollSystem.contentTrans.lossyScale.y * height, Color.red);
+				var rectBounds = new RectBounds(
+					GetWorldPosition(),
+					scrollSystem.contentTrans.lossyScale.x * width,
+					scrollSystem.contentTrans.lossyScale.y * height);
+				rectBounds.Draw(Color.red);
 			}
 		}
 

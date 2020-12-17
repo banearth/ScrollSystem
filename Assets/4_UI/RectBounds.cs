@@ -28,13 +28,13 @@ namespace BanSupport
 
 		public Vector2 center { get { return new Vector2((left + right) / 2, (up + down) / 2); } }
 
-		public RectBounds(RectTransform rectTransform)
-		{
-			left = rectTransform.position.x - rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
-			right = rectTransform.position.x + rectTransform.sizeDelta.x / 2 * rectTransform.localScale.x;
-			up = rectTransform.position.y + rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
-			down = rectTransform.position.y - rectTransform.sizeDelta.y / 2 * rectTransform.localScale.y;
-		}
+		public RectBounds(RectTransform rectTransform):
+			this(rectTransform.pivot,
+				rectTransform.lossyScale,
+				rectTransform.rect.width,
+				rectTransform.rect.height,
+				rectTransform.position)
+		{}
 
 		public RectBounds(float left, float right, float up, float down)
 		{
@@ -44,17 +44,24 @@ namespace BanSupport
 			this.down = down;
 		}
 
-		public RectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height, Vector3 worldPosition)
+		public RectBounds(Vector2 pivot, Vector3 lossyScale, float pixelWidth, float pixelHeight, Vector3 worldPosition)
 		{
-			width = width * lossyScale.x;
-			height = height * lossyScale.y;
+			float width =  pixelWidth* lossyScale.x;
+			float height = pixelHeight * lossyScale.y;
 			this.left = worldPosition.x + width * (-pivot.x);
 			this.right = worldPosition.x + width * (1 - pivot.x);
 			this.up = worldPosition.y + height * (1 - pivot.y);
 			this.down = worldPosition.y + height * (-pivot.y);
+			Debug.Log("width:"+width+" height:"+height);
 		}
 
-
+		public RectBounds(Vector3 worldPos, float width, float height)
+		{
+			this.left = worldPos.x - width / 2;
+			this.right = worldPos.x + width / 2;
+			this.up = worldPos.y + height / 2;
+			this.down = worldPos.y - height / 2;
+		}
 
 		public bool Overlaps(RectBounds other)
 		{
@@ -120,14 +127,6 @@ namespace BanSupport
 			}
 		}
 
-		public Vector2 RightUpPos
-		{
-			get
-			{
-				return new Vector2(right, up);
-			}
-		}
-
 		public Vector2 LeftDownPos
 		{
 			get
@@ -136,11 +135,35 @@ namespace BanSupport
 			}
 		}
 
+		public Vector2 RightUpPos
+		{
+			get
+			{
+				return new Vector2(right, up);
+			}
+		}
+
 		public Vector2 RightDownPos
 		{
 			get
 			{
 				return new Vector2(right, down);
+			}
+		}
+
+		public Vector2 MiddleUpPos
+		{
+			get
+			{
+				return new Vector2((left + right) / 2, up);
+			}
+		}
+
+		public Vector2 MiddleDownPos
+		{
+			get
+			{
+				return new Vector2((left + right) / 2, down);
 			}
 		}
 
@@ -170,12 +193,24 @@ namespace BanSupport
 		/// <summary>
 		/// 使用Debug画方块
 		/// </summary>
-		public static void DrawRectRange(RectBounds rectBounds, Color color)
+		public void Draw(Color color)
 		{
-			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
-			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.RightDownPos, color);
-			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.LeftDownPos, color);
-			Debug.DrawLine(rectBounds.RightUpPos, rectBounds.RightDownPos, color);
+			Debug.DrawLine(this.LeftUpPos, this.RightUpPos, color);
+			Debug.DrawLine(this.LeftDownPos, this.RightDownPos, color);
+			Debug.DrawLine(this.LeftUpPos, this.LeftDownPos, color);
+			Debug.DrawLine(this.RightUpPos, this.RightDownPos, color);
+		}
+
+		public void Draw(Color color, float z)
+		{
+			var pos1 = new Vector3(this.LeftUpPos.x, this.LeftUpPos.y, z);
+			var pos2 = new Vector3(this.RightUpPos.x, this.RightUpPos.y, z);
+			var pos3 = new Vector3(this.RightDownPos.x, this.RightDownPos.y, z);
+			var pos4 = new Vector3(this.LeftDownPos.x, this.LeftDownPos.y, z);
+			Debug.DrawLine(pos1, pos2, color);
+			Debug.DrawLine(pos2, pos3, color);
+			Debug.DrawLine(pos3, pos4, color);
+			Debug.DrawLine(pos4, pos1, color);
 		}
 
 	}
@@ -258,13 +293,6 @@ namespace BanSupport
 //	return rectRange;
 //}
 
-
-
-
-//public static void DrawRectBounds(Vector2 pos, float z, float width, float height, Color color)
-//{
-//	DrawRectBounds(new Vector3(pos.x, pos.y, z), width, height, color);
-//}
 
 
 ///// <summary>

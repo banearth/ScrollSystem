@@ -14,7 +14,7 @@ namespace BanSupport
 
 		#region 众多参数
 
-		public bool useGroupMode = false;
+		public bool groupMode = false;
 
 		[BoolCondition("useGroupMode")]
 		public int groupCount = 1;
@@ -93,8 +93,6 @@ namespace BanSupport
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
 
-		public ScrollDirection Direction { get { return scrollDirection; } }
-
 		public RectTransform selfRectTransform
 		{
 			get
@@ -116,7 +114,7 @@ namespace BanSupport
 		{
 			get
 			{
-				if (useGroupMode)
+				if (groupMode)
 				{
 					if (scrollDirection == ScrollDirection.Vertical)
 					{
@@ -134,7 +132,7 @@ namespace BanSupport
 		{
 			get
 			{
-				if (useGroupMode)
+				if (groupMode)
 				{
 					if (scrollDirection == ScrollDirection.Horizontal)
 					{
@@ -1780,25 +1778,21 @@ namespace BanSupport
 			if (drawGizmos)
 			{
 				Gizmos.color = Color.green;
-
-				//haha
-				//GetCenterOffset();
-
 				//基本点触区域
-				Tools.DrawRectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
+				new RectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y).Draw(Color.blue);
 				//滚动区域
 				if (contentTrans != null)
 				{
-					scrollBounds = 
-					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans, scrollBounds), this.transform.position.z, Color.green);
-					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
-					{
-						scrollBounds.left += contentTrans.lossyScale.x * border.x;
-						scrollBounds.right -= contentTrans.lossyScale.x * border.x;
-						scrollBounds.up -= contentTrans.lossyScale.y * border.y;
-						scrollBounds.down += contentTrans.lossyScale.y * border.y;
-						Tools.DrawRectRange(scrollBounds, this.transform.position.z, Color.green);
-					}
+					var curBounds = new RectBounds(contentTrans);
+					//curBounds.Draw(Color.green, this.transform.position.z);
+					//if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
+					//{
+						curBounds.left += contentTrans.lossyScale.x * border.x;
+						curBounds.right -= contentTrans.lossyScale.x * border.x;
+						curBounds.up -= contentTrans.lossyScale.y * border.y;
+						curBounds.down += contentTrans.lossyScale.y * border.y;
+						curBounds.Draw(Color.green, this.transform.position.z);
+					//}
 				}
 			}
 		}
@@ -2356,23 +2350,38 @@ namespace BanSupport
 		/// <returns></returns>
 		public RectBounds GetGroupRectBounds(int groupIndex)
 		{
-			var rectBounds = new RectBounds();
-			if (useGroupMode)
+			var rectBounds = new RectBounds(this.selfRectTransform);
+			if (groupMode)
 			{
+				if (scrollDirection == ScrollDirection.Vertical)
+				{
+					
 
-			}
-			else
-			{
-
-				//this.recttrans
-				//var rectBounds = new RectBounds();
-				//rectBounds.center = 
-				return new RectBounds(this.selfRectTransform);
-				//this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
-				//haha
-				//rectBounds.center = new Vector2(this.tra);
+					//for (int i = 0;i<) { 
+					//}
+					//groupIndex
+					//groupCount
+				}
+				else if (scrollDirection == ScrollDirection.Horizontal)
+				{
+					var groupHeight = rectBounds.height / groupCount;
+					var centerPos = rectBounds.MiddleUpPos;
+					centerPos.y -= groupHeight * (0.5f + groupIndex);
+					//rectBounds.
+				}
 			}
 			return rectBounds;
+		}
+
+		private void OnValidate()
+		{
+			if (groupMode)
+			{
+				if (groupCount < 2)
+				{
+					groupCount = 2;
+				}
+			}
 		}
 
 	}
