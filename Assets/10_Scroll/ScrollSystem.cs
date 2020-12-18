@@ -212,8 +212,10 @@ namespace BanSupport
 		/// </summary>
 		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
-		//haha
-		//private List<>
+		/// <summary>
+		/// 用于分组排列
+		/// </summary>
+		private List<AlignGroup> alignList = new List<AlignGroup>();
 
 		/// <summary>
 		/// 光标的位置
@@ -566,9 +568,29 @@ namespace BanSupport
 
 		}
 
+		//haha
 		public class AlignGroup
 		{
-			public Vector2 cursor;
+			public ScrollSystem scrollSystem;
+			public Vector2 cursorPos;
+			public float maxHeight;
+			public float maxWidth;
+			public float oldMaxWidth;
+
+			/// <summary>
+			/// 初始化当前光标以及最大高度
+			/// </summary>
+			public void InitCursor()
+			{
+				//haha
+				this.cursorPos = new Vector2(scrollSystem.border.x, scrollSystem.border.y);
+				this.maxHeight = 0;
+				this.maxWidth = 0;
+				this.oldMaxWidth = 0;
+			}
+
+
+
 		}
 
 		#endregion
@@ -951,14 +973,14 @@ namespace BanSupport
 		/// <summary>
 		/// 初始化当前光标以及最大高度
 		/// </summary>
-		private void InitCursor()
-		{
-			//haha
-			this.cursorPos = new Vector2(border.x, border.y);
-			this.maxHeight = 0;
-			this.maxWidth = 0;
-			this.oldMaxWidth = 0;
-		}
+		//private void InitCursor()
+		//{
+		//	//haha
+		//	this.cursorPos = new Vector2(border.x, border.y);
+		//	this.maxHeight = 0;
+		//	this.maxWidth = 0;
+		//	this.oldMaxWidth = 0;
+		//}
 
 		/// <summary>
 		/// 初始化内容面板
