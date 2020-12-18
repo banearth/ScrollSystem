@@ -308,9 +308,9 @@ namespace BanSupport
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform.parent));
 
 			Undo.RecordObject(this.maskTransform, "FitMask Main");
-			this.maskTransform.position = rectBounds.center;
+			this.maskTransform.position = rectBounds.Position;
 			var lossyScale = this.maskTransform.lossyScale;
-			this.maskTransform.sizeDelta = new Vector2(rectBounds.width / lossyScale.x, rectBounds.height / lossyScale.y);
+			this.maskTransform.sizeDelta = new Vector2(rectBounds.Width / lossyScale.x, rectBounds.Height / lossyScale.y);
 
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
 			ListPool<Transform>.Release(listChildren);

@@ -12,12 +12,9 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
+
+
 		#region 众多参数
-
-		public bool groupMode = false;
-
-		[BoolCondition("useGroupMode")]
-		public int groupCount = 1;
 
 		private static string[] ignorePrefabNames = new string[] { "background"};
 
@@ -92,6 +89,33 @@ namespace BanSupport
 		public enum ScrollDirection { Vertical, Horizontal }
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
+
+		[Header("分组相关")]
+		[SerializeField]
+		private bool groupMode = false;
+
+		[BoolCondition("groupMode")]
+		[SerializeField]
+		private int groupCount = 1;
+
+		[BoolCondition("groupMode")]
+		[SerializeField]
+		private int curGroupIndex = 0;
+
+		public int GroupCount
+		{
+			get
+			{
+				if (groupMode)
+				{
+					return groupCount;
+				}
+				else
+				{
+					return 1;
+				}
+			}
+		}
 
 		public RectTransform selfRectTransform
 		{
@@ -188,10 +212,13 @@ namespace BanSupport
 		/// </summary>
 		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
+		//haha
+		//private List<>
+
 		/// <summary>
 		/// 光标的位置
 		/// </summary>
-		private Vector2 cursorPos;
+		//private Vector2 cursorPos;
 
 		/// <summary>
 		/// 最后一行的最大高度，用于在换行的时候使用
@@ -233,7 +260,7 @@ namespace BanSupport
 			BothPositionAndContent,//位置和内容都更新
 		}
 
-		public WillShowState willShowState = WillShowState.None;
+		private WillShowState willShowState = WillShowState.None;
 
 		private bool moveEnable = true;
 
@@ -537,6 +564,11 @@ namespace BanSupport
 				bindFunc(prefabName, bindOrigin);
 			}
 
+		}
+
+		public class AlignGroup
+		{
+			public Vector2 cursor;
 		}
 
 		#endregion
@@ -921,6 +953,7 @@ namespace BanSupport
 		/// </summary>
 		private void InitCursor()
 		{
+			//haha
 			this.cursorPos = new Vector2(border.x, border.y);
 			this.maxHeight = 0;
 			this.maxWidth = 0;
@@ -1772,28 +1805,47 @@ namespace BanSupport
 		}
 
 
-
 		private void OnDrawGizmos()
 		{
+			if (contentTrans == null)
+			{
+				return;
+			}
 			if (drawGizmos)
 			{
 				Gizmos.color = Color.green;
 				//基本点触区域
-				new RectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y).Draw(Color.blue);
-				//滚动区域
-				if (contentTrans != null)
+				//haha
+				for (int i = 0; i < GroupCount; i++)
 				{
-					var curBounds = new RectBounds(contentTrans);
-					//curBounds.Draw(Color.green, this.transform.position.z);
-					//if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
-					//{
-						curBounds.left += contentTrans.lossyScale.x * border.x;
-						curBounds.right -= contentTrans.lossyScale.x * border.x;
-						curBounds.up -= contentTrans.lossyScale.y * border.y;
-						curBounds.down += contentTrans.lossyScale.y * border.y;
-						curBounds.Draw(Color.green, this.transform.position.z);
-					//}
+					var rectBounds = GetGroupRectBounds(i);
+					rectBounds.Draw(Color.blue);
 				}
+
+				//var rectBounds = GetGroupRectBounds(1);
+				//rectBounds.Draw(Color.blue);
+
+				//Debug.Log(groupCount);
+				//for (int i = 0; i < groupCount; i++)
+				//{
+				//	var rectBounds = GetGroupRectBounds(i);
+				//	rectBounds.Draw(Color.blue);
+				//}
+
+				//new RectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y).Draw();
+				//滚动区域
+
+				var curBounds = new RectBounds(contentTrans);
+				//curBounds.Draw(Color.green, this.transform.position.z);
+				//if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
+				//{
+					curBounds.left += contentTrans.lossyScale.x * border.x;
+					curBounds.right -= contentTrans.lossyScale.x * border.x;
+					curBounds.up -= contentTrans.lossyScale.y * border.y;
+					curBounds.down += contentTrans.lossyScale.y * border.y;
+					curBounds.Draw(Color.green, this.transform.position.z);
+				//}
+				
 			}
 		}
 
@@ -2355,19 +2407,22 @@ namespace BanSupport
 			{
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-					
 
+					//haha
 					//for (int i = 0;i<) { 
 					//}
 					//groupIndex
 					//groupCount
+
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					var groupHeight = rectBounds.height / groupCount;
+					//haha
+					var groupHeight = rectBounds.Height / groupCount;
 					var centerPos = rectBounds.MiddleUpPos;
 					centerPos.y -= groupHeight * (0.5f + groupIndex);
-					//rectBounds.
+					rectBounds.Position = centerPos;
+					rectBounds.Height = groupHeight;
 				}
 			}
 			return rectBounds;
@@ -2377,9 +2432,13 @@ namespace BanSupport
 		{
 			if (groupMode)
 			{
-				if (groupCount < 2)
+				if (groupCount < 1)
 				{
-					groupCount = 2;
+					groupCount = 1;
+				}
+				if (curGroupIndex >= groupCount)
+				{
+					curGroupIndex = groupCount - 1;
 				}
 			}
 		}
