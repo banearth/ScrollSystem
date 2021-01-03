@@ -20,21 +20,137 @@ namespace BanSupport
 		//下边界的位置
 		public float down;
 
-		public float width { get { return Mathf.Max(0, right - left); } }
+		#region All Attributes
 
-		public float height { get { return Mathf.Max(0, up - down); } }
+		public float Width
+		{
+			get
+			{
+				return right - left;
+			}
+			set
+			{
+				var x = (left + right) / 2;
+				left = x - value / 2;
+				right = x + value / 2;
+			}
+		}
 
-		public Vector2 size { get { return new Vector2(width, height); } }
+		public float Height
+		{
+			get
+			{
+				return Mathf.Max(0, up - down);
+			}
+			set
+			{
+				var y = (up + down) / 2;
+				up = y + value / 2;
+				down = y - value / 2;
+			}
+		}
 
-		public Vector2 center { get { return new Vector2((left + right) / 2, (up + down) / 2); } }
+		public Vector2 Size
+		{
+			get
+			{
+				return new Vector2(Width, Height);
+			}
+		}
+
+		public Vector2 LeftUpPos
+		{
+			get
+			{
+				return new Vector2(left, up);
+			}
+		}
+
+		public Vector2 LeftDownPos
+		{
+			get
+			{
+				return new Vector2(left, down);
+			}
+		}
+
+		public Vector2 RightUpPos
+		{
+			get
+			{
+				return new Vector2(right, up);
+			}
+		}
+
+		public Vector2 RightDownPos
+		{
+			get
+			{
+				return new Vector2(right, down);
+			}
+		}
+
+		public Vector2 MiddleUpPos
+		{
+			get
+			{
+				return new Vector2((left + right) / 2, up);
+			}
+		}
+
+		public Vector2 MiddleDownPos
+		{
+			get
+			{
+				return new Vector2((left + right) / 2, down);
+			}
+		}
+
+		public Vector2 LeftMiddlePos
+		{
+			get
+			{
+				return new Vector2(left, (up + down) / 2);
+			}
+		}
+
+		public Vector2 RightMiddlePos
+		{
+			get
+			{
+				return new Vector2(right, (up + down) / 2);
+			}
+		}
+
+		public Vector2 Position
+		{
+			get
+			{
+				return new Vector2((left + right) / 2, (up + down) / 2);
+			}
+			set
+			{
+				var x = (left + right) / 2;
+				var y = (up + down) / 2;
+				var newX = value.x;
+				var newY = value.y;
+				var offsetX = newX - x;
+				var offsetY = newY - y;
+				left += offsetX;
+				right += offsetX;
+				up += offsetY;
+				down += offsetY;
+			}
+		}
+
+		#endregion
 
 		public RectBounds(RectTransform rectTransform):
 			this(rectTransform.pivot,
 				rectTransform.lossyScale,
 				rectTransform.rect.width,
 				rectTransform.rect.height,
-				rectTransform.position)
-		{}
+				rectTransform.position){}
 
 		public RectBounds(float left, float right, float up, float down)
 		{
@@ -52,7 +168,6 @@ namespace BanSupport
 			this.right = worldPosition.x + width * (1 - pivot.x);
 			this.up = worldPosition.y + height * (1 - pivot.y);
 			this.down = worldPosition.y + height * (-pivot.y);
-			Debug.Log("width:"+width+" height:"+height);
 		}
 
 		public RectBounds(Vector3 worldPos, float width, float height)
@@ -116,54 +231,6 @@ namespace BanSupport
 			else
 			{
 				return false;
-			}
-		}
-
-		public Vector2 LeftUpPos
-		{
-			get
-			{
-				return new Vector2(left, up);
-			}
-		}
-
-		public Vector2 LeftDownPos
-		{
-			get
-			{
-				return new Vector2(left, down);
-			}
-		}
-
-		public Vector2 RightUpPos
-		{
-			get
-			{
-				return new Vector2(right, up);
-			}
-		}
-
-		public Vector2 RightDownPos
-		{
-			get
-			{
-				return new Vector2(right, down);
-			}
-		}
-
-		public Vector2 MiddleUpPos
-		{
-			get
-			{
-				return new Vector2((left + right) / 2, up);
-			}
-		}
-
-		public Vector2 MiddleDownPos
-		{
-			get
-			{
-				return new Vector2((left + right) / 2, down);
 			}
 		}
 

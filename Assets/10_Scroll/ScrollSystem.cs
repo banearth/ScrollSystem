@@ -12,12 +12,9 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
+
+
 		#region 众多参数
-
-		public bool groupMode = false;
-
-		[BoolCondition("useGroupMode")]
-		public int groupCount = 1;
 
 		private static string[] ignorePrefabNames = new string[] { "background"};
 
@@ -92,6 +89,33 @@ namespace BanSupport
 		public enum ScrollDirection { Vertical, Horizontal }
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
+
+		[Header("分组相关")]
+		[SerializeField]
+		private bool groupMode = false;
+
+		[BoolCondition("groupMode")]
+		[SerializeField]
+		private int groupCount = 1;
+
+		[BoolCondition("groupMode")]
+		[SerializeField]
+		private int curGroupIndex = 0;
+
+		public int GroupCount
+		{
+			get
+			{
+				if (groupMode)
+				{
+					return groupCount;
+				}
+				else
+				{
+					return 1;
+				}
+			}
+		}
 
 		public RectTransform selfRectTransform
 		{
@@ -173,10 +197,11 @@ namespace BanSupport
 		/// </summary>
 		private RectBounds scrollBounds = new RectBounds();
 
+		//haha
 		/// <summary>
 		/// 运行时用的Data，核心数据
 		/// </summary>
-		private List<ScrollData> listData = new List<ScrollData>();
+		//private List<ScrollData> listData = new List<ScrollData>();
 
 		/// <summary>
 		/// 用于内部的搜索
@@ -189,21 +214,38 @@ namespace BanSupport
 		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
 		/// <summary>
+		/// 用于分组排列
+		/// </summary>
+		private List<AlignGroup> alignList = new List<AlignGroup>();
+
+		private AlignGroup GetCurAlignGroup()
+		{
+			if (groupMode)
+			{
+				return alignList[curGroupIndex];
+			}
+			else
+			{
+				return alignList[0];
+			}
+		}
+
+		/// <summary>
 		/// 光标的位置
 		/// </summary>
-		private Vector2 cursorPos;
+		//private Vector2 cursorPos;
 
 		/// <summary>
 		/// 最后一行的最大高度，用于在换行的时候使用
 		/// </summary>
-		private float maxHeight;
+		//private float maxHeight;
 
 		/// <summary>
 		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
 		/// </summary>
-		private float maxWidth = 0;
+		//private float maxWidth = 0;
 
-		private float oldMaxWidth = 0;
+		//private float oldMaxWidth = 0;
 
 		/// <summary>
 		/// 视图最大尺寸，用于计算跳转使用
@@ -233,7 +275,7 @@ namespace BanSupport
 			BothPositionAndContent,//位置和内容都更新
 		}
 
-		public WillShowState willShowState = WillShowState.None;
+		private WillShowState willShowState = WillShowState.None;
 
 		private bool moveEnable = true;
 
@@ -290,29 +332,30 @@ namespace BanSupport
 			public int middle;
 			public bool found;
 
-			public static SearchGroup Get(int left, int right, ScrollSystem scrollSystem)
+			public static SearchGroup Get(int left, int right, AlignGroup alignGroup)
 			{
 				var result = ObjectPool<SearchGroup>.Get();
 				result.left = left;
 				result.right = right;
 				result.middle = (left + right) / 2;
-				var curData = scrollSystem.listData[result.middle];
-				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
+
+				var curData = alignGroup.listData[result.middle];
+				result.distance = alignGroup.scrollSystem.getDistanceToCenter(curData.anchoredPosition);
 				result.found = curData.IsVisible();
 				return result;
 			}
 
-			public void Expand(List<SearchGroup> list, ScrollSystem scrollSystem)
+			public void Expand(List<SearchGroup> list, AlignGroup alignGroup)
 			{
 				int minus = right - left;
 				if (minus > 1)
 				{
-					list.Add(Get(left, middle - 1, scrollSystem));
-					list.Add(Get(middle + 1, right, scrollSystem));
+					list.Add(Get(left, middle - 1, alignGroup));
+					list.Add(Get(middle + 1, right, alignGroup));
 				}
 				else if (minus > 0)
 				{
-					list.Add(Get(right, right, scrollSystem));
+					list.Add(Get(right, right, alignGroup));
 				}
 			}
 
@@ -539,6 +582,60 @@ namespace BanSupport
 
 		}
 
+		//haha
+		public class AlignGroup
+		{
+			public ScrollSystem scrollSystem;
+			public Vector2 cursorPos;
+			public float maxHeight;
+			public float maxWidth;
+			public float oldMaxWidth;
+			public RectBounds rectBounds;
+			public List<ScrollData> listData;
+			public Func<Vector2> getCenterOffset;
+
+			public float Width
+			{
+				get
+				{
+					return rectBounds.Width;
+				}
+			}
+
+			public float Height
+			{
+				get
+				{
+					return rectBounds.Height;
+				}
+			}
+
+			public AlignGroup(ScrollSystem scrollSystem, int index)
+			{
+				this.scrollSystem = scrollSystem;
+				this.rectBounds = this.scrollSystem.GetGroupRectBounds(index);
+				this.listData = new List<ScrollData>();
+				if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
+				{
+					getCenterOffset = () => { return new Vector2((Width - scrollSystem.border.x - maxWidth) / 2, 0); };
+				}
+				else if (scrollSystem.scrollDirection == ScrollDirection.Horizontal)
+				{
+					getCenterOffset = () => { return new Vector2(0, (Height - scrollSystem.border.y - maxHeight) / 2); };
+				}
+				InitCursor();
+			}
+
+			public void InitCursor()
+			{
+				this.cursorPos = new Vector2(scrollSystem.border.x, scrollSystem.border.y);
+				this.maxHeight = 0;
+				this.maxWidth = 0;
+				this.oldMaxWidth = 0;
+			}
+
+		}
+
 		#endregion
 
 		#region 内部方法
@@ -566,10 +663,10 @@ namespace BanSupport
 				inited = true;
 
 				//初始化
-				InitGetCenterOffset();
 				InitTransAnchoredPosition();
 				InitFormatPrefabRectTransform();
-				InitCursor();
+				InitAlignGroup();
+				//haha
 				InitContentTrans();
 
 				//注册预制体对象池
@@ -605,7 +702,8 @@ namespace BanSupport
 
 		private void OnDestroy()
 		{
-			this.listData.Clear();
+			//haha
+			//this.listData.Clear();
 		}
 
 		/// <summary>
@@ -615,16 +713,21 @@ namespace BanSupport
 		{
 			if (Application.isPlaying)
 			{
-
 				if (dataChanged != DataChange.None)
 				{
 					switch (dataChanged)
 					{
 						case DataChange.Added:
-							for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
 							{
-								var scrollData = this.listData[i];
-								this.setSingleDataAction(scrollData);
+								for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+								{
+									var curAlignGroup = alignList[groupIndex];
+									for (int i = this.addModeStartIndex; i < curAlignGroup.listData.Count; i++)
+									{
+										var scrollData = curAlignGroup.listData[i];
+										this.setSingleDataAction(scrollData);
+									}
+								}
 							}
 							EndSetData();
 							break;
@@ -764,167 +867,177 @@ namespace BanSupport
 		private void Show()
 		{
 			UpdateBounds();
-			if (listData.Count <= 0)
-			{
-				return;
-			}
-			searchList.Add(SearchGroup.Get(0, listData.Count - 1, this));
-			bool found = false;
-			int foundIndex = -1;
-			uint maxSearchTimes = 1000;
 
-			while (searchList.Count > 0 && (--maxSearchTimes > 0)) {
-				var curSearch = searchList[0];
-				searchList.RemoveAt(0);
-				ObjectPool<SearchGroup>.Release(curSearch);
-				if (curSearch.found)
+			for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+			{
+				var curAlignGroup = alignList[groupIndex];
+				var listData = curAlignGroup.listData;
+				if (listData.Count <= 0)
 				{
+					return;
+				}
+				searchList.Add(SearchGroup.Get(0, listData.Count - 1, curAlignGroup));
+				bool found = false;
+				int foundIndex = -1;
+				uint maxSearchTimes = 1000;
+
+				while (searchList.Count > 0 && (--maxSearchTimes > 0))
+				{
+					var curSearch = searchList[0];
+					searchList.RemoveAt(0);
+					ObjectPool<SearchGroup>.Release(curSearch);
+					if (curSearch.found)
+					{
+						found = true;
+						foundIndex = curSearch.middle;
+						break;
+					}
+					else
+					{
+						curSearch.Expand(searchList, curAlignGroup);
+					}
+					SearchListSort();
+				}
+
+				//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
+
+				if (maxSearchTimes == 0)
+				{
+					Debug.LogWarning("maxSearchTimes == 0");
+				}
+
+				if (searchList.Count > 0)
+				{
+					foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
+					searchList.Clear();
+				}
+
+				//根据位置上下寻找
+				if (found)
+				{
+					listNextVisibleScrollData.Add(listData[foundIndex]);
+					float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
+					//向上
+					for (int i = foundIndex - 1; i >= 0; i--)
+					{
+						var curData = listData[i];
+						var curLineStartPos = GetScrollDataLineStartPos(curData);
+						if (lastLineStartPos != curLineStartPos)
+						{
+							if (found)
+							{
+								if (curData.IsVisible())
+								{
+									listNextVisibleScrollData.Add(curData);
+								}
+								found = curData.isVisible;
+								lastLineStartPos = curLineStartPos;
+							}
+							else
+							{
+								break;
+							}
+						}
+						else
+						{
+							if (curData.IsVisible())
+							{
+								listNextVisibleScrollData.Add(curData);
+								found = true;
+							}
+						}
+					}
+
+					//向下
+					lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 					found = true;
-					foundIndex = curSearch.middle;
-					break;
-				}
-				else
-				{
-					curSearch.Expand(searchList, this);
-				}
-				SearchListSort();
-			}
-
-			//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
-
-			if (maxSearchTimes == 0)
-			{
-				Debug.LogWarning("maxSearchTimes == 0");
-			}
-
-			if (searchList.Count > 0)
-			{
-				foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
-				searchList.Clear();
-			}
-
-			//根据位置上下寻找
-			if (found)
-			{
-				listNextVisibleScrollData.Add(listData[foundIndex]);
-				float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
-				//向上
-				for (int i = foundIndex - 1; i >= 0; i--)
-				{
-					var curData = listData[i];
-					var curLineStartPos = GetScrollDataLineStartPos(curData);
-					if (lastLineStartPos != curLineStartPos)
+					for (int i = foundIndex + 1; i < listData.Count; i++)
 					{
-						if (found)
+						var curData = listData[i];
+						var curLineStartPos = GetScrollDataLineStartPos(curData);
+						if (lastLineStartPos != curLineStartPos)
+						{
+							if (found)
+							{
+								if (curData.IsVisible())
+								{
+									listNextVisibleScrollData.Add(curData);
+								}
+								found = curData.isVisible;
+								lastLineStartPos = curLineStartPos;
+							}
+							else
+							{
+								break;
+							}
+						}
+						else
 						{
 							if (curData.IsVisible())
 							{
 								listNextVisibleScrollData.Add(curData);
+								found = true;
 							}
-							found = curData.isVisible;
-							lastLineStartPos = curLineStartPos;
-						}
-						else
-						{
-							break;
 						}
 					}
-					else
+
+					//方法一（这个效率更高一些）
+					//var watch = Tools.StartWatch();
+					foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
+					foreach (var tempData in listVisibleScrollData) { tempData.Hide(); }
+					listVisibleScrollData.Clear();
+					listVisibleScrollData.AddRange(listNextVisibleScrollData);
+					listNextVisibleScrollData.Clear();
+					foreach (var visibleData in listVisibleScrollData)
 					{
-						if (curData.IsVisible())
-						{
-							listNextVisibleScrollData.Add(curData);
-							found = true;
-						}
+						visibleData.Update(willShowState);
 					}
-				}
+					//Debug.Log(Tools.StopWatch(watch));
 
-				//向下
-				lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
-				found = true;
-				for (int i = foundIndex + 1; i < listData.Count; i++)
-				{
-					var curData = listData[i];
-					var curLineStartPos = GetScrollDataLineStartPos(curData);
-					if (lastLineStartPos != curLineStartPos)
+
+					//方法二
+					/*
+					var watch = Tools.StartWatch();
+					for (int i = 0;i<visibleStartIndex;i++) {
+						listData[i].Hide();
+					}
+					for (int i = visibleEndIndex+1;i<listData.Count;i++) {
+						listData[i].Hide();
+					}
+					for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
 					{
-						if (found)
-						{
-							if (curData.IsVisible())
-							{
-								listNextVisibleScrollData.Add(curData);
-							}
-							found = curData.isVisible;
-							lastLineStartPos = curLineStartPos;
-						}
-						else
-						{
-							break;
-						}
+						listData[i].Update(false, refreshPosition);
 					}
-					else
-					{
-						if (curData.IsVisible())
-						{
-							listNextVisibleScrollData.Add(curData);
-							found = true;
-						}
-					}
+					Debug.Log(Tools.StopWatch(watch));
+					*/
 				}
 
-				//方法一（这个效率更高一些）
-				//var watch = Tools.StartWatch();
-				foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
-				foreach (var tempData in listVisibleScrollData) { tempData.Hide(); }
-				listVisibleScrollData.Clear();
-				listVisibleScrollData.AddRange(listNextVisibleScrollData);
-				listNextVisibleScrollData.Clear();
-				foreach (var visibleData in listVisibleScrollData)
-				{
-					visibleData.Update(willShowState);
-				}
-				//Debug.Log(Tools.StopWatch(watch));
-
-
-				//方法二
-				/*
-				var watch = Tools.StartWatch();
-				for (int i = 0;i<visibleStartIndex;i++) {
-					listData[i].Hide();
-				}
-				for (int i = visibleEndIndex+1;i<listData.Count;i++) {
-					listData[i].Hide();
-				}
-				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-				{
-					listData[i].Update(false, refreshPosition);
-				}
-				Debug.Log(Tools.StopWatch(watch));
-				*/
 			}
-
 
 		}
 
 		public void ShowGizmosBounds()
 		{
-			listData.ForEach(temp => {
-				if (temp.isVisible)
+			for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+			{
+				var curAlignGroup = alignList[groupIndex];
+				var listData = curAlignGroup.listData;
+				listData.ForEach(temp =>
 				{
-					temp.ShowGizmosBounds();
-				}
-			});
+					if (temp.isVisible)
+					{
+						temp.ShowGizmosBounds();
+					}
+				});
+			}
 		}
 
-		/// <summary>
-		/// 初始化当前光标以及最大高度
-		/// </summary>
-		private void InitCursor()
+		private void InitAlignGroup()
 		{
-			this.cursorPos = new Vector2(border.x, border.y);
-			this.maxHeight = 0;
-			this.maxWidth = 0;
-			this.oldMaxWidth = 0;
+			for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+			{
+				alignList.Add(new AlignGroup(this,groupIndex));
+			}
 		}
 
 		/// <summary>
@@ -988,15 +1101,18 @@ namespace BanSupport
 		{
 			if (centered)
 			{
-				if (oldMaxWidth == maxWidth)
-				{
-					return;
-				}
-				oldMaxWidth = maxWidth;
-				var centerOffset = getCenterOffset();
-				foreach (var aScrollData in listData)
-				{
-					aScrollData.SetCenterOffset(centerOffset);
+				for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++) {
+					var curAlignGroup = alignList[groupIndex];
+					if (curAlignGroup.oldMaxWidth == curAlignGroup.maxWidth)
+					{
+						continue;
+					}
+					curAlignGroup.oldMaxWidth = curAlignGroup.maxWidth;
+					var centerOffset = curAlignGroup.getCenterOffset();
+					foreach (var aScrollData in curAlignGroup.listData)
+					{
+						aScrollData.SetCenterOffset(centerOffset);
+					}
 				}
 			}
 		}
@@ -1008,13 +1124,31 @@ namespace BanSupport
 		{
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				this.contentSize = cursorPos.y + maxHeight - (listData.Count > 0 ? spacing.y : 0) + border.y;
-				contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x, this.contentSize);
+				this.contentSize = 0;
+				for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+				{
+					var curAlignGroup = alignList[groupIndex];
+					var curContentSize = curAlignGroup.cursorPos.y + curAlignGroup.maxHeight - (curAlignGroup.listData.Count > 0 ? spacing.y : 0) + border.y;
+					if (this.contentSize < curContentSize)
+					{
+						this.contentSize = curContentSize;
+					}
+				}
+				this.contentTrans.sizeDelta = new Vector2(contentTrans.sizeDelta.x, this.contentSize);
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				this.contentSize = cursorPos.x + maxHeight - (listData.Count > 0 ? spacing.x : 0) + border.x;
-				contentTrans.sizeDelta = new Vector2(this.contentSize, contentTrans.sizeDelta.y);
+				this.contentSize = 0;
+				for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+				{
+					var curAlignGroup = alignList[groupIndex];
+					var curContentSize = curAlignGroup.cursorPos.x + curAlignGroup.maxHeight - (curAlignGroup.listData.Count > 0 ? spacing.x : 0) + border.x;
+					if (this.contentSize < curContentSize)
+					{
+						this.contentSize = curContentSize;
+					}
+				}
+				this.contentTrans.sizeDelta = new Vector2(this.contentSize, contentTrans.sizeDelta.y);
 			}
 		}
 
@@ -1066,25 +1200,6 @@ namespace BanSupport
 		{
 			var returnPosition = transAnchoredPosition(position);
 			return returnPosition;
-		}
-
-		private Func<Vector2> getCenterOffset;
-
-		private void InitGetCenterOffset()
-		{
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
-			}
-		}
-
-		public Vector2 GetCenterOffset()
-		{
-			return getCenterOffset();
 		}
 
 		private Action<RectTransform> formatPrefabRectTransform;
@@ -1169,11 +1284,12 @@ namespace BanSupport
 			}
 
 			//初始化
-			InitGetCenterOffset();
 			InitTransAnchoredPosition();
 			InitFormatPrefabRectTransform();
-			InitCursor();
+			InitAlignGroup();
 			InitContentTrans();
+
+			var curAlignGroup = GetCurAlignGroup();
 
 			Dictionary<RectTransform, Vector2> dic_RectTransform_AnchoredPosition = new Dictionary<RectTransform, Vector2>();
 			var childCount = this.contentTrans.childCount;
@@ -1193,73 +1309,73 @@ namespace BanSupport
 					if (newLine == ScrollLayout.NewLine.None)
 					{
 						//发生过偏移，并且这次物体的右边界超过宽度
-						if (cursorPos.x > border.x && cursorPos.x + rectTransform.sizeDelta.x > Width - border.x)
+						if (curAlignGroup.cursorPos.x > border.x && curAlignGroup.cursorPos.x + rectTransform.sizeDelta.x > Width - border.x)
 						{
 							//那么执行换行操作
-							cursorPos.x = border.x;
-							cursorPos.y += maxHeight;
-							maxHeight = 0;
+							curAlignGroup.cursorPos.x = border.x;
+							curAlignGroup.cursorPos.y += curAlignGroup.maxHeight;
+							curAlignGroup.maxHeight = 0;
 						}
 						//设置位置
-						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+						dic_RectTransform_AnchoredPosition.Add(rectTransform, curAlignGroup.cursorPos + rectTransform.sizeDelta / 2);
 						//更新光标
-						cursorPos.x += rectTransform.sizeDelta.x;
+						curAlignGroup.cursorPos.x += rectTransform.sizeDelta.x;
 						//更新最大宽度
-						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
+						if (curAlignGroup.maxWidth < curAlignGroup.cursorPos.x) { curAlignGroup.maxWidth = curAlignGroup.cursorPos.x; }
 						//增加间隔
 						if (rectTransform.sizeDelta.x > 0)
 						{
-							cursorPos.x += spacing.x;
+							curAlignGroup.cursorPos.x += spacing.x;
 						}
 						float curMaxHeight = rectTransform.sizeDelta.y > 0 ? (rectTransform.sizeDelta.y + spacing.y) : 0;
 						//更新最大高度
-						if (maxHeight < curMaxHeight)
+						if (curAlignGroup.maxHeight < curMaxHeight)
 						{
-							maxHeight = curMaxHeight;
+							curAlignGroup.maxHeight = curMaxHeight;
 						}
 					}
 					else
 					{
 						//发生过偏移，换行
-						if (cursorPos.x > border.x)
+						if (curAlignGroup.cursorPos.x > border.x)
 						{
-							cursorPos.y += maxHeight;
-							maxHeight = 0;
+							curAlignGroup.cursorPos.y += curAlignGroup.maxHeight;
+							curAlignGroup.maxHeight = 0;
 						}
 						switch (newLine)
 						{
 							case ScrollLayout.NewLine.Center:
 								{
-									cursorPos.x = Width / 2;
+									curAlignGroup.cursorPos.x = Width / 2;
 								}
 								break;
 							case ScrollLayout.NewLine.LeftOrUp:
 								{
-									cursorPos.x = rectTransform.sizeDelta.x / 2 + border.x;
+									curAlignGroup.cursorPos.x = rectTransform.sizeDelta.x / 2 + border.x;
 								}
 								break;
 							case ScrollLayout.NewLine.RightOrDown:
 								{
-									cursorPos.x = Width - rectTransform.sizeDelta.x / 2 - border.x;
+									curAlignGroup.cursorPos.x = Width - rectTransform.sizeDelta.x / 2 - border.x;
 								}
 								break;
 						}
 						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
-						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
+						rectTransform.anchoredPosition = TransAnchoredPosition(curAlignGroup.cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
 						//换新行
-						cursorPos.x = border.x;
-						cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
+						curAlignGroup.cursorPos.x = border.x;
+						curAlignGroup.cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
 					}
 				}
 				//设置content高度
 				contentTrans.sizeDelta = new Vector2(
 					contentTrans.sizeDelta.x,
-					cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y
+					curAlignGroup.cursorPos.y + curAlignGroup.maxHeight - (childCount > 0 ? spacing.y : 0) + border.y
 				);
 				float centerOffset = 0;
 				if (centered)
 				{
-					centerOffset = (Width - border.x - maxWidth) / 2;
+					centerOffset = (Width - border.x - curAlignGroup.maxWidth) / 2;
 				}
 				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
 				{
@@ -1268,92 +1384,92 @@ namespace BanSupport
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				for (int i = 0; i < childCount; i++)
-				{
-					var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
-					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
-					formatPrefabRectTransform(rectTransform);
-					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
-					var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
-					if (layout != null)
-					{
-						newLine = layout.newLine;
-					}
-					if (newLine == ScrollLayout.NewLine.None)
-					{
-						//发生过偏移，并且这次物体的右边界超过宽度
-						if (cursorPos.y > border.y && cursorPos.y + rectTransform.sizeDelta.y > Height - border.y)
-						{
-							//那么执行换行操作
-							cursorPos.y = border.y;
-							cursorPos.x += maxHeight;
-							maxHeight = 0;
-						}
-						//设置位置
-						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
-						//更新光标
-						cursorPos.y += rectTransform.sizeDelta.y;
-						//更新最大宽度
-						if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
-						//增加间隔
-						if (rectTransform.sizeDelta.y > 0)
-						{
-							cursorPos.y += spacing.y;
-						}
-						//更新最大高度
-						float curMaxHeight = rectTransform.sizeDelta.x > 0 ? (rectTransform.sizeDelta.x + spacing.x) : 0;
-						if (maxHeight < curMaxHeight)
-						{
-							maxHeight = curMaxHeight;
-						}
-					}
-					else
-					{
-						//发生过偏移，换行
-						if (cursorPos.y > border.y)
-						{
-							cursorPos.x += maxHeight;
-							maxHeight = 0;
-						}
-						switch (newLine)
-						{
-							case ScrollLayout.NewLine.Center:
-								{
-									cursorPos.y = Height / 2;
-								}
-								break;
-							case ScrollLayout.NewLine.LeftOrUp:
-								{
-									cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
-								}
-								break;
-							case ScrollLayout.NewLine.RightOrDown:
-								{
-									cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
-								}
-								break;
-						}
-						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
-						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
-						//换新行
-						cursorPos.y = border.y;
-						cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
-					}
-				}
-				//设置content高度
-				contentTrans.sizeDelta = new Vector2(
-					cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x,
-					contentTrans.sizeDelta.y
-				);
-				float centerOffset = 0;
-				if (centered)
-				{
-					centerOffset = (Height - border.y - maxWidth) / 2;
-				}
-				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
-				{
-					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.up * centerOffset);
-				}
+				//for (int i = 0; i < childCount; i++)
+				//{
+				//	var rectTransform = this.contentTrans.GetChild(i) as RectTransform;
+				//	if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
+				//	formatPrefabRectTransform(rectTransform);
+				//	ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
+				//	var layout = this.contentTrans.GetChild(i).GetComponent<ScrollLayout>();
+				//	if (layout != null)
+				//	{
+				//		newLine = layout.newLine;
+				//	}
+				//	if (newLine == ScrollLayout.NewLine.None)
+				//	{
+				//		//发生过偏移，并且这次物体的右边界超过宽度
+				//		if (cursorPos.y > border.y && cursorPos.y + rectTransform.sizeDelta.y > Height - border.y)
+				//		{
+				//			//那么执行换行操作
+				//			cursorPos.y = border.y;
+				//			cursorPos.x += maxHeight;
+				//			maxHeight = 0;
+				//		}
+				//		//设置位置
+				//		dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+				//		//更新光标
+				//		cursorPos.y += rectTransform.sizeDelta.y;
+				//		//更新最大宽度
+				//		if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
+				//		//增加间隔
+				//		if (rectTransform.sizeDelta.y > 0)
+				//		{
+				//			cursorPos.y += spacing.y;
+				//		}
+				//		//更新最大高度
+				//		float curMaxHeight = rectTransform.sizeDelta.x > 0 ? (rectTransform.sizeDelta.x + spacing.x) : 0;
+				//		if (maxHeight < curMaxHeight)
+				//		{
+				//			maxHeight = curMaxHeight;
+				//		}
+				//	}
+				//	else
+				//	{
+				//		//发生过偏移，换行
+				//		if (cursorPos.y > border.y)
+				//		{
+				//			cursorPos.x += maxHeight;
+				//			maxHeight = 0;
+				//		}
+				//		switch (newLine)
+				//		{
+				//			case ScrollLayout.NewLine.Center:
+				//				{
+				//					cursorPos.y = Height / 2;
+				//				}
+				//				break;
+				//			case ScrollLayout.NewLine.LeftOrUp:
+				//				{
+				//					cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
+				//				}
+				//				break;
+				//			case ScrollLayout.NewLine.RightOrDown:
+				//				{
+				//					cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
+				//				}
+				//				break;
+				//		}
+				//		//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
+				//		rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
+				//		//换新行
+				//		cursorPos.y = border.y;
+				//		cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
+				//	}
+				//}
+				////设置content高度
+				//contentTrans.sizeDelta = new Vector2(
+				//	cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x,
+				//	contentTrans.sizeDelta.y
+				//);
+				//float centerOffset = 0;
+				//if (centered)
+				//{
+				//	centerOffset = (Height - border.y - maxWidth) / 2;
+				//}
+				//foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
+				//{
+				//	rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.up * centerOffset);
+				//}
 			}
 			dic_RectTransform_AnchoredPosition.Clear();
 #endif
@@ -1428,14 +1544,15 @@ namespace BanSupport
 		/// </summary>
 		private void SetAllData()
 		{
-			InitCursor();
-			var dataCount = this.listData.Count;
-			for (int i = 0; i < dataCount; i++)
-			{
-				var curData = this.listData[i];
-				setSingleDataAction(curData);
-			}
-			EndSetData();
+			//haha
+			//InitCursor();
+			//var dataCount = this.listData.Count;
+			//for (int i = 0; i < dataCount; i++)
+			//{
+			//	var curData = this.listData[i];
+			//	setSingleDataAction(curData);
+			//}
+			//EndSetData();
 		}
 
 		/// <summary>
@@ -1472,128 +1589,130 @@ namespace BanSupport
 
 		private void SetSingleContentDataWhenVertical(ScrollData data)
 		{
-			data.CalculateSize();
-			if (data.newLine == ScrollLayout.NewLine.None)
-			{
-				//发生过偏移，并且这次物体的右边界超过宽度
-				if (cursorPos.x > border.x && cursorPos.x + data.width > Width - border.x)
-				{
-					//那么执行换行操作
-					cursorPos.x = border.x;
-					cursorPos.y += maxHeight;
-					maxHeight = 0;
-				}
-				//设置位置
-				data.SetAnchoredPosition(cursorPos + data.Size / 2);
-				//更新光标
-				cursorPos.x += data.width;
-				//更新最大宽度
-				if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
-				//增加间隔
-				if (data.width > 0)
-				{
-					cursorPos.x += spacing.x;
-				}
-				//更新最大高度
-				float curMaxHeight = data.height > 0 ? (data.height + spacing.y) : 0;
-				if (maxHeight < curMaxHeight)
-				{
-					maxHeight = curMaxHeight;
-				}
-			}
-			else
-			{
-				//发生过偏移
-				if (cursorPos.x > border.x)
-				{
-					//换行
-					cursorPos.y += maxHeight;
-					maxHeight = 0;
-				}
+			//haha
+			//data.CalculateSize();
+			//if (data.newLine == ScrollLayout.NewLine.None)
+			//{
+			//	//发生过偏移，并且这次物体的右边界超过宽度
+			//	if (cursorPos.x > border.x && cursorPos.x + data.width > Width - border.x)
+			//	{
+			//		//那么执行换行操作
+			//		cursorPos.x = border.x;
+			//		cursorPos.y += maxHeight;
+			//		maxHeight = 0;
+			//	}
+			//	//设置位置
+			//	data.SetAnchoredPosition(cursorPos + data.Size / 2);
+			//	//更新光标
+			//	cursorPos.x += data.width;
+			//	//更新最大宽度
+			//	if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
+			//	//增加间隔
+			//	if (data.width > 0)
+			//	{
+			//		cursorPos.x += spacing.x;
+			//	}
+			//	//更新最大高度
+			//	float curMaxHeight = data.height > 0 ? (data.height + spacing.y) : 0;
+			//	if (maxHeight < curMaxHeight)
+			//	{
+			//		maxHeight = curMaxHeight;
+			//	}
+			//}
+			//else
+			//{
+			//	//发生过偏移
+			//	if (cursorPos.x > border.x)
+			//	{
+			//		//换行
+			//		cursorPos.y += maxHeight;
+			//		maxHeight = 0;
+			//	}
 
-				//指定使用新行
-				switch (data.newLine)
-				{
-					case ScrollLayout.NewLine.Center:
-						cursorPos.x = Width / 2;
-						break;
-					case ScrollLayout.NewLine.LeftOrUp:
-						cursorPos.x = data.width / 2 + border.x;
-						break;
-					case ScrollLayout.NewLine.RightOrDown:
-						cursorPos.x = Width - data.width / 2 - border.x;
-						break;
-				}
+			//	//指定使用新行
+			//	switch (data.newLine)
+			//	{
+			//		case ScrollLayout.NewLine.Center:
+			//			cursorPos.x = Width / 2;
+			//			break;
+			//		case ScrollLayout.NewLine.LeftOrUp:
+			//			cursorPos.x = data.width / 2 + border.x;
+			//			break;
+			//		case ScrollLayout.NewLine.RightOrDown:
+			//			cursorPos.x = Width - data.width / 2 - border.x;
+			//			break;
+			//	}
 
-				//设置位置
-				data.SetAnchoredPosition(cursorPos + data.height / 2 * Vector2.up);
-				//换新行
-				cursorPos.x = border.x;
-				cursorPos.y += data.height + spacing.y;
-			}
+			//	//设置位置
+			//	data.SetAnchoredPosition(cursorPos + data.height / 2 * Vector2.up);
+			//	//换新行
+			//	cursorPos.x = border.x;
+			//	cursorPos.y += data.height + spacing.y;
+			//}
 		}
 
 		private void SetSingleContentDataWhenHorizontal(ScrollData data)
 		{
-			data.CalculateSize();
-			//指定使用新行
-			if (data.newLine == ScrollLayout.NewLine.None)
-			{
-				//发生过偏移，并且这次物体的右边界超过宽度
-				if (cursorPos.y > border.y && cursorPos.y + data.height > Height - border.y)
-				{
-					//那么执行换行操作
-					cursorPos.y = border.y;
-					cursorPos.x += maxHeight;
-					maxHeight = 0;
-				}
-				//设置位置
-				data.SetAnchoredPosition(cursorPos + data.Size / 2);
-				//更新光标
-				cursorPos.y += data.height;
-				//更新最大宽度
-				if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
-				//增加间隔
-				if (data.height > 0)
-				{
-					cursorPos.y += spacing.y;
-				}
-				//更新最大高度
-				var curMaxHeight = data.width > 0 ? (data.width + spacing.x) : 0;
-				if (maxHeight < curMaxHeight)
-				{
-					maxHeight = curMaxHeight;
-				}
-			}
-			else
-			{
-				//发生过偏移
-				if (cursorPos.y > border.y)
-				{
-					//换行
-					cursorPos.x += maxHeight;
-					maxHeight = 0;
-				}
+			//haha
+			//data.CalculateSize();
+			////指定使用新行
+			//if (data.newLine == ScrollLayout.NewLine.None)
+			//{
+			//	//发生过偏移，并且这次物体的右边界超过宽度
+			//	if (cursorPos.y > border.y && cursorPos.y + data.height > Height - border.y)
+			//	{
+			//		//那么执行换行操作
+			//		cursorPos.y = border.y;
+			//		cursorPos.x += maxHeight;
+			//		maxHeight = 0;
+			//	}
+			//	//设置位置
+			//	data.SetAnchoredPosition(cursorPos + data.Size / 2);
+			//	//更新光标
+			//	cursorPos.y += data.height;
+			//	//更新最大宽度
+			//	if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
+			//	//增加间隔
+			//	if (data.height > 0)
+			//	{
+			//		cursorPos.y += spacing.y;
+			//	}
+			//	//更新最大高度
+			//	var curMaxHeight = data.width > 0 ? (data.width + spacing.x) : 0;
+			//	if (maxHeight < curMaxHeight)
+			//	{
+			//		maxHeight = curMaxHeight;
+			//	}
+			//}
+			//else
+			//{
+			//	//发生过偏移
+			//	if (cursorPos.y > border.y)
+			//	{
+			//		//换行
+			//		cursorPos.x += maxHeight;
+			//		maxHeight = 0;
+			//	}
 
-				//指定使用新行
-				switch (data.newLine)
-				{
-					case ScrollLayout.NewLine.Center:
-						cursorPos.y = Width / 2;
-						break;
-					case ScrollLayout.NewLine.LeftOrUp:
-						cursorPos.y = data.height / 2 + border.y;
-						break;
-					case ScrollLayout.NewLine.RightOrDown:
-						cursorPos.y = Width - data.width / 2 - border.y;
-						break;
-				}
-				//设置位置
-				data.SetAnchoredPosition(cursorPos + data.width / 2 * Vector2.right);
-				//换新行
-				cursorPos.y = border.y;
-				cursorPos.x += data.width + spacing.x;
-			}
+			//	//指定使用新行
+			//	switch (data.newLine)
+			//	{
+			//		case ScrollLayout.NewLine.Center:
+			//			cursorPos.y = Width / 2;
+			//			break;
+			//		case ScrollLayout.NewLine.LeftOrUp:
+			//			cursorPos.y = data.height / 2 + border.y;
+			//			break;
+			//		case ScrollLayout.NewLine.RightOrDown:
+			//			cursorPos.y = Width - data.width / 2 - border.y;
+			//			break;
+			//	}
+			//	//设置位置
+			//	data.SetAnchoredPosition(cursorPos + data.width / 2 * Vector2.right);
+			//	//换新行
+			//	cursorPos.y = border.y;
+			//	cursorPos.x += data.width + spacing.x;
+			//}
 		}
 
 		private void UpdateEnableScroll()
@@ -1772,28 +1891,46 @@ namespace BanSupport
 		}
 
 
-
 		private void OnDrawGizmos()
 		{
+			if (contentTrans == null)
+			{
+				return;
+			}
 			if (drawGizmos)
 			{
 				Gizmos.color = Color.green;
 				//基本点触区域
-				new RectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y).Draw(Color.blue);
-				//滚动区域
-				if (contentTrans != null)
+				//haha
+				for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
 				{
-					var curBounds = new RectBounds(contentTrans);
-					//curBounds.Draw(Color.green, this.transform.position.z);
-					//if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
-					//{
-						curBounds.left += contentTrans.lossyScale.x * border.x;
-						curBounds.right -= contentTrans.lossyScale.x * border.x;
-						curBounds.up -= contentTrans.lossyScale.y * border.y;
-						curBounds.down += contentTrans.lossyScale.y * border.y;
-						curBounds.Draw(Color.green, this.transform.position.z);
-					//}
+					alignList[groupIndex].rectBounds.Draw(Color.blue);
 				}
+
+				//var rectBounds = GetGroupRectBounds(1);
+				//rectBounds.Draw(Color.blue);
+
+				//Debug.Log(groupCount);
+				//for (int i = 0; i < groupCount; i++)
+				//{
+				//	var rectBounds = GetGroupRectBounds(i);
+				//	rectBounds.Draw(Color.blue);
+				//}
+
+				//new RectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y).Draw();
+				//滚动区域
+
+				var curBounds = new RectBounds(contentTrans);
+				//curBounds.Draw(Color.green, this.transform.position.z);
+				//if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
+				//{
+					curBounds.left += contentTrans.lossyScale.x * border.x;
+					curBounds.right -= contentTrans.lossyScale.x * border.x;
+					curBounds.up -= contentTrans.lossyScale.y * border.y;
+					curBounds.down += contentTrans.lossyScale.y * border.y;
+					curBounds.Draw(Color.green, this.transform.position.z);
+				//}
+				
 			}
 		}
 
@@ -1877,7 +2014,8 @@ namespace BanSupport
 		/// </summary>
 		public void Refresh()
 		{
-			if (listData.Count == 0)
+			var curAlignGroup = GetCurAlignGroup();
+			if (curAlignGroup.listData.Count == 0)
 			{
 				return;
 			}
@@ -1890,7 +2028,8 @@ namespace BanSupport
 		public void Clear()
 		{
 			bool removedAny = false;
-			while (listData.Count > 0)
+			var curAlignGroup = GetCurAlignGroup();
+			while (curAlignGroup.listData.Count > 0)
 			{
 				if (Remove(0))
 				{
@@ -1909,7 +2048,8 @@ namespace BanSupport
 		/// </summary>
 		public bool RemoveLast()
 		{
-			return Remove(listData.Count - 1);
+			var curAlignGroup = GetCurAlignGroup();
+			return Remove(curAlignGroup.listData.Count - 1);
 		}
 
 		/// <summary>
@@ -1925,13 +2065,14 @@ namespace BanSupport
 		/// </summary>
 		public bool Remove(int index)
 		{
-			if (index >= 0 && index < listData.Count)
+			var curAlignGroup = GetCurAlignGroup();
+			if (index >= 0 && index < curAlignGroup.listData.Count)
 			{
-				var removedScrollData = listData[index];
+				var removedScrollData = curAlignGroup.listData[index];
 				//自身删除
 				removedScrollData.Hide();
 				//从listData中删除
-				listData.RemoveAt(index);
+				curAlignGroup.listData.RemoveAt(index);
 				//从dic_DataSource_ScrollData中删除
 				if (removedScrollData.dataSource != null)
 				{
@@ -2355,19 +2496,22 @@ namespace BanSupport
 			{
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-					
 
+					//haha
 					//for (int i = 0;i<) { 
 					//}
 					//groupIndex
 					//groupCount
+
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					var groupHeight = rectBounds.height / groupCount;
+					//haha
+					var groupHeight = rectBounds.Height / groupCount;
 					var centerPos = rectBounds.MiddleUpPos;
 					centerPos.y -= groupHeight * (0.5f + groupIndex);
-					//rectBounds.
+					rectBounds.Position = centerPos;
+					rectBounds.Height = groupHeight;
 				}
 			}
 			return rectBounds;
@@ -2377,9 +2521,13 @@ namespace BanSupport
 		{
 			if (groupMode)
 			{
-				if (groupCount < 2)
+				if (groupCount < 1)
 				{
-					groupCount = 2;
+					groupCount = 1;
+				}
+				if (curGroupIndex >= groupCount)
+				{
+					curGroupIndex = groupCount - 1;
 				}
 			}
 		}
