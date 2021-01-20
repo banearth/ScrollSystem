@@ -90,33 +90,6 @@ namespace BanSupport
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
 
-		[Header("分组相关")]
-		[SerializeField]
-		private bool groupMode = false;
-
-		[BoolCondition("groupMode")]
-		[SerializeField]
-		private int groupCount = 1;
-
-		[BoolCondition("groupMode")]
-		[SerializeField]
-		private int curGroupIndex = 0;
-
-		public int GroupCount
-		{
-			get
-			{
-				if (groupMode)
-				{
-					return groupCount;
-				}
-				else
-				{
-					return 1;
-				}
-			}
-		}
-
 		public RectTransform selfRectTransform
 		{
 			get
@@ -138,13 +111,6 @@ namespace BanSupport
 		{
 			get
 			{
-				if (groupMode)
-				{
-					if (scrollDirection == ScrollDirection.Vertical)
-					{
-						return selfRectTransform.rect.width / groupCount;
-					}
-				}
 				return selfRectTransform.rect.width;
 			}
 		}
@@ -156,13 +122,6 @@ namespace BanSupport
 		{
 			get
 			{
-				if (groupMode)
-				{
-					if (scrollDirection == ScrollDirection.Horizontal)
-					{
-						return selfRectTransform.rect.height / groupCount;
-					}
-				}
 				return selfRectTransform.rect.height;
 			}
 		}
@@ -197,11 +156,10 @@ namespace BanSupport
 		/// </summary>
 		private RectBounds scrollBounds = new RectBounds();
 
-		//haha
 		/// <summary>
 		/// 运行时用的Data，核心数据
 		/// </summary>
-		//private List<ScrollData> listData = new List<ScrollData>();
+		private List<ScrollData> listData = new List<ScrollData>();
 
 		/// <summary>
 		/// 用于内部的搜索
@@ -214,38 +172,21 @@ namespace BanSupport
 		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
 		/// <summary>
-		/// 用于分组排列
-		/// </summary>
-		private List<AlignGroup> alignList = new List<AlignGroup>();
-
-		private AlignGroup GetCurAlignGroup()
-		{
-			if (groupMode)
-			{
-				return alignList[curGroupIndex];
-			}
-			else
-			{
-				return alignList[0];
-			}
-		}
-
-		/// <summary>
 		/// 光标的位置
 		/// </summary>
-		//private Vector2 cursorPos;
+		private Vector2 cursorPos;
 
 		/// <summary>
 		/// 最后一行的最大高度，用于在换行的时候使用
 		/// </summary>
-		//private float maxHeight;
+		private float maxHeight;
 
 		/// <summary>
 		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
 		/// </summary>
-		//private float maxWidth = 0;
+		private float maxWidth = 0;
 
-		//private float oldMaxWidth = 0;
+		private float oldMaxWidth = 0;
 
 		/// <summary>
 		/// 视图最大尺寸，用于计算跳转使用
@@ -719,15 +660,14 @@ namespace BanSupport
 					{
 						case DataChange.Added:
 							{
-								for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
-								{
-									var curAlignGroup = alignList[groupIndex];
-									for (int i = this.addModeStartIndex; i < curAlignGroup.listData.Count; i++)
-									{
-										var scrollData = curAlignGroup.listData[i];
-										this.setSingleDataAction(scrollData);
-									}
-								}
+								
+									//var curAlignGroup = alignList[groupIndex];
+									//for (int i = this.addModeStartIndex; i < curAlignGroup.listData.Count; i++)
+									//{
+									//	var scrollData = curAlignGroup.listData[i];
+									//	this.setSingleDataAction(scrollData);
+									//}
+								
 							}
 							EndSetData();
 							break;
@@ -2102,22 +2042,28 @@ namespace BanSupport
 		/// </summary>
 		public bool Remove(object dataSource)
 		{
-			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
+			var curAlignGroup = GetCurAlignGroup();
+			curAlignGroup
+			//if (index >= 0 && index < curAlignGroup.listData.Count)
+			if ()
 			{
-				var removedScrollData = dic_DataSource_ScrollData[dataSource];
+				var removedScrollData = curAlignGroup.listData[index];
 				//自身删除
 				removedScrollData.Hide();
 				//从listData中删除
-				listData.Remove(removedScrollData);
+				curAlignGroup.listData.RemoveAt(index);
 				//从dic_DataSource_ScrollData中删除
-				dic_DataSource_ScrollData.Remove(dataSource);
+				if (removedScrollData.dataSource != null)
+				{
+					dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
+				}
 				//从listVisibleScrollData删除
 				if (listVisibleScrollData.Contains(removedScrollData))
 				{
 					listVisibleScrollData.Remove(removedScrollData);
 				}
 				//标记当前数据更改过
-				if (this.dataChanged < DataChange.Removed)
+				if (dataChanged < DataChange.Removed)
 				{
 					dataChanged = DataChange.Removed;
 				}
@@ -2125,9 +2071,36 @@ namespace BanSupport
 			}
 			else
 			{
-				Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
+				Debug.LogWarning("无法找到index:" + index);
 				return false;
 			}
+
+			//if (dic_DataSource_ScrollData.ContainsKey(dataSource))
+			//{
+			//	var removedScrollData = dic_DataSource_ScrollData[dataSource];
+			//	//自身删除
+			//	removedScrollData.Hide();
+			//	//从listData中删除
+			//	listData.Remove(removedScrollData);
+			//	//从dic_DataSource_ScrollData中删除
+			//	dic_DataSource_ScrollData.Remove(dataSource);
+			//	//从listVisibleScrollData删除
+			//	if (listVisibleScrollData.Contains(removedScrollData))
+			//	{
+			//		listVisibleScrollData.Remove(removedScrollData);
+			//	}
+			//	//标记当前数据更改过
+			//	if (this.dataChanged < DataChange.Removed)
+			//	{
+			//		dataChanged = DataChange.Removed;
+			//	}
+			//	return true;
+			//}
+			//else
+			//{
+			//	Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
+			//	return false;
+			//}
 		}
 
 		/// <summary>
