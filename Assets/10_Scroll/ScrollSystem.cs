@@ -12,8 +12,6 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
-
-
 		#region 众多参数
 
 		private static string[] ignorePrefabNames = new string[] { "background"};
@@ -89,6 +87,8 @@ namespace BanSupport
 		public enum ScrollDirection { Vertical, Horizontal }
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
+
+		public ScrollDirection ScrollDirection_GET { get { return scrollDirection; } }
 
 		[Header("分组相关")]
 		[SerializeField]
@@ -582,60 +582,6 @@ namespace BanSupport
 
 		}
 
-		//haha
-		public class AlignGroup
-		{
-			public ScrollSystem scrollSystem;
-			public Vector2 cursorPos;
-			public float maxHeight;
-			public float maxWidth;
-			public float oldMaxWidth;
-			public RectBounds rectBounds;
-			public List<ScrollData> listData;
-			public Func<Vector2> getCenterOffset;
-
-			public float Width
-			{
-				get
-				{
-					return rectBounds.Width;
-				}
-			}
-
-			public float Height
-			{
-				get
-				{
-					return rectBounds.Height;
-				}
-			}
-
-			public AlignGroup(ScrollSystem scrollSystem, int index)
-			{
-				this.scrollSystem = scrollSystem;
-				this.rectBounds = this.scrollSystem.GetGroupRectBounds(index);
-				this.listData = new List<ScrollData>();
-				if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
-				{
-					getCenterOffset = () => { return new Vector2((Width - scrollSystem.border.x - maxWidth) / 2, 0); };
-				}
-				else if (scrollSystem.scrollDirection == ScrollDirection.Horizontal)
-				{
-					getCenterOffset = () => { return new Vector2(0, (Height - scrollSystem.border.y - maxHeight) / 2); };
-				}
-				InitCursor();
-			}
-
-			public void InitCursor()
-			{
-				this.cursorPos = new Vector2(scrollSystem.border.x, scrollSystem.border.y);
-				this.maxHeight = 0;
-				this.maxWidth = 0;
-				this.oldMaxWidth = 0;
-			}
-
-		}
-
 		#endregion
 
 		#region 内部方法
@@ -868,6 +814,17 @@ namespace BanSupport
 		{
 			UpdateBounds();
 
+			foreach () { 
+				
+			}
+			for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
+			{
+				//haha
+				var curAlignGroup = alignList[groupIndex];
+				//haha
+				curAlignGroup.SHow
+			}
+
 			for (int groupIndex = 0; groupIndex < GroupCount; groupIndex++)
 			{
 				var curAlignGroup = alignList[groupIndex];
@@ -915,6 +872,7 @@ namespace BanSupport
 				//根据位置上下寻找
 				if (found)
 				{
+					//curAlignGroup
 					listNextVisibleScrollData.Add(listData[foundIndex]);
 					float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 					//向上
@@ -1940,12 +1898,6 @@ namespace BanSupport
 
 		#region 外部方法
 
-		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
-
-		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
-
-		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
-
 		public Action<string, GameObject, object> onItemOpen { get; private set; }
 
 		public Action<string, GameObject, object> onItemClose { get; private set; }
@@ -2102,32 +2054,70 @@ namespace BanSupport
 		/// </summary>
 		public bool Remove(object dataSource)
 		{
-			if (dic_DataSource_ScrollData.ContainsKey(dataSource))
-			{
-				var removedScrollData = dic_DataSource_ScrollData[dataSource];
-				//自身删除
-				removedScrollData.Hide();
-				//从listData中删除
-				listData.Remove(removedScrollData);
-				//从dic_DataSource_ScrollData中删除
-				dic_DataSource_ScrollData.Remove(dataSource);
-				//从listVisibleScrollData删除
-				if (listVisibleScrollData.Contains(removedScrollData))
-				{
-					listVisibleScrollData.Remove(removedScrollData);
-				}
-				//标记当前数据更改过
-				if (this.dataChanged < DataChange.Removed)
-				{
-					dataChanged = DataChange.Removed;
-				}
-				return true;
-			}
-			else
-			{
-				Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
-				return false;
-			}
+
+			//var curAlignGroup = GetCurAlignGroup();
+			//if (index >= 0 && index < curAlignGroup.listData.Count)
+			//{
+			//	var removedScrollData = curAlignGroup.listData[index];
+			//	//自身删除
+			//	removedScrollData.Hide();
+			//	//从listData中删除
+			//	curAlignGroup.listData.RemoveAt(index);
+			//	//从dic_DataSource_ScrollData中删除
+			//	if (removedScrollData.dataSource != null)
+			//	{
+			//		dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
+			//	}
+			//	//从listVisibleScrollData删除
+			//	if (listVisibleScrollData.Contains(removedScrollData))
+			//	{
+			//		listVisibleScrollData.Remove(removedScrollData);
+			//	}
+			//	//标记当前数据更改过
+			//	if (dataChanged < DataChange.Removed)
+			//	{
+			//		dataChanged = DataChange.Removed;
+			//	}
+			//	return true;
+			//}
+			//else
+			//{
+			//	Debug.LogWarning("无法找到index:" + index);
+			//	return false;
+			//}
+
+			//dic_DataSource_ScrollData
+			//haha
+			var curAlignGroup = GetCurAlignGroup();
+			curAlignGroup
+
+
+			//if (dic_DataSource_ScrollData.ContainsKey(dataSource))
+			//{
+			//	var removedScrollData = dic_DataSource_ScrollData[dataSource];
+			//	//自身删除
+			//	removedScrollData.Hide();
+			//	//从listData中删除
+			//	listData.Remove(removedScrollData);
+			//	//从dic_DataSource_ScrollData中删除
+			//	dic_DataSource_ScrollData.Remove(dataSource);
+			//	//从listVisibleScrollData删除
+			//	if (listVisibleScrollData.Contains(removedScrollData))
+			//	{
+			//		listVisibleScrollData.Remove(removedScrollData);
+			//	}
+			//	//标记当前数据更改过
+			//	if (this.dataChanged < DataChange.Removed)
+			//	{
+			//		dataChanged = DataChange.Removed;
+			//	}
+			//	return true;
+			//}
+			//else
+			//{
+			//	Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
+			//	return false;
+			//}
 		}
 
 		/// <summary>
