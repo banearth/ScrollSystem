@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using BanSupport;
+using BanSupport.ScrollSystem;
 
 //表示插入
 public class ItemC : MonoBehaviour

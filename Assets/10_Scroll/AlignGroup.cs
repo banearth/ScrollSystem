@@ -98,7 +98,7 @@ namespace BanSupport.ScrollSystem
 				{
 					curSearch.Expand(searchList, this);
 				}
-				SearchListSort();
+				SearchListSort(searchList);
 			}
 
 			//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
@@ -193,6 +193,7 @@ namespace BanSupport.ScrollSystem
 				listNextVisibleScrollData.Clear();
 				foreach (var visibleData in listVisibleScrollData)
 				{
+					//haha
 					visibleData.Update(willShowState);
 				}
 				//Debug.Log(Tools.StopWatch(watch));
@@ -218,6 +219,7 @@ namespace BanSupport.ScrollSystem
 
 		private void SearchListSort(List<SearchGroup> list)
 		{
+			//haha
 			list.Sort((temp1, temp2) =>
 			{
 				return temp1.distance - temp2.distance > 0 ? 1 : -1;

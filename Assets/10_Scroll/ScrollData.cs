@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace BanSupport
+namespace BanSupport.ScrollSystem
 {
 
 	public class ScrollData
@@ -28,7 +28,7 @@ namespace BanSupport
 		public float width;
 		public float height;
 		public ScrollLayout.NewLine newLine;
-		public ScrollSystem.PrefabGroup objectPool;
+		public PrefabGroup objectPool;
 		public System.Object dataSource;
 		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;

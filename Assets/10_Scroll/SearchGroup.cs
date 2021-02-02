@@ -21,9 +21,8 @@ namespace BanSupport.ScrollSystem
 			result.left = left;
 			result.right = right;
 			result.middle = (left + right) / 2;
-
 			var curData = alignGroup.listData[result.middle];
-			result.distance = alignGroup.scrollSystem.getDistanceToCenter(curData.anchoredPosition);
+			result.distance = alignGroup.scrollSystem.GetDistanceToCenter(curData.anchoredPosition);
 			result.found = curData.IsVisible();
 			return result;
 		}

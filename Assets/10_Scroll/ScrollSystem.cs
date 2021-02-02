@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-namespace BanSupport
+namespace BanSupport.ScrollSystem
 {
 
 	[ExecuteInEditMode]
@@ -53,6 +53,8 @@ namespace BanSupport
 		[Tooltip("跳转的速度")]
 		[SerializeField]
 		private float jumpToSpeed = 10;
+
+		public float JumpToSpeed { get { return jumpToSpeed; } }
 
 		/// <summary>
 		/// 注册数量
@@ -170,7 +172,7 @@ namespace BanSupport
 		/// <summary>
 		/// 本体
 		/// </summary>
-		private ScrollRect scrollRect
+		public ScrollRect scrollRect
 		{
 			get
 			{
@@ -235,6 +237,8 @@ namespace BanSupport
 		/// </summary>
 		private float contentSize = 0;
 
+		public float ContentSize { get { return contentSize; } }
+
 		private Action<ScrollData> setSingleDataAction;
 
 		private bool inited = false;
@@ -260,7 +264,11 @@ namespace BanSupport
 
 		private WillShowState willShowState = WillShowState.None;
 
+		public WillShowState willShowState_Get { get { return willShowState; } }
+
 		private bool moveEnable = true;
+
+		public bool MoveEnable { get { return moveEnable; } }
 
 		/// <summary>
 		/// 跳转状态
@@ -271,6 +279,11 @@ namespace BanSupport
 		/// 获得距离中心点的距离
 		/// </summary>
 		private Func<Vector2, float> getDistanceToCenter;
+
+		public float GetDistanceToCenter(Vector2 v2)
+		{
+			return getDistanceToCenter(v2);
+		}
 
 		/// <summary>
 		/// 用于更直观展示剩余缓存数量

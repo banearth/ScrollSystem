@@ -53,7 +53,7 @@ namespace BanSupport.ScrollSystem
 		{
 			if (bindOrigin == null)
 			{
-				bindOrigin = Instantiate(origin, scrollSystem.transform);
+				bindOrigin = GameObject.Instantiate(origin, scrollSystem.transform);
 				bindOrigin.name = bindOrigin.name.Substring(0, bindOrigin.name.Length - 7) + "_BindScript";
 				bindOrigin.SetActive(true);
 				bindOrigin.SetActive(false);
