@@ -9,14 +9,14 @@ namespace BanSupport.ScrollSystem
 	public class ScrollData
 	{
 
-		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+		public ScrollData(AlignGroup alignGroup, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
-			Init(scrollSystem, prefabName, dataSource, getSize);
+			Init(alignGroup, prefabName, dataSource, getSize);
 		}
 
-		protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+		protected void Init(AlignGroup alignGroup, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
-			this.scrollSystem = scrollSystem;
+			this.alignGroup = alignGroup;
 			this.objectPool = scrollSystem.ObjectPoolDic[prefabName];
 			this.dataSource = dataSource;
 			this.newLine = objectPool.newLine;
@@ -30,7 +30,9 @@ namespace BanSupport.ScrollSystem
 		public ScrollLayout.NewLine newLine;
 		public PrefabGroup objectPool;
 		public System.Object dataSource;
-		public ScrollSystem scrollSystem;
+		public AlignGroup alignGroup;
+		public ScrollSystem scrollSystem { get { return alignGroup.scrollSystem; } }
+
 		public Vector2 anchoredPosition;
 		public Vector2 originPosition;
 		private int lastFrameCount;
@@ -124,6 +126,7 @@ namespace BanSupport.ScrollSystem
 		/// </summary>
 		public void Update(ScrollSystem.WillShowState willShowState)
 		{
+
 			if (isVisible)
 			{
 				if (this.targetTrans == null)
@@ -207,6 +210,38 @@ namespace BanSupport.ScrollSystem
 				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
 				UpdateRectBounds();
 			}
+		}
+
+		/// <summary>
+		/// 获得起始点
+		/// </summary>
+		public float GetStartPos()
+		{
+			if (scrollSystem.ScrollDirection_GET == ScrollSystem.ScrollDirection.Vertical)
+			{
+				switch (scrollSystem.startCorner)
+				{
+					case 0:
+					case 1:
+						return Up;
+					case 2:
+					case 3:
+						return Down;
+				}
+			}
+			else
+			{
+				switch (scrollSystem.startCorner)
+				{
+					case 0:
+					case 2:
+						return Left;
+					case 1:
+					case 3:
+						return Right;
+				}
+			}
+			return 0;
 		}
 
 		private void UpdateRectBounds()

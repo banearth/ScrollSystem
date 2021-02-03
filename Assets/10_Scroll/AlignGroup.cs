@@ -26,7 +26,6 @@ namespace BanSupport.ScrollSystem
 		public List<ScrollData> listData;
 		public Func<Vector2> getCenterOffset;
 
-		public Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
 		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
@@ -118,13 +117,14 @@ namespace BanSupport.ScrollSystem
 			if (found)
 			{
 				//curAlignGroup
-				listNextVisibleScrollData.Add(listData[foundIndex]);
-				float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
+				var foundData = listData[foundIndex];
+				float lastLineStartPos = foundData.GetStartPos();
+				listNextVisibleScrollData.Add(foundData);
 				//向上
 				for (int i = foundIndex - 1; i >= 0; i--)
 				{
 					var curData = listData[i];
-					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					var curLineStartPos = curData.GetStartPos();
 					if (lastLineStartPos != curLineStartPos)
 					{
 						if (found)
@@ -152,12 +152,12 @@ namespace BanSupport.ScrollSystem
 				}
 
 				//向下
-				lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
+				lastLineStartPos = listData[foundIndex].GetStartPos();
 				found = true;
 				for (int i = foundIndex + 1; i < listData.Count; i++)
 				{
 					var curData = listData[i];
-					var curLineStartPos = GetScrollDataLineStartPos(curData);
+					var curLineStartPos = curData.GetStartPos();
 					if (lastLineStartPos != curLineStartPos)
 					{
 						if (found)
@@ -194,7 +194,9 @@ namespace BanSupport.ScrollSystem
 				foreach (var visibleData in listVisibleScrollData)
 				{
 					//haha
-					visibleData.Update(willShowState);
+					//haha
+					//visibleData.Update(willShowState);
+
 				}
 				//Debug.Log(Tools.StopWatch(watch));
 
@@ -226,154 +228,192 @@ namespace BanSupport.ScrollSystem
 			});
 		}
 
+		/// <summary>
+		/// 删第一个
+		/// </summary>
+		public bool RemoveFirst()
+		{
+			return Remove(0);
+		}
+
+		/// <summary>
+		/// 删，根据索引
+		/// </summary>
+		public bool Remove(int index)
+		{
+			var curAlignGroup = GetCurAlignGroup();
+			if (index >= 0 && index < curAlignGroup.listData.Count)
+			{
+				var removedScrollData = curAlignGroup.listData[index];
+				//自身删除
+				removedScrollData.Hide();
+				//从listData中删除
+				curAlignGroup.listData.RemoveAt(index);
+				//从dic_DataSource_ScrollData中删除
+				if (removedScrollData.dataSource != null)
+				{
+					dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
+				}
+				//从listVisibleScrollData删除
+				if (listVisibleScrollData.Contains(removedScrollData))
+				{
+					listVisibleScrollData.Remove(removedScrollData);
+				}
+				//标记当前数据更改过
+				if (dataChanged < DataChange.Removed)
+				{
+					dataChanged = DataChange.Removed;
+				}
+				return true;
+			}
+			else
+			{
+				Debug.LogWarning("无法找到index:" + index);
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 删，根据data
+		/// </summary>
+		public bool Remove(object dataSource)
+		{
+
+			//var curAlignGroup = GetCurAlignGroup();
+			//if (index >= 0 && index < curAlignGroup.listData.Count)
+			//{
+			//	var removedScrollData = curAlignGroup.listData[index];
+			//	//自身删除
+			//	removedScrollData.Hide();
+			//	//从listData中删除
+			//	curAlignGroup.listData.RemoveAt(index);
+			//	//从dic_DataSource_ScrollData中删除
+			//	if (removedScrollData.dataSource != null)
+			//	{
+			//		dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
+			//	}
+			//	//从listVisibleScrollData删除
+			//	if (listVisibleScrollData.Contains(removedScrollData))
+			//	{
+			//		listVisibleScrollData.Remove(removedScrollData);
+			//	}
+			//	//标记当前数据更改过
+			//	if (dataChanged < DataChange.Removed)
+			//	{
+			//		dataChanged = DataChange.Removed;
+			//	}
+			//	return true;
+			//}
+			//else
+			//{
+			//	Debug.LogWarning("无法找到index:" + index);
+			//	return false;
+			//}
+
+			//dic_DataSource_ScrollData
+			//haha
+			var curAlignGroup = GetCurAlignGroup();
+			//curAlignGroup
+
+
+			//if (dic_DataSource_ScrollData.ContainsKey(dataSource))
+			//{
+			//	var removedScrollData = dic_DataSource_ScrollData[dataSource];
+			//	//自身删除
+			//	removedScrollData.Hide();
+			//	//从listData中删除
+			//	listData.Remove(removedScrollData);
+			//	//从dic_DataSource_ScrollData中删除
+			//	dic_DataSource_ScrollData.Remove(dataSource);
+			//	//从listVisibleScrollData删除
+			//	if (listVisibleScrollData.Contains(removedScrollData))
+			//	{
+			//		listVisibleScrollData.Remove(removedScrollData);
+			//	}
+			//	//标记当前数据更改过
+			//	if (this.dataChanged < DataChange.Removed)
+			//	{
+			//		dataChanged = DataChange.Removed;
+			//	}
+			//	return true;
+			//}
+			//else
+			//{
+			//	Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
+			//	return false;
+			//}
+		}
+
+		/// <summary>
+		/// 替换
+		/// </summary>
+		public void Replace(object fromDataSource, object toDataSource)
+		{
+			if (dic_DataSource_ScrollData.ContainsKey(fromDataSource))
+			{
+				var referScrollData = dic_DataSource_ScrollData[fromDataSource];
+				dic_DataSource_ScrollData.Remove(fromDataSource);
+				referScrollData.dataSource = toDataSource;
+				dic_DataSource_ScrollData.Add(toDataSource, referScrollData);
+				referScrollData.Update(WillShowState.BothPositionAndContent);
+			}
+			else
+			{
+				Debug.LogWarning("无法找到该dataSource:" + toDataSource.ToString());
+			}
+		}
+
+		/// <summary>
+		/// 删除全部
+		/// </summary>
+		public void Clear()
+		{
+			bool removedAny = false;
+			var curAlignGroup = GetCurAlignGroup();
+			while (curAlignGroup.listData.Count > 0)
+			{
+				if (Remove(0))
+				{
+					removedAny = true;
+				}
+			}
+			if (removedAny)
+			{
+				dataChanged = DataChange.Removed;
+				Jump(this.resetNormalizedPosition);
+			}
+		}
+
+		/// <summary>
+		/// 最后一个元素可否可见
+		/// </summary>
+		public bool IsLastVisible()
+		{
+			if (listData.Count > 0)
+			{
+				return IsVisible(listData[listData.Count - 1].dataSource);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// 第一个元素是否可见
+		/// </summary>
+		public bool IsFirstVisible()
+		{
+			if (listData.Count > 0)
+			{
+				return listData[0].isVisible;
+			}
+			else
+			{
+				return false;
+			}
+		}
 
 	}
 
 }
-
-//for (int groupIndex = 0; groupIndex<GroupCount; groupIndex++)
-//			{
-//				var curAlignGroup = alignList[groupIndex];
-//var listData = curAlignGroup.listData;
-//				if (listData.Count <= 0)
-//				{
-//					return;
-//				}
-//				searchList.Add(SearchGroup.Get(0, listData.Count - 1, curAlignGroup));
-//				bool found = false;
-//int foundIndex = -1;
-//uint maxSearchTimes = 1000;
-
-//				while (searchList.Count > 0 && (--maxSearchTimes > 0))
-//				{
-//					var curSearch = searchList[0];
-//searchList.RemoveAt(0);
-//					ObjectPool<SearchGroup>.Release(curSearch);
-//					if (curSearch.found)
-//					{
-//						found = true;
-//						foundIndex = curSearch.middle;
-//						break;
-//					}
-//					else
-//					{
-//						curSearch.Expand(searchList, curAlignGroup);
-//					}
-//					SearchListSort();
-//				}
-
-//				//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
-
-//				if (maxSearchTimes == 0)
-//				{
-//					Debug.LogWarning("maxSearchTimes == 0");
-//				}
-
-//				if (searchList.Count > 0)
-//				{
-//					foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
-//					searchList.Clear();
-//				}
-
-//				//根据位置上下寻找
-//				if (found)
-//				{
-//					//curAlignGroup
-//					listNextVisibleScrollData.Add(listData[foundIndex]);
-//					float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
-//					//向上
-//					for (int i = foundIndex - 1; i >= 0; i--)
-//					{
-//						var curData = listData[i];
-//var curLineStartPos = GetScrollDataLineStartPos(curData);
-//						if (lastLineStartPos != curLineStartPos)
-//						{
-//							if (found)
-//							{
-//								if (curData.IsVisible())
-//								{
-//									listNextVisibleScrollData.Add(curData);
-//								}
-//								found = curData.isVisible;
-//								lastLineStartPos = curLineStartPos;
-//							}
-//							else
-//							{
-//								break;
-//							}
-//						}
-//						else
-//						{
-//							if (curData.IsVisible())
-//							{
-//								listNextVisibleScrollData.Add(curData);
-//								found = true;
-//							}
-//						}
-//					}
-
-//					//向下
-//					lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
-//found = true;
-//					for (int i = foundIndex + 1; i<listData.Count; i++)
-//					{
-//						var curData = listData[i];
-//var curLineStartPos = GetScrollDataLineStartPos(curData);
-//						if (lastLineStartPos != curLineStartPos)
-//						{
-//							if (found)
-//							{
-//								if (curData.IsVisible())
-//								{
-//									listNextVisibleScrollData.Add(curData);
-//								}
-//								found = curData.isVisible;
-//								lastLineStartPos = curLineStartPos;
-//							}
-//							else
-//							{
-//								break;
-//							}
-//						}
-//						else
-//						{
-//							if (curData.IsVisible())
-//							{
-//								listNextVisibleScrollData.Add(curData);
-//								found = true;
-//							}
-//						}
-//					}
-
-//					//方法一（这个效率更高一些）
-//					//var watch = Tools.StartWatch();
-//					foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
-//					foreach (var tempData in listVisibleScrollData) { tempData.Hide(); }
-//					listVisibleScrollData.Clear();
-//					listVisibleScrollData.AddRange(listNextVisibleScrollData);
-//					listNextVisibleScrollData.Clear();
-//					foreach (var visibleData in listVisibleScrollData)
-//					{
-//						visibleData.Update(willShowState);
-//					}
-//					//Debug.Log(Tools.StopWatch(watch));
-
-
-//					//方法二
-//					/*
-//					var watch = Tools.StartWatch();
-//					for (int i = 0;i<visibleStartIndex;i++) {
-//						listData[i].Hide();
-//					}
-//					for (int i = visibleEndIndex+1;i<listData.Count;i++) {
-//						listData[i].Hide();
-//					}
-//					for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-//					{
-//						listData[i].Update(false, refreshPosition);
-//					}
-//					Debug.Log(Tools.StopWatch(watch));
-//					*/
-//				}
-
-//			}

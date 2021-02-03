@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
-namespace BanSupport
+namespace BanSupport.ScrollSystem
 {
 	/// <summary>
 	/// 这个东西定义了基本的排列方式

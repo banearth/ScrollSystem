@@ -199,17 +199,6 @@ namespace BanSupport.ScrollSystem
 		/// </summary>
 		private RectBounds scrollBounds = new RectBounds();
 
-		//haha
-		/// <summary>
-		/// 运行时用的Data，核心数据
-		/// </summary>
-		//private List<ScrollData> listData = new List<ScrollData>();
-
-		/// <summary>
-		/// 用于内部的搜索
-		/// </summary>
-		private List<SearchGroup> searchList = new List<SearchGroup>();
-
 		/// <summary>
 		/// 用于缓存物体对象
 		/// </summary>
@@ -219,6 +208,8 @@ namespace BanSupport.ScrollSystem
 		/// 用于分组排列
 		/// </summary>
 		private List<AlignGroup> alignList = new List<AlignGroup>();
+
+		public Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
 		private AlignGroup GetCurAlignGroup()
 		{
@@ -499,35 +490,6 @@ namespace BanSupport.ScrollSystem
 					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 			}
-		}
-
-		private float GetScrollDataLineStartPos(ScrollData aScrollData)
-		{
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				switch (startCorner)
-				{
-					case 0:
-					case 1:
-						return aScrollData.Up;
-					case 2:
-					case 3:
-						return aScrollData.Down;
-				}
-			}
-			else
-			{
-				switch (startCorner)
-				{
-					case 0:
-					case 2:
-						return aScrollData.Left;
-					case 1:
-					case 3:
-						return aScrollData.Right;
-				}
-			}
-			return 0;
 		}
 
 		/// <summary>
@@ -1511,25 +1473,6 @@ namespace BanSupport.ScrollSystem
 		}
 
 		/// <summary>
-		/// 替换
-		/// </summary>
-		public void Replace(object fromDataSource, object toDataSource)
-		{
-			if (dic_DataSource_ScrollData.ContainsKey(fromDataSource))
-			{
-				var referScrollData = dic_DataSource_ScrollData[fromDataSource];
-				dic_DataSource_ScrollData.Remove(fromDataSource);
-				referScrollData.dataSource = toDataSource;
-				dic_DataSource_ScrollData.Add(toDataSource, referScrollData);
-				referScrollData.Update(WillShowState.BothPositionAndContent);
-			}
-			else
-			{
-				Debug.LogWarning("无法找到该dataSource:" + toDataSource.ToString());
-			}
-		}
-
-		/// <summary>
 		/// 刷新可见元素
 		/// </summary>
 		public void Refresh()
@@ -1543,149 +1486,12 @@ namespace BanSupport.ScrollSystem
 		}
 
 		/// <summary>
-		/// 删除全部
-		/// </summary>
-		public void Clear()
-		{
-			bool removedAny = false;
-			var curAlignGroup = GetCurAlignGroup();
-			while (curAlignGroup.listData.Count > 0)
-			{
-				if (Remove(0))
-				{
-					removedAny = true;
-				}
-			}
-			if (removedAny)
-			{
-				dataChanged = DataChange.Removed;
-				Jump(this.resetNormalizedPosition);
-			}
-		}
-
-		/// <summary>
 		/// 删最后一个
 		/// </summary>
 		public bool RemoveLast()
 		{
 			var curAlignGroup = GetCurAlignGroup();
 			return Remove(curAlignGroup.listData.Count - 1);
-		}
-
-		/// <summary>
-		/// 删第一个
-		/// </summary>
-		public bool RemoveFirst()
-		{
-			return Remove(0);
-		}
-
-		/// <summary>
-		/// 删，根据索引
-		/// </summary>
-		public bool Remove(int index)
-		{
-			var curAlignGroup = GetCurAlignGroup();
-			if (index >= 0 && index < curAlignGroup.listData.Count)
-			{
-				var removedScrollData = curAlignGroup.listData[index];
-				//自身删除
-				removedScrollData.Hide();
-				//从listData中删除
-				curAlignGroup.listData.RemoveAt(index);
-				//从dic_DataSource_ScrollData中删除
-				if (removedScrollData.dataSource != null)
-				{
-					dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
-				}
-				//从listVisibleScrollData删除
-				if (listVisibleScrollData.Contains(removedScrollData))
-				{
-					listVisibleScrollData.Remove(removedScrollData);
-				}
-				//标记当前数据更改过
-				if (dataChanged < DataChange.Removed)
-				{
-					dataChanged = DataChange.Removed;
-				}
-				return true;
-			}
-			else
-			{
-				Debug.LogWarning("无法找到index:" + index);
-				return false;
-			}
-		}
-
-		/// <summary>
-		/// 删，根据data
-		/// </summary>
-		public bool Remove(object dataSource)
-		{
-
-			//var curAlignGroup = GetCurAlignGroup();
-			//if (index >= 0 && index < curAlignGroup.listData.Count)
-			//{
-			//	var removedScrollData = curAlignGroup.listData[index];
-			//	//自身删除
-			//	removedScrollData.Hide();
-			//	//从listData中删除
-			//	curAlignGroup.listData.RemoveAt(index);
-			//	//从dic_DataSource_ScrollData中删除
-			//	if (removedScrollData.dataSource != null)
-			//	{
-			//		dic_DataSource_ScrollData.Remove(removedScrollData.dataSource);
-			//	}
-			//	//从listVisibleScrollData删除
-			//	if (listVisibleScrollData.Contains(removedScrollData))
-			//	{
-			//		listVisibleScrollData.Remove(removedScrollData);
-			//	}
-			//	//标记当前数据更改过
-			//	if (dataChanged < DataChange.Removed)
-			//	{
-			//		dataChanged = DataChange.Removed;
-			//	}
-			//	return true;
-			//}
-			//else
-			//{
-			//	Debug.LogWarning("无法找到index:" + index);
-			//	return false;
-			//}
-
-			//dic_DataSource_ScrollData
-			//haha
-			var curAlignGroup = GetCurAlignGroup();
-			//curAlignGroup
-
-
-			//if (dic_DataSource_ScrollData.ContainsKey(dataSource))
-			//{
-			//	var removedScrollData = dic_DataSource_ScrollData[dataSource];
-			//	//自身删除
-			//	removedScrollData.Hide();
-			//	//从listData中删除
-			//	listData.Remove(removedScrollData);
-			//	//从dic_DataSource_ScrollData中删除
-			//	dic_DataSource_ScrollData.Remove(dataSource);
-			//	//从listVisibleScrollData删除
-			//	if (listVisibleScrollData.Contains(removedScrollData))
-			//	{
-			//		listVisibleScrollData.Remove(removedScrollData);
-			//	}
-			//	//标记当前数据更改过
-			//	if (this.dataChanged < DataChange.Removed)
-			//	{
-			//		dataChanged = DataChange.Removed;
-			//	}
-			//	return true;
-			//}
-			//else
-			//{
-			//	Debug.LogWarning("无法找到该dataSource:" + dataSource.ToString());
-			//	return false;
-			//}
 		}
 
 		/// <summary>
@@ -1881,7 +1687,7 @@ namespace BanSupport.ScrollSystem
 		}
 
 		/// <summary>
-		/// 最后一个元素是否可见
+		/// 元素是否可见
 		/// </summary>
 		public bool IsVisible(object dataSource)
 		{
@@ -1902,6 +1708,7 @@ namespace BanSupport.ScrollSystem
 		/// </summary>
 		public bool IsFirstVisible()
 		{
+			GetCurAlignGroup()?.IsLastVisible
 			if (listData.Count > 0)
 			{
 				return IsVisible(listData[0].dataSource);
@@ -1917,6 +1724,7 @@ namespace BanSupport.ScrollSystem
 		/// </summary>
 		public bool IsLastVisible()
 		{
+			GetCurAlignGroup()?.
 			if (listData.Count > 0)
 			{
 				return IsVisible(listData[listData.Count - 1].dataSource);
@@ -1925,6 +1733,11 @@ namespace BanSupport.ScrollSystem
 			{
 				return false;
 			}
+		}
+
+		public void Clear()
+		{
+			GetCurAlignGroup()?.Clear();
 		}
 
 		#endregion
@@ -1944,36 +1757,6 @@ namespace BanSupport.ScrollSystem
 				}
 			}
 			return false;
-		}
-
-		/// <summary>
-		/// 传过来一个原始的rectTransform，就会自动创建所有需要的组件
-		/// </summary>
-		public static ScrollSystem Create(Transform target)
-		{
-#if UNITY_EDITOR
-			var scrollsystem = target.gameObject.AddComponent<ScrollSystem>();
-			scrollsystem.SetComponent();
-			var image = scrollsystem.GetComponent<Image>();
-			image.type = Image.Type.Sliced;
-			image.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource(typeof(Sprite), "UI/Skin/UIMask.psd") as Sprite;
-			image.color = Color.white;
-			var mask = scrollsystem.GetComponent<Mask>();
-			mask.showMaskGraphic = false;
-			return scrollsystem;
-#else
-			return null;
-#endif
-		}
-
-		/// <summary>
-		/// 添加元素
-		/// </summary>
-		public void AddInEditor(Transform target)
-		{
-#if UNITY_EDITOR
-			target.SetParent(this.contentTrans);
-#endif
 		}
 
 		private Action<PointerEventData> onBeginDrag = null;
@@ -2041,7 +1824,6 @@ namespace BanSupport.ScrollSystem
 
 		#endregion
 
-
 		/// <summary>
 		/// groupIndex从0开始
 		/// </summary>
@@ -2054,17 +1836,14 @@ namespace BanSupport.ScrollSystem
 			{
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-
 					//haha
 					//for (int i = 0;i<) { 
 					//}
 					//groupIndex
 					//groupCount
-
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					//haha
 					var groupHeight = rectBounds.Height / groupCount;
 					var centerPos = rectBounds.MiddleUpPos;
 					centerPos.y -= groupHeight * (0.5f + groupIndex);
