@@ -154,7 +154,7 @@ namespace BanSupport
 				return _scrollBounds;
 			}
 		}
-		private RectBounds _scrollBounds = new RectBounds();
+		private RectBounds _scrollBounds;
 
 		/// <summary>
 		/// 运行时用的Data，核心数据

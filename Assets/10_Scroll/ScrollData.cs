@@ -40,7 +40,7 @@ namespace BanSupport
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
-		private RectBounds rectBounds = new RectBounds();
+		private RectBounds rectBounds;
 		private RectTransform targetTrans = null;
 
 		public float Left { get { return rectBounds.left; } }
