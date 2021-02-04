@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using BanSupport.ScrollSystem;
+using BanSupport;
 
 public class ScrollLayoutForTextMeshPro : ScrollLayout
 {

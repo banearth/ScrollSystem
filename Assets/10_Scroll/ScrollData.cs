@@ -3,20 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace BanSupport.ScrollSystem
+namespace BanSupport
 {
 
 	public class ScrollData
 	{
 
-		public ScrollData(AlignGroup alignGroup, string prefabName, object dataSource, Func<object, Vector2> getSize)
+		public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
-			Init(alignGroup, prefabName, dataSource, getSize);
+			Init(scrollSystem, prefabName, dataSource, getSize);
 		}
 
-		protected void Init(AlignGroup alignGroup, string prefabName, object dataSource, Func<object, Vector2> getSize)
+		protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
 		{
-			this.alignGroup = alignGroup;
+			this.scrollSystem = scrollSystem;
 			this.objectPool = scrollSystem.ObjectPoolDic[prefabName];
 			this.dataSource = dataSource;
 			this.newLine = objectPool.newLine;
@@ -28,11 +28,9 @@ namespace BanSupport.ScrollSystem
 		public float width;
 		public float height;
 		public ScrollLayout.NewLine newLine;
-		public PrefabGroup objectPool;
+		public ScrollSystem.PrefabGroup objectPool;
 		public System.Object dataSource;
-		public AlignGroup alignGroup;
-		public ScrollSystem scrollSystem { get { return alignGroup.scrollSystem; } }
-
+		public ScrollSystem scrollSystem;
 		public Vector2 anchoredPosition;
 		public Vector2 originPosition;
 		private int lastFrameCount;
@@ -126,7 +124,6 @@ namespace BanSupport.ScrollSystem
 		/// </summary>
 		public void Update(ScrollSystem.WillShowState willShowState)
 		{
-
 			if (isVisible)
 			{
 				if (this.targetTrans == null)
@@ -163,11 +160,7 @@ namespace BanSupport.ScrollSystem
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				var rectBounds = new RectBounds(
-					GetWorldPosition(),
-					scrollSystem.contentTrans.lossyScale.x * width,
-					scrollSystem.contentTrans.lossyScale.y * height);
-				rectBounds.Draw(Color.red);
+				Tools.DrawRectBounds(GetWorldPosition(), scrollSystem.contentTrans.lossyScale.x * width, scrollSystem.contentTrans.lossyScale.y * height, Color.red);
 			}
 		}
 
@@ -178,14 +171,7 @@ namespace BanSupport.ScrollSystem
 		{
 			if (Time.frameCount == lastFrameCount) { return this.isVisible; }
 			this.lastFrameCount = Time.frameCount;
-			if (this.width <= 0 || this.height <= 0)
-			{
-				this.isVisible = false;
-			}
-			else
-			{
-				this.isVisible = rectBounds.Overlaps(scrollSystem.ScrollBounds);
-			}
+			this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
 			return this.isVisible;
 		}
 
@@ -210,38 +196,6 @@ namespace BanSupport.ScrollSystem
 				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
 				UpdateRectBounds();
 			}
-		}
-
-		/// <summary>
-		/// 获得起始点
-		/// </summary>
-		public float GetStartPos()
-		{
-			if (scrollSystem.ScrollDirection_GET == ScrollSystem.ScrollDirection.Vertical)
-			{
-				switch (scrollSystem.startCorner)
-				{
-					case 0:
-					case 1:
-						return Up;
-					case 2:
-					case 3:
-						return Down;
-				}
-			}
-			else
-			{
-				switch (scrollSystem.startCorner)
-				{
-					case 0:
-					case 2:
-						return Left;
-					case 1:
-					case 3:
-						return Right;
-				}
-			}
-			return 0;
 		}
 
 		private void UpdateRectBounds()
