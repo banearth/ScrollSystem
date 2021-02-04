@@ -8,7 +8,7 @@ namespace BanSupport
 	/// <summary>
 	/// 用于表示一个矩形区域的四个边界的世界坐标
 	/// </summary>
-	public class RectBounds
+	public struct RectBounds
 	{
 		//左边界的位置
 		public float left;
@@ -27,11 +27,29 @@ namespace BanSupport
 
 		public Vector2 center { get { return new Vector2((left + right) / 2, (up + down) / 2); } }
 
-		public RectBounds() { }
-
-		public RectBounds(RectTransform rectTransfrom)
+		public RectBounds(float left, float right, float up, float down)
 		{
-			ParseRectTransform(rectTransfrom,out left,out right,out up,out down);
+			this.left = left;
+			this.right = right;
+			this.up = up;
+			this.down = down;
+		}
+
+		public RectBounds(RectTransform rectTransform) :this(
+			rectTransform.pivot,
+			rectTransform.lossyScale,
+			rectTransform.rect.width,
+			rectTransform.rect.height,
+			rectTransform.position){ }
+
+		public RectBounds(Vector2 pivot, Vector3 lossyScale, float pixelWidth, float pixelHeight, Vector3 worldPosition)
+		{
+			float width = pixelWidth * lossyScale.x;
+			float height = pixelHeight * lossyScale.y;
+			this.left = worldPosition.x + width * (-pivot.x);
+			this.right = worldPosition.x + width * (1 - pivot.x);
+			this.up = worldPosition.y + height * (1 - pivot.y);
+			this.down = worldPosition.y + height * (-pivot.y);
 		}
 
 		public bool Overlaps(RectBounds other)
@@ -74,21 +92,9 @@ namespace BanSupport
 
 		public void Encapsulate(RectTransform rectTransform)
 		{
-			ParseRectTransform(rectTransform,out float left, out float right, out float up, out float down);
-			var pos1 = new Vector2(left, up);
-			var pos2 = new Vector2(right, down);
-			Encapsulate(pos1);
-			Encapsulate(pos2);
-		}
-
-		private void ParseRectTransform(RectTransform rectTransform, out float left, out float right, out float up, out float down)
-		{
-			Vector3[] v = new Vector3[4];
-			rectTransform.GetWorldCorners(v);
-			left = v[0].x;
-			right = v[2].x;
-			up = v[2].y;
-			down = v[0].y;
+			var rectBounds = new RectBounds(rectTransform);
+			Encapsulate(rectBounds.LeftUpPos);
+			Encapsulate(rectBounds.RightDownPos);
 		}
 
 		public bool Contains(Vector2 pos)
@@ -135,16 +141,6 @@ namespace BanSupport
 			}
 		}
 
-		public Vector3[] GetAllPos(float z)
-		{
-			return new Vector3[] {
-				new Vector3(left,up,z),
-				new Vector3(right,up,z),
-				new Vector3(left,down,z),
-				new Vector3(right,down,z),
-			};
-		}
-
 		public override string ToString()
 		{
 			return "left:" + left + " right:" + right + " up:" + up + " down:" + down;
@@ -178,7 +174,7 @@ namespace BanSupport
 		/// <summary>
 		/// 使用Debug画方块
 		/// </summary>
-		public static void DrawRectRange(RectBounds rectBounds, Color color)
+		public static void DrawRectBounds(RectBounds rectBounds, Color color)
 		{
 			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
 			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.RightDownPos, color);
@@ -189,42 +185,40 @@ namespace BanSupport
 		/// <summary>
 		/// 使用Debug画方块
 		/// </summary>
-		public static void DrawRectRange(RectBounds rectRange,float z,Color color)
+		public static void DrawRectBounds(RectBounds rectBounds, float z, Color color)
 		{
-			var allPos = rectRange.GetAllPos(z);
-			Debug.DrawLine(allPos[0], allPos[1], color);
-			Debug.DrawLine(allPos[1], allPos[3], color);
-			Debug.DrawLine(allPos[2], allPos[3], color);
-			Debug.DrawLine(allPos[0], allPos[2], color);
+			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
+			Debug.DrawLine(rectBounds.RightUpPos, rectBounds.RightDownPos, color);
+			Debug.DrawLine(rectBounds.RightDownPos, rectBounds.LeftDownPos, color);
+			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.LeftUpPos, color);
 		}
 
 		/// <summary>
 		/// 获得RectTransform的边界，用一个来接收
 		/// </summary>
-		public static RectBounds GetRectBounds(RectTransform rectTransform,RectBounds rectRange = null)
+		public static RectBounds GetRectBounds(RectTransform rectTransform)
 		{
 			var pivot = rectTransform.pivot;
 			var width = rectTransform.rect.width * rectTransform.lossyScale.x;
 			var height = rectTransform.rect.height * rectTransform.lossyScale.y;
-            if (rectRange == null) { rectRange = new RectBounds(); }
-            rectRange.left = rectTransform.transform.position.x + width * (-pivot.x);
-            rectRange.right = rectTransform.transform.position.x + width * (1 - pivot.x);
-            rectRange.up = rectTransform.transform.position.y + height * (1 - pivot.y);
-            rectRange.down = rectTransform.transform.position.y + height * (-pivot.y);
-			return rectRange;
+			var rectBounds = new RectBounds();
+			rectBounds.left = rectTransform.transform.position.x + width * (-pivot.x);
+			rectBounds.right = rectTransform.transform.position.x + width * (1 - pivot.x);
+			rectBounds.up = rectTransform.transform.position.y + height * (1 - pivot.y);
+			rectBounds.down = rectTransform.transform.position.y + height * (-pivot.y);
+			return rectBounds;
 		}
 
-		public static RectBounds GetRectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height,
-			Vector3 worldPosition, RectBounds rectRange = null)
+		public static RectBounds GetRectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height, Vector3 worldPosition)
 		{
 			width = width * lossyScale.x;
 			height = height * lossyScale.y;
-			if (rectRange == null) { rectRange = new RectBounds(); }
-			rectRange.left = worldPosition.x + width * (-pivot.x);
-			rectRange.right = worldPosition.x + width * (1 - pivot.x);
-			rectRange.up = worldPosition.y + height * (1 - pivot.y);
-			rectRange.down = worldPosition.y + height * (-pivot.y);
-			return rectRange;
+			var rectBounds = new RectBounds();
+			rectBounds.left = worldPosition.x + width * (-pivot.x);
+			rectBounds.right = worldPosition.x + width * (1 - pivot.x);
+			rectBounds.up = worldPosition.y + height * (1 - pivot.y);
+			rectBounds.down = worldPosition.y + height * (-pivot.y);
+			return rectBounds;
 		}
 
 	}

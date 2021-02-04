@@ -151,10 +151,10 @@ namespace BanSupport
 		{
 			get
 			{
-				return _scrollRange;
+				return _scrollBounds;
 			}
 		}
-		private RectBounds _scrollRange = new RectBounds();
+		private RectBounds _scrollBounds = new RectBounds();
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -678,34 +678,35 @@ namespace BanSupport
 			var rectTransfrom = this.contentTrans;
 			switch (startCorner) {
 				case 0:
-					scrollBounds.left = -rectTransfrom.anchoredPosition.x;
-					scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
-					scrollBounds.up = -rectTransfrom.anchoredPosition.y;
-					scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
+					//haha
+					_scrollBounds.left = -rectTransfrom.anchoredPosition.x;
+					_scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
+					_scrollBounds.up = -rectTransfrom.anchoredPosition.y;
+					_scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
 					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 1:
-					scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
-					scrollBounds.right = -rectTransfrom.anchoredPosition.x;
-					scrollBounds.up = -rectTransfrom.anchoredPosition.y;
-					scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
+					_scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
+					_scrollBounds.right = -rectTransfrom.anchoredPosition.x;
+					_scrollBounds.up = -rectTransfrom.anchoredPosition.y;
+					_scrollBounds.down = -Height - rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
 					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 2:
-					scrollBounds.left = -rectTransfrom.anchoredPosition.x;
-					scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
-					scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
-					scrollBounds.down = -rectTransfrom.anchoredPosition.y;
+					_scrollBounds.left = -rectTransfrom.anchoredPosition.x;
+					_scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
+					_scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
+					_scrollBounds.down = -rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
 					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 3:
-					scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
-					scrollBounds.right = -rectTransfrom.anchoredPosition.x;
-					scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
-					scrollBounds.down = -rectTransfrom.anchoredPosition.y;
+					_scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
+					_scrollBounds.right = -rectTransfrom.anchoredPosition.x;
+					_scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
+					_scrollBounds.down = -rectTransfrom.anchoredPosition.y;
 					centerAnchoredPosition.x = Width / 2 - rectTransfrom.anchoredPosition.x;
 					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
@@ -1764,14 +1765,15 @@ namespace BanSupport
 				//滚动区域
 				if (contentTrans != null)
 				{
-					Tools.DrawRectRange(Tools.GetRectBounds(contentTrans, scrollBounds), this.transform.position.z, Color.green);
+					var tempRectBounds = Tools.GetRectBounds(contentTrans);
+					Tools.DrawRectBounds(tempRectBounds, this.transform.position.z, Color.green);
 					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
 					{
-						scrollBounds.left += contentTrans.lossyScale.x * border.x;
-						scrollBounds.right -= contentTrans.lossyScale.x * border.x;
-						scrollBounds.up -= contentTrans.lossyScale.y * border.y;
-						scrollBounds.down += contentTrans.lossyScale.y * border.y;
-						Tools.DrawRectRange(scrollBounds, this.transform.position.z, Color.green);
+						tempRectBounds.left += contentTrans.lossyScale.x * border.x;
+						tempRectBounds.right -= contentTrans.lossyScale.x * border.x;
+						tempRectBounds.up -= contentTrans.lossyScale.y * border.y;
+						tempRectBounds.down += contentTrans.lossyScale.y * border.y;
+						Tools.DrawRectBounds(scrollBounds, this.transform.position.z, Color.green);
 					}
 				}
 			}

@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using BanSupport.ScrollSystem;
+using BanSupport;
 
 public class MultipleManager : MonoBehaviour
 {

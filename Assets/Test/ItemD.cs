@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using BanSupport.ScrollSystem;
+using BanSupport;
 
 //表示仅仅打印
 public class ItemD : MonoBehaviour

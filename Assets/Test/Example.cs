@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using BanSupport.ScrollSystem;
+using BanSupport;
 using System;
 
 public class Example : MonoBehaviour
