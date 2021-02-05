@@ -20,8 +20,6 @@ namespace BanSupport
 		[SerializeField]
 		private bool centered = false;
 
-		public bool Centered { get { return centered; } }
-
 		[HideInInspector]
 		public int startCorner = 0;
 
@@ -257,6 +255,12 @@ namespace BanSupport
 		private bool m_Centered = false;
 		private Action m_TurnSameAction;
 #endif
+
+		#endregion
+
+		#region 只读
+
+
 
 		#endregion
 
@@ -598,7 +602,6 @@ namespace BanSupport
 		{
 			if (Application.isPlaying)
 			{
-
 				if (dataChanged != DataChange.None)
 				{
 					switch (dataChanged)
@@ -787,10 +790,11 @@ namespace BanSupport
 				searchList.Clear();
 			}
 
-			//根据位置上下寻找
+			//上下寻找下一帧视野内的所有ScrollData
 			if (found)
 			{
-				listNextVisibleScrollData.Add(listData[foundIndex]);
+				var nextVisibleDatas = ListPool<ScrollData>.Get();
+				nextVisibleDatas.Add(listData[foundIndex]);
 				float lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 				//向上
 				for (int i = foundIndex - 1; i >= 0; i--)
@@ -803,7 +807,7 @@ namespace BanSupport
 						{
 							if (curData.IsVisible())
 							{
-								listNextVisibleScrollData.Add(curData);
+								nextVisibleDatas.Add(curData);
 							}
 							found = curData.isVisible;
 							lastLineStartPos = curLineStartPos;
@@ -817,12 +821,11 @@ namespace BanSupport
 					{
 						if (curData.IsVisible())
 						{
-							listNextVisibleScrollData.Add(curData);
+							nextVisibleDatas.Add(curData);
 							found = true;
 						}
 					}
 				}
-
 				//向下
 				lastLineStartPos = GetScrollDataLineStartPos(listData[foundIndex]);
 				found = true;
@@ -836,7 +839,7 @@ namespace BanSupport
 						{
 							if (curData.IsVisible())
 							{
-								listNextVisibleScrollData.Add(curData);
+								nextVisibleDatas.Add(curData);
 							}
 							found = curData.isVisible;
 							lastLineStartPos = curLineStartPos;
@@ -850,54 +853,25 @@ namespace BanSupport
 					{
 						if (curData.IsVisible())
 						{
-							listNextVisibleScrollData.Add(curData);
+							nextVisibleDatas.Add(curData);
 							found = true;
 						}
 					}
 				}
 
-				//方法一（这个效率更高一些）
-				//var watch = Tools.StartWatch();
-				foreach (var visibleData in listNextVisibleScrollData) { listVisibleScrollData.Remove(visibleData); }
+				//下次不再显示的Data隐藏
+				foreach (var aData in nextVisibleDatas) { this.listVisibleScrollData.Remove(aData); }
 				foreach (var tempData in listVisibleScrollData) { tempData.Hide(); }
-				listVisibleScrollData.Clear();
-				listVisibleScrollData.AddRange(listNextVisibleScrollData);
-				listNextVisibleScrollData.Clear();
-				foreach (var visibleData in listVisibleScrollData)
+				//设置当前显示的Data
+				this.listVisibleScrollData.Clear();
+				this.listVisibleScrollData.AddRange(nextVisibleDatas);
+				ListPool<ScrollData>.Release(nextVisibleDatas);
+				foreach (var visibleData in this.listVisibleScrollData)
 				{
 					visibleData.Update(willShowState);
 				}
-				//Debug.Log(Tools.StopWatch(watch));
 
-
-				//方法二
-				/*
-				var watch = Tools.StartWatch();
-				for (int i = 0;i<visibleStartIndex;i++) {
-					listData[i].Hide();
-				}
-				for (int i = visibleEndIndex+1;i<listData.Count;i++) {
-					listData[i].Hide();
-				}
-				for (int i = visibleStartIndex; i <= visibleEndIndex; i++)
-				{
-					listData[i].Update(false, refreshPosition);
-				}
-				Debug.Log(Tools.StopWatch(watch));
-				*/
 			}
-
-
-		}
-
-		public void ShowGizmosBounds()
-		{
-			listData.ForEach(temp => {
-				if (temp.isVisible)
-				{
-					temp.ShowGizmosBounds();
-				}
-			});
 		}
 
 		/// <summary>
@@ -1787,9 +1761,8 @@ namespace BanSupport
 
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
+		//haha
 		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
-
-		private List<ScrollData> listNextVisibleScrollData = new List<ScrollData>(8);
 
 		public Action<string, GameObject, object> onItemOpen { get; private set; }
 
@@ -1884,6 +1857,7 @@ namespace BanSupport
 				dataChanged = DataChange.Removed;
 				Jump(this.resetNormalizedPosition);
 			}
+			this.addModeStartIndex = 0;
 		}
 
 		/// <summary>
