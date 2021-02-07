@@ -5,6 +5,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+/*
+todo
+1自定义布局功能
+2外部预制体导入
+3Flush功能
+*/
+
 namespace BanSupport
 {
 
@@ -12,22 +19,34 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
+		public Vector2 Border { get { return border; } }
+
 		#region 众多参数
 
+		//用途：给拳皇项目做重复图案背景
+		//备注：不区分大小写，字母相同都会忽略掉
 		private static string[] ignorePrefabNames = new string[] { "background"};
 
-		[Tooltip("尽量保持剧中")]
+		//用途：自动排列居中
+		//备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中
+		[Tooltip("用途：自动排列居中\n备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中")]
 		[SerializeField]
 		private bool centered = false;
 
-		[HideInInspector]
-		public int startCorner = 0;
-
+		//用途：排列起始角
+		//备注：0左上，1右上，2左下，3右下
+		[SerializeField]
+		[IntEnum(0, 1, 2, 3, "Left Up", "Right Up", "Left Down", "Right Down")]
+		private int startCorner = 0;
+		//haha
+		
+		//用途：排列
+		//备注：内容跟外边框的距离
 		[Tooltip("边界")]
 		[SerializeField]
 		private Vector2 border = Vector2.zero;
 
-		public Vector2 Border { get { return border; } }
+		
 
 		/// <summary>
 		/// 元素之间的间隔
@@ -679,6 +698,7 @@ namespace BanSupport
 		private void UpdateBounds()
 		{
 			var rectTransfrom = this.contentTrans;
+			//haha
 			switch (startCorner) {
 				case 0:
 					//haha
@@ -2298,6 +2318,13 @@ namespace BanSupport
 
 		#endregion
 
+
+		//haha
+
+		private void OnValidate()
+		{
+			
+		}
 
 	}
 }

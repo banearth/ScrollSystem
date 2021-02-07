@@ -45,17 +45,17 @@ namespace BanSupport
 				
 
 				//默认排列
-				GUILayout.BeginHorizontal();
-				GUILayout.Label("StartCorner");
+				
+				
 				int newCorner = GUILayout.SelectionGrid(script.startCorner, new string[] {
 						"Left Up", "Right Up" , "Left Down", "Right Down" }, 2);
-				if (script.startCorner != newCorner)
-				{
-					script.startCorner = newCorner;
-					script.SetContentChildren();
-					EditorUtility.SetDirty(script);
-				}
-				GUILayout.EndHorizontal();
+				//if (script.startCorner != newCorner)
+				//{
+				//	script.startCorner = newCorner;
+				//	script.SetContentChildren();
+				//	EditorUtility.SetDirty(script);
+				//}
+				
 			}
 
 			DrawDefaultInspector();
