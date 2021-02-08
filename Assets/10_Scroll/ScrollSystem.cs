@@ -15,13 +15,33 @@ todo
 namespace BanSupport
 {
 
-	[ExecuteInEditMode]
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
-		public Vector2 Border { get { return border; } }
+		#region 内部参数
 
-		#region 众多参数
+		private int _startCorner = int.MinValue;
+		private int _clipType = 0;
+
+
+		private Vector2 m_OldSizeDelta = Vector2.zero;
+		private ScrollDirection m_OldScrollDirection = ScrollDirection.Vertical;
+		private Vector2 m_OldBorder = Vector2.zero;
+		private Vector2 m_OldSpacing = Vector2.one * 10;
+		private int m_OldChildCount = 0;
+		private bool m_Centered = false;
+		private Action m_TurnSameAction;
+
+		#endregion
+
+		#region 只读的参数
+
+		public Vector2 Border { get { return border; } }
+		public Vector2 Spacing { get { return spacing; } }
+
+		#endregion
+
+		#region 编辑器可调整的参数
 
 		//用途：给拳皇项目做重复图案背景
 		//备注：不区分大小写，字母相同都会忽略掉
@@ -35,18 +55,19 @@ namespace BanSupport
 
 		//用途：排列起始角
 		//备注：0左上，1右上，2左下，3右下
-		[SerializeField]
 		[IntEnum(0, 1, 2, 3, "Left Up", "Right Up", "Left Down", "Right Down")]
+		[SerializeField]
 		private int startCorner = 0;
-		//haha
-		
-		//用途：排列
+
+		[IntEnum(0, 1, "Mask", "RectMask")]
+		[SerializeField]
+		private int  clipType = 0;
+
+		//用途：排列时边缘留空
 		//备注：内容跟外边框的距离
 		[Tooltip("边界")]
 		[SerializeField]
 		private Vector2 border = Vector2.zero;
-
-		
 
 		/// <summary>
 		/// 元素之间的间隔
@@ -54,12 +75,10 @@ namespace BanSupport
 		[SerializeField]
 		private Vector2 spacing = Vector2.one * 10;
 
-		public Vector2 Spacing { get { return spacing; } }
-
-		[Range(0, 1)]
 		/// <summary>
 		/// 当发生重置的时候，设置的位置
 		/// </summary>
+		[Range(0, 1)]
 		[Tooltip("当发生重置的时候，设置的位置")]
 		[SerializeField]
 		private float resetNormalizedPosition = 0;
@@ -263,16 +282,12 @@ namespace BanSupport
 
 		public Vector2 PrefabAnchor { get { return prefabAnchor; } }
 
+		//haha
 #if UNITY_EDITOR
 
 		//----------------------------------用于记录编辑器环境下变化的值----------------------------------
-		private Vector2 m_OldSizeDelta = Vector2.zero;
-		private ScrollDirection m_OldScrollDirection = ScrollDirection.Vertical;
-		private Vector2 m_OldBorder = Vector2.zero;
-		private Vector2 m_OldSpacing = Vector2.one * 10;
-		private int m_OldChildCount = 0;
-		private bool m_Centered = false;
-		private Action m_TurnSameAction;
+		
+		
 #endif
 
 		#endregion
@@ -619,62 +634,42 @@ namespace BanSupport
 		/// </summary>
 		private void Update()
 		{
-			if (Application.isPlaying)
+			//haha
+			if (dataChanged != DataChange.None)
 			{
-				if (dataChanged != DataChange.None)
+				switch (dataChanged)
 				{
-					switch (dataChanged)
-					{
-						case DataChange.Added:
-							for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
-							{
-								var scrollData = this.listData[i];
-								this.setSingleDataAction(scrollData);
-							}
-							EndSetData();
-							break;
-						case DataChange.Removed:
-							SetAllData();
-							break;
-					}
-					dataChanged = DataChange.None;
-					if (willShowState < WillShowState.OnlyPosition)
-					{
-						willShowState = WillShowState.OnlyPosition;
-					}
+					case DataChange.Added:
+						for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
+						{
+							var scrollData = this.listData[i];
+							this.setSingleDataAction(scrollData);
+						}
+						EndSetData();
+						break;
+					case DataChange.Removed:
+						SetAllData();
+						break;
 				}
+				dataChanged = DataChange.None;
+				if (willShowState < WillShowState.OnlyPosition)
+				{
+					willShowState = WillShowState.OnlyPosition;
+				}
+			}
 
-				//跳转相关
-				if (jumpState.Update())
-				{
-					if (willShowState < WillShowState.OnlyPosition)
-					{
-						willShowState = WillShowState.OnlyPosition;
-					}
-				}
-				if (willShowState != WillShowState.None)
-				{
-					Show();
-				}
-			}
-#if UNITY_EDITOR
-			else
+			//跳转相关
+			if (jumpState.Update())
 			{
-				if (CheckSetComponent())
+				if (willShowState < WillShowState.OnlyPosition)
 				{
-					SetComponent();
-				}
-				if (CheckSetContentChildren())
-				{
-					SetContentChildren();
-				}
-				if (m_TurnSameAction != null)
-				{
-					m_TurnSameAction();
-					m_TurnSameAction = null;
+					willShowState = WillShowState.OnlyPosition;
 				}
 			}
-#endif
+			if (willShowState != WillShowState.None)
+			{
+				Show();
+			}
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
@@ -698,10 +693,9 @@ namespace BanSupport
 		private void UpdateBounds()
 		{
 			var rectTransfrom = this.contentTrans;
-			//haha
 			switch (startCorner) {
 				case 0:
-					//haha
+					//Left Up
 					_scrollBounds.left = -rectTransfrom.anchoredPosition.x;
 					_scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
 					_scrollBounds.up = -rectTransfrom.anchoredPosition.y;
@@ -710,6 +704,7 @@ namespace BanSupport
 					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 1:
+					//Right Up
 					_scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
 					_scrollBounds.right = -rectTransfrom.anchoredPosition.x;
 					_scrollBounds.up = -rectTransfrom.anchoredPosition.y;
@@ -718,6 +713,7 @@ namespace BanSupport
 					centerAnchoredPosition.y = -Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 2:
+					//Left Down
 					_scrollBounds.left = -rectTransfrom.anchoredPosition.x;
 					_scrollBounds.right = Width - rectTransfrom.anchoredPosition.x;
 					_scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
@@ -726,6 +722,7 @@ namespace BanSupport
 					centerAnchoredPosition.y = Height / 2 - rectTransfrom.anchoredPosition.y;
 					break;
 				case 3:
+					//Right Down
 					_scrollBounds.left = -Width - rectTransfrom.anchoredPosition.x;
 					_scrollBounds.right = -rectTransfrom.anchoredPosition.x;
 					_scrollBounds.up = Height - rectTransfrom.anchoredPosition.y;
@@ -1361,7 +1358,7 @@ namespace BanSupport
 					image.color = new Color(1, 1, 1, 0.2f);
 				}
 
-
+				//haha
 				//Mask
 				var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
 				if (isNew)
@@ -1677,111 +1674,10 @@ namespace BanSupport
 
 		#endregion
 
-		#region 用于检测变化的值
-
-#if UNITY_EDITOR
-		private bool CheckSetComponent()
-		{
-			bool result = false;
-			if (m_OldScrollDirection != this.scrollDirection)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldScrollDirection = this.scrollDirection;
-				};
-			}
-			return result;
-		}
-
-		private bool CheckSetContentChildren()
-		{
-			bool result = false;
-			if (m_OldSizeDelta != (this.transform as RectTransform).sizeDelta)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldSizeDelta = (this.transform as RectTransform).sizeDelta;
-				};
-			}
-			if (m_OldSpacing != this.spacing)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldSpacing = spacing;
-				};
-			}
-
-			if (contentTrans != null && m_OldChildCount != this.contentTrans.childCount)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldChildCount = this.contentTrans.childCount;
-				};
-			}
-			if (m_OldScrollDirection != scrollDirection)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldScrollDirection = scrollDirection;
-				};
-			}
-			if (m_OldBorder != border)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_OldBorder = border;
-				};
-			}
-			if (m_Centered != centered)
-			{
-				result = true;
-				m_TurnSameAction += () =>
-				{
-					m_Centered = centered;
-				};
-			}
-			return result;
-		}
-
-		private void OnDrawGizmos()
-		{
-			if (drawGizmos)
-			{
-				Gizmos.color = Color.green;
-				//基本点触区域
-				Tools.DrawRectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
-				//滚动区域
-				if (contentTrans != null)
-				{
-					var tempRectBounds = Tools.GetRectBounds(contentTrans);
-					Tools.DrawRectBounds(tempRectBounds, this.transform.position.z, Color.green);
-					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
-					{
-						tempRectBounds.left += contentTrans.lossyScale.x * border.x;
-						tempRectBounds.right -= contentTrans.lossyScale.x * border.x;
-						tempRectBounds.up -= contentTrans.lossyScale.y * border.y;
-						tempRectBounds.down += contentTrans.lossyScale.y * border.y;
-						Tools.DrawRectBounds(scrollBounds, this.transform.position.z, Color.green);
-					}
-				}
-			}
-		}
-
-#endif
-
-		#endregion
-
 		#region 外部方法
 
 		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
 
-		//haha
 		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
 
 		public Action<string, GameObject, object> onItemOpen { get; private set; }
@@ -2318,13 +2214,158 @@ namespace BanSupport
 
 		#endregion
 
+#if UNITY_EDITOR
 
-		//haha
+		public class CheckMode
+		{
+			public static int Component = 1 << 0;
+			public static int ContentChildren = 1 << 0;
+		}
 
+		//数据发生变化时
 		private void OnValidate()
 		{
-			
+			CheckChange(CheckMode.ContentChildren | CheckMode.Component);
 		}
+
+		private void OnRectTransformDimensionsChange()
+		{
+			CheckChange(CheckMode.ContentChildren);
+		}
+
+		public void OnContentChildrenChanged()
+		{
+			CheckChange(CheckMode.ContentChildren);
+		}
+
+		private void CheckChange(int checkMode)
+		{
+			if (Application.isPlaying)
+			{
+				return;
+			}
+			if ((checkMode & CheckMode.Component) > 0)
+			{
+				if (CheckSetComponent())
+				{
+					SetComponent();
+				}
+			}
+			if ((checkMode & CheckMode.ContentChildren) > 0)
+			{
+				if (CheckSetContentChildren())
+				{
+					SetContentChildren();
+				}
+			}
+			if (m_TurnSameAction != null)
+			{
+				m_TurnSameAction();
+				m_TurnSameAction = null;
+			}
+		}
+
+#endif
+
+		#region 用于检测变化的值
+
+#if UNITY_EDITOR
+		private bool CheckSetComponent()
+		{
+			bool result = false;
+			if (m_OldScrollDirection != this.scrollDirection)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldScrollDirection = this.scrollDirection;
+				};
+			}
+			return result;
+		}
+
+		private bool CheckSetContentChildren()
+		{
+			bool result = false;
+			if (m_OldSizeDelta != (this.transform as RectTransform).sizeDelta)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldSizeDelta = (this.transform as RectTransform).sizeDelta;
+				};
+			}
+			if (m_OldSpacing != this.spacing)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldSpacing = spacing;
+				};
+			}
+
+			if (contentTrans != null && m_OldChildCount != this.contentTrans.childCount)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldChildCount = this.contentTrans.childCount;
+				};
+			}
+			if (m_OldScrollDirection != scrollDirection)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldScrollDirection = scrollDirection;
+				};
+			}
+			if (m_OldBorder != border)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_OldBorder = border;
+				};
+			}
+			if (m_Centered != centered)
+			{
+				result = true;
+				m_TurnSameAction += () =>
+				{
+					m_Centered = centered;
+				};
+			}
+			return result;
+		}
+
+		private void OnDrawGizmos()
+		{
+			if (drawGizmos)
+			{
+				Gizmos.color = Color.green;
+				//基本点触区域
+				Tools.DrawRectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
+				//滚动区域
+				if (contentTrans != null)
+				{
+					var tempRectBounds = Tools.GetRectBounds(contentTrans);
+					Tools.DrawRectBounds(tempRectBounds, this.transform.position.z, Color.green);
+					if ((border.x > 0 || border.y > 0) && (contentTrans.rect.width > 2 * border.x) && (contentTrans.rect.height > 2 * border.y))
+					{
+						tempRectBounds.left += contentTrans.lossyScale.x * border.x;
+						tempRectBounds.right -= contentTrans.lossyScale.x * border.x;
+						tempRectBounds.up -= contentTrans.lossyScale.y * border.y;
+						tempRectBounds.down += contentTrans.lossyScale.y * border.y;
+						Tools.DrawRectBounds(scrollBounds, this.transform.position.z, Color.green);
+					}
+				}
+			}
+		}
+
+#endif
+
+		#endregion
 
 	}
 }

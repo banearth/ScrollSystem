@@ -42,13 +42,9 @@ namespace BanSupport
 
 				GUILayout.EndHorizontal();
 
-				
-
 				//默认排列
-				
-				
-				int newCorner = GUILayout.SelectionGrid(script.startCorner, new string[] {
-						"Left Up", "Right Up" , "Left Down", "Right Down" }, 2);
+				//int newCorner = GUILayout.SelectionGrid(script.startCorner, new string[] {
+						//"Left Up", "Right Up" , "Left Down", "Right Down" }, 2);
 				//if (script.startCorner != newCorner)
 				//{
 				//	script.startCorner = newCorner;
