@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using BanSupport;
 
-
 public class TestSwap : MonoBehaviour
 {
 

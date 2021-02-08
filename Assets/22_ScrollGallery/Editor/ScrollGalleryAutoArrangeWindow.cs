@@ -295,8 +295,8 @@ namespace BanSupport
 			RectBounds rectBounds = new RectBounds(scrollGallery.Splits[1]);
 			for (int i = 2; i < scrollGallery.Splits.Length - 1; i++)
 			{
-				var curRectTransform = scrollGallery.Splits[i];
-				rectBounds.Encapsulate(new RectBounds(curRectTransform));
+				var curSplit = scrollGallery.Splits[i];
+				rectBounds.Encapsulate(curSplit);
 			}
 
 			var listChildren = ListPool<Transform>.Get();
@@ -308,9 +308,9 @@ namespace BanSupport
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform.parent));
 
 			Undo.RecordObject(this.maskTransform, "FitMask Main");
-			this.maskTransform.position = rectBounds.Position;
+			this.maskTransform.position = rectBounds.center;
 			var lossyScale = this.maskTransform.lossyScale;
-			this.maskTransform.sizeDelta = new Vector2(rectBounds.Width / lossyScale.x, rectBounds.Height / lossyScale.y);
+			this.maskTransform.sizeDelta = new Vector2(rectBounds.width / lossyScale.x, rectBounds.height / lossyScale.y);
 
 			listChildren.ForEach(temp => temp.SetParent(this.maskTransform));
 			ListPool<Transform>.Release(listChildren);

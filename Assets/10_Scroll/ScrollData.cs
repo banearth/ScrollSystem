@@ -40,7 +40,7 @@ namespace BanSupport
 		public bool isVisible { get; private set; }
 		public bool isPositionInited { get; private set; }
 
-		private RectBounds rectBounds = new RectBounds();
+		private RectBounds rectBounds;
 		private RectTransform targetTrans = null;
 
 		public float Left { get { return rectBounds.left; } }
@@ -160,11 +160,7 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				var rectBounds = new RectBounds(
-					GetWorldPosition(),
-					scrollSystem.contentTrans.lossyScale.x * width,
-					scrollSystem.contentTrans.lossyScale.y * height);
-				rectBounds.Draw(Color.red);
+				Tools.DrawRectBounds(GetWorldPosition(), scrollSystem.contentTrans.lossyScale.x * width, scrollSystem.contentTrans.lossyScale.y * height, Color.red);
 			}
 		}
 
@@ -175,14 +171,7 @@ namespace BanSupport
 		{
 			if (Time.frameCount == lastFrameCount) { return this.isVisible; }
 			this.lastFrameCount = Time.frameCount;
-			if (this.width <= 0 || this.height <= 0)
-			{
-				this.isVisible = false;
-			}
-			else
-			{
-				this.isVisible = rectBounds.Overlaps(scrollSystem.ScrollBounds);
-			}
+			this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
 			return this.isVisible;
 		}
 
