@@ -577,6 +577,27 @@ namespace BanSupport
 			return t;
 		}
 
+		public static bool RemoveComponentIfExist<T>(GameObject go) where T : Component
+		{
+			var t = go.GetComponent<T>();
+			if (t != null)
+			{
+				if (Application.isPlaying)
+				{
+					GameObject.Destroy(t);
+				}
+				else
+				{
+					GameObject.DestroyImmediate(t);
+				}
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
 		/// <summary>
 		/// Vector3直接打印出来精度不高，故使用本方法
 		/// </summary>

@@ -18,26 +18,24 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
-		#region 内部参数
-
-		private int _startCorner = int.MinValue;
-		private int _clipType = 0;
-
-
-		private Vector2 m_OldSizeDelta = Vector2.zero;
-		private ScrollDirection m_OldScrollDirection = ScrollDirection.Vertical;
-		private Vector2 m_OldBorder = Vector2.zero;
-		private Vector2 m_OldSpacing = Vector2.one * 10;
-		private int m_OldChildCount = 0;
-		private bool m_Centered = false;
-		private Action m_TurnSameAction;
-
-		#endregion
-
 		#region 只读的参数
 
 		public Vector2 Border { get { return border; } }
 		public Vector2 Spacing { get { return spacing; } }
+
+		private RectTransform _contentTrans = null;
+
+		public RectTransform ContentTrans
+		{
+			get
+			{
+				if (_contentTrans == null)
+				{
+					_contentTrans = this.transform.Find("Content Transform").transform as RectTransform;
+				}
+				return _contentTrans;
+			}
+		}
 
 		#endregion
 
@@ -59,9 +57,15 @@ namespace BanSupport
 		[SerializeField]
 		private int startCorner = 0;
 
+		/// <summary>
+		/// 用途:裁切方式
+		/// 备注:1使用Mask裁切
+		///			2使用RectMask裁切
+		/// </summary>
 		[IntEnum(0, 1, "Mask", "RectMask")]
 		[SerializeField]
 		private int  clipType = 0;
+		//haha
 
 		//用途：排列时边缘留空
 		//备注：内容跟外边框的距离
@@ -104,11 +108,7 @@ namespace BanSupport
 		[SerializeField]
 		private bool enableScrollOnlyWhenOutOfBounds = false;
 
-		/// <summary>
-		/// 直接用于滚动
-		/// </summary>
-		public RectTransform contentTrans;
-
+		//haha
 		/// <summary>
 		/// Gizmos相关
 		/// </summary>
@@ -1334,70 +1334,6 @@ namespace BanSupport
 #endif
 		}
 
-#if UNITY_EDITOR
-		/// <summary>
-		/// 设置好控件
-		/// </summary>
-		private void SetComponent()
-		{
-			bool isNew;
-			//contentTrans
-			if (contentTrans == null)
-			{
-				contentTrans = new GameObject("Content Transform", typeof(RectTransform)).transform as RectTransform;
-				contentTrans.SetParent(this.transform);
-				contentTrans.gameObject.layer = this.gameObject.layer;
-				contentTrans.transform.localPosition = Vector3.zero;
-				contentTrans.localScale = Vector3.one;
-
-				//Image
-				var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
-				if (isNew)
-				{
-					image.sprite = null;
-					image.color = new Color(1, 1, 1, 0.2f);
-				}
-
-				//haha
-				//Mask
-				var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
-				if (isNew)
-				{
-					mask.showMaskGraphic = true;
-				}
-
-			}
-			//Scroll
-			var scrollRect = Tools.AddComponentIfNotExist<ScrollRect>(this.gameObject, out isNew);
-			if (isNew) {
-				scrollRect.decelerationRate = 0.04f;
-			}
-			EnableScrollDirection();
-			scrollRect.viewport = this.transform as RectTransform;
-			scrollRect.content = contentTrans;
-
-			//交换horizontalBar和verticalBar
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				if (scrollRect.verticalScrollbar == null && scrollRect.horizontalScrollbar != null)
-				{
-					scrollRect.verticalScrollbar = scrollRect.horizontalScrollbar;
-					scrollRect.horizontalScrollbar = null;
-				}
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				if (scrollRect.horizontalScrollbar == null && scrollRect.verticalScrollbar != null)
-				{
-					scrollRect.horizontalScrollbar = scrollRect.verticalScrollbar;
-					scrollRect.verticalScrollbar = null;
-				}
-			}
-
-		}
-
-#endif
-
 		/// <summary>
 		/// applyLocate 表示保持界面固定不动
 		/// </summary>
@@ -2214,7 +2150,21 @@ namespace BanSupport
 
 		#endregion
 
+		#region 仅用于编辑器模式下
+
 #if UNITY_EDITOR
+
+		private int _startCorner = int.MinValue;
+		private int _clipType = 0;
+
+
+		private Vector2 _size = Vector2.zero;
+		private ScrollDirection _scrollDirection = ScrollDirection.Vertical;
+		private Vector2 _border = Vector2.zero;
+		private Vector2 _spacing = Vector2.one * 10;
+		private int _childCount = 0;
+		private bool _centered = false;
+		private Action _beSameAction;
 
 		public class CheckMode
 		{
@@ -2222,23 +2172,22 @@ namespace BanSupport
 			public static int ContentChildren = 1 << 0;
 		}
 
-		//数据发生变化时
 		private void OnValidate()
 		{
-			CheckChange(CheckMode.ContentChildren | CheckMode.Component);
+			CheckValueChange(CheckMode.ContentChildren | CheckMode.Component);
 		}
 
 		private void OnRectTransformDimensionsChange()
 		{
-			CheckChange(CheckMode.ContentChildren);
+			CheckValueChange(CheckMode.ContentChildren);
 		}
 
 		public void OnContentChildrenChanged()
 		{
-			CheckChange(CheckMode.ContentChildren);
+			CheckValueChange(CheckMode.ContentChildren);
 		}
 
-		private void CheckChange(int checkMode)
+		private void CheckValueChange(int checkMode)
 		{
 			if (Application.isPlaying)
 			{
@@ -2258,27 +2207,30 @@ namespace BanSupport
 					SetContentChildren();
 				}
 			}
-			if (m_TurnSameAction != null)
+			if (_beSameAction != null)
 			{
-				m_TurnSameAction();
-				m_TurnSameAction = null;
+				_beSameAction();
+				_beSameAction = null;
 			}
 		}
 
-#endif
-
-		#region 用于检测变化的值
-
-#if UNITY_EDITOR
 		private bool CheckSetComponent()
 		{
 			bool result = false;
-			if (m_OldScrollDirection != this.scrollDirection)
+			if (_scrollDirection != this.scrollDirection)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldScrollDirection = this.scrollDirection;
+					_scrollDirection = this.scrollDirection;
+				};
+			}
+			if (_clipType != this.clipType)
+			{
+				result = true;
+				_beSameAction += () =>
+				{
+					_clipType = this.clipType;
 				};
 			}
 			return result;
@@ -2287,56 +2239,128 @@ namespace BanSupport
 		private bool CheckSetContentChildren()
 		{
 			bool result = false;
-			if (m_OldSizeDelta != (this.transform as RectTransform).sizeDelta)
+			if (_size != (this.transform as RectTransform).sizeDelta)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldSizeDelta = (this.transform as RectTransform).sizeDelta;
+					_size = (this.transform as RectTransform).sizeDelta;
 				};
 			}
-			if (m_OldSpacing != this.spacing)
+			if (_spacing != this.spacing)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldSpacing = spacing;
+					_spacing = spacing;
 				};
 			}
-
-			if (contentTrans != null && m_OldChildCount != this.contentTrans.childCount)
+			if (_scrollDirection != scrollDirection)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldChildCount = this.contentTrans.childCount;
+					_scrollDirection = scrollDirection;
 				};
 			}
-			if (m_OldScrollDirection != scrollDirection)
+			if (_border != border)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldScrollDirection = scrollDirection;
+					_border = border;
 				};
 			}
-			if (m_OldBorder != border)
+			if (_centered != centered)
 			{
 				result = true;
-				m_TurnSameAction += () =>
+				_beSameAction += () =>
 				{
-					m_OldBorder = border;
+					_centered = centered;
 				};
 			}
-			if (m_Centered != centered)
+			if (contentTrans != null)
 			{
-				result = true;
-				m_TurnSameAction += () =>
+				if (_childCount != this.contentTrans.childCount)
 				{
-					m_Centered = centered;
-				};
+					result = true;
+					_beSameAction += () =>
+					{
+						_childCount = this.contentTrans.childCount;
+					};
+				}
 			}
 			return result;
+		}
+
+		private void SetComponent()
+		{
+			//contentTrans
+			if (_contentTrans == null)
+			{
+				_contentTrans = new GameObject("Content Transform", typeof(RectTransform)).transform as RectTransform;
+				_contentTrans.gameObject.AddComponent<ScrollSystemContentTransform>();
+				_contentTrans.SetParent(this.transform);
+				_contentTrans.gameObject.layer = this.gameObject.layer;
+				_contentTrans.transform.localPosition = Vector3.zero;
+				_contentTrans.localScale = Vector3.one;
+			}
+
+			if (this.clipType == 1)
+			{
+				//-------------------使用Mask裁切-------------------
+				//Image
+				bool isNew;
+				var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
+				if (isNew)
+				{
+					image.sprite = null;
+					image.color = new Color(1, 1, 1, 0.2f);
+				}
+
+			}
+			else if (this.clipType == 2)
+			{
+				//-------------------使用RectMask裁切-------------------
+				var isSucess = Tools.RemoveComponentIfExist<Image>(this.gameObject);
+				
+			}
+
+			//Mask			
+			var mask = Tools.AddComponentIfNotExist<Mask>(this.gameObject, out isNew);
+			if (isNew)
+			{
+				mask.showMaskGraphic = true;
+			}
+
+			//Scroll
+			var scrollRect = Tools.AddComponentIfNotExist<ScrollRect>(this.gameObject, out isNew);
+			if (isNew)
+			{
+				scrollRect.decelerationRate = 0.04f;
+			}
+			EnableScrollDirection();
+			scrollRect.viewport = this.transform as RectTransform;
+			scrollRect.content = contentTrans;
+
+			//交换horizontalBar和verticalBar
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				if (scrollRect.verticalScrollbar == null && scrollRect.horizontalScrollbar != null)
+				{
+					scrollRect.verticalScrollbar = scrollRect.horizontalScrollbar;
+					scrollRect.horizontalScrollbar = null;
+				}
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				if (scrollRect.horizontalScrollbar == null && scrollRect.verticalScrollbar != null)
+				{
+					scrollRect.horizontalScrollbar = scrollRect.verticalScrollbar;
+					scrollRect.verticalScrollbar = null;
+				}
+			}
+
 		}
 
 		private void OnDrawGizmos()
