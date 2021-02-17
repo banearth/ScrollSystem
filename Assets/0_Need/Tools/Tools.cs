@@ -552,32 +552,21 @@ namespace BanSupport
 
 		#region Others
 
-		public static T AddComponentIfNotExist<T>(GameObject go) where T : Component
+		public static bool AddComponent<T>(GameObject go, out T t) where T : Component
 		{
-			var t = go.GetComponent<T>();
+			t = go.GetComponent<T>();
 			if (t == null)
 			{
 				t = go.AddComponent<T>();
-			}
-			return t;
-		}
-
-		public static T AddComponentIfNotExist<T>(GameObject go, out bool isNew) where T : Component
-		{
-			var t = go.GetComponent<T>();
-			if (t == null)
-			{
-				t = go.AddComponent<T>();
-				isNew = true;
+				return true;
 			}
 			else
 			{
-				isNew = false;
+				return false;
 			}
-			return t;
 		}
 
-		public static bool RemoveComponentIfExist<T>(GameObject go) where T : Component
+		public static bool RemoveComponent<T>(GameObject go) where T : Component
 		{
 			var t = go.GetComponent<T>();
 			if (t != null)

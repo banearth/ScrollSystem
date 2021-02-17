@@ -7,7 +7,6 @@ using UnityEngine.EventSystems;
 
 namespace BanSupport
 {
-	[ExecuteInEditMode]
 	public class ScrollGallery : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
@@ -138,22 +137,7 @@ namespace BanSupport
 		}
 		private void Start()
 		{
-			if (Application.isPlaying)
-			{
-				Init();
-			}
-#if UNITY_EDITOR
-			else
-			{
-				bool isNew;
-				var image = Tools.AddComponentIfNotExist<Image>(this.gameObject, out isNew);
-				if (isNew)
-				{
-					image.sprite = null;
-					image.color = new Color(1, 1, 1, 0.2f);
-				}
-			}
-#endif
+			Init();
 		}
 
 		#endregion

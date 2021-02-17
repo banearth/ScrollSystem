@@ -5,7 +5,7 @@ using UnityEditor;
 
 namespace BanSupport
 {
-	[CustomEditor(typeof(ScrollSystem))]
+	//[CustomEditor(typeof(ScrollSystem))]
 	public class ScrollSystemEditor : Editor
 	{
 

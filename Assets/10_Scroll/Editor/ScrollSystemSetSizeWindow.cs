@@ -16,7 +16,7 @@ namespace BanSupport
 		private int colCount = 0;
 		public static void ShowWindow(ScrollSystem scrollSystem)
 		{
-			if (scrollSystem.contentTrans.childCount <= 0)
+			if (scrollSystem.ContentTrans.childCount <= 0)
 			{
 				Debug.LogError("ScrollSystem至少需要放置一个模板预制体");
 				return;
@@ -29,7 +29,7 @@ namespace BanSupport
 			r.y = Screen.currentResolution.height / 2 - r.height / 2;
 			window.position = r;
 
-			var originTransform = scrollSystem.contentTrans.GetChild(0) as RectTransform;
+			var originTransform = scrollSystem.ContentTrans.GetChild(0) as RectTransform;
 			window.tileWidth = originTransform.sizeDelta.x;
 			window.tileHeight = originTransform.sizeDelta.y;
 		}
