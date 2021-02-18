@@ -160,7 +160,7 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				Tools.DrawRectBounds(
+				Tools.DrawRect(
 					GetWorldPosition(), 
 					scrollSystem.ContentTrans.lossyScale.x * width, 
 					scrollSystem.ContentTrans.lossyScale.y * height, 

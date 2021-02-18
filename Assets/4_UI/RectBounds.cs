@@ -151,52 +151,29 @@ namespace BanSupport
 	partial class Tools
 	{
 
-		public static void DrawRectBounds(Vector2 pos, float z, float width, float height, Color color)
+		public static void DrawRect(Vector3 worldPos, float worldWidth, float worldHeight, Color color)
 		{
-			DrawRectBounds(new Vector3(pos.x, pos.y, z), width, height, color);
-		}
-
-		/// <summary>
-		/// Width和Height都是世界距离，不是像素距离
-		/// </summary>
-		public static void DrawRectBounds(Vector3 pos, float width, float height, Color color)
-		{
-			var leftUpPos = pos + Vector3.left * width / 2 + Vector3.up * height / 2;
-			var rightUpPos = pos + Vector3.right * width / 2 + Vector3.up * height / 2;
-			var leftDownPos = pos + Vector3.left * width / 2 + Vector3.down * height / 2;
-			var rightDownPos = pos + Vector3.right * width / 2 + Vector3.down * height / 2;
+			var leftUpPos = worldPos + Vector3.left * worldWidth / 2 + Vector3.up * worldHeight / 2;
+			var rightUpPos = worldPos + Vector3.right * worldWidth / 2 + Vector3.up * worldHeight / 2;
+			var leftDownPos = worldPos + Vector3.left * worldWidth / 2 + Vector3.down * worldHeight / 2;
+			var rightDownPos = worldPos + Vector3.right * worldWidth / 2 + Vector3.down * worldHeight / 2;
 			Debug.DrawLine(leftUpPos, rightUpPos, color);
 			Debug.DrawLine(leftDownPos, rightDownPos, color);
 			Debug.DrawLine(leftUpPos, leftDownPos, color);
 			Debug.DrawLine(rightUpPos, rightDownPos, color);
 		}
 
-		/// <summary>
-		/// 使用Debug画方块
-		/// </summary>
-		public static void DrawRectBounds(RectBounds rectBounds, Color color)
-		{
-			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
-			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.RightDownPos, color);
-			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.LeftDownPos, color);
-			Debug.DrawLine(rectBounds.RightUpPos, rectBounds.RightDownPos, color);
-		}
-
-		/// <summary>
-		/// 使用Debug画方块
-		/// </summary>
-		public static void DrawRectBounds(RectBounds rectBounds, float z, Color color)
+		public static void DrawRect(RectBounds rectBounds, float z, Color color)
 		{
 			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
 			Debug.DrawLine(rectBounds.RightUpPos, rectBounds.RightDownPos, color);
 			Debug.DrawLine(rectBounds.RightDownPos, rectBounds.LeftDownPos, color);
 			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.LeftUpPos, color);
 		}
+		
 
-		/// <summary>
-		/// 获得RectTransform的边界，用一个来接收
-		/// </summary>
-		public static RectBounds GetRectBounds(RectTransform rectTransform)
+
+		private static RectBounds GetRectBounds(RectTransform rectTransform)
 		{
 			var pivot = rectTransform.pivot;
 			var width = rectTransform.rect.width * rectTransform.lossyScale.x;

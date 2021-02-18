@@ -1105,202 +1105,6 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 根据子物体来排列内容，这个方法只在编辑器环境下使用
-		/// </summary>
-		public void SetContentChildren()
-		{
-#if UNITY_EDITOR
-			if (this.ContentTrans == null)
-			{
-				return;
-			}
-
-			//初始化
-			InitGetCenterOffset();
-			InitTransAnchoredPosition();
-			InitFormatPrefabRectTransform();
-			InitCursor();
-			InitContentTrans();
-
-			Dictionary<RectTransform, Vector2> dic_RectTransform_AnchoredPosition = new Dictionary<RectTransform, Vector2>();
-			var childCount = this.ContentTrans.childCount;
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				for (int i = 0; i < childCount; i++)
-				{
-					var rectTransform = this.ContentTrans.GetChild(i) as RectTransform;
-					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
-					formatPrefabRectTransform(rectTransform);
-					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
-					var layout = this.ContentTrans.GetChild(i).GetComponent<ScrollLayout>();
-					if (layout != null)
-					{
-						newLine = layout.newLine;
-					}
-					if (newLine == ScrollLayout.NewLine.None)
-					{
-						//发生过偏移，并且这次物体的右边界超过宽度
-						if (cursorPos.x > border.x && cursorPos.x + rectTransform.sizeDelta.x > Width - border.x)
-						{
-							//那么执行换行操作
-							cursorPos.x = border.x;
-							cursorPos.y += maxHeight;
-							maxHeight = 0;
-						}
-						//设置位置
-						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
-						//更新光标
-						cursorPos.x += rectTransform.sizeDelta.x;
-						//更新最大宽度
-						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
-						//增加间隔
-						if (rectTransform.sizeDelta.x > 0)
-						{
-							cursorPos.x += spacing.x;
-						}
-						float curMaxHeight = rectTransform.sizeDelta.y > 0 ? (rectTransform.sizeDelta.y + spacing.y) : 0;
-						//更新最大高度
-						if (maxHeight < curMaxHeight)
-						{
-							maxHeight = curMaxHeight;
-						}
-					}
-					else
-					{
-						//发生过偏移，换行
-						if (cursorPos.x > border.x)
-						{
-							cursorPos.y += maxHeight;
-							maxHeight = 0;
-						}
-						switch (newLine)
-						{
-							case ScrollLayout.NewLine.Center:
-								{
-									cursorPos.x = Width / 2;
-								}
-								break;
-							case ScrollLayout.NewLine.LeftOrUp:
-								{
-									cursorPos.x = rectTransform.sizeDelta.x / 2 + border.x;
-								}
-								break;
-							case ScrollLayout.NewLine.RightOrDown:
-								{
-									cursorPos.x = Width - rectTransform.sizeDelta.x / 2 - border.x;
-								}
-								break;
-						}
-						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
-						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
-						//换新行
-						cursorPos.x = border.x;
-						cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
-					}
-				}
-				//设置content高度
-				ContentTrans.sizeDelta = new Vector2(ContentTrans.sizeDelta.x,cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y);
-				float centerOffset = 0;
-				if (centered)
-				{
-					centerOffset = (Width - border.x - maxWidth) / 2;
-				}
-				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
-				{
-					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.right * centerOffset);
-				}
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				for (int i = 0; i < childCount; i++)
-				{
-					var rectTransform = this.ContentTrans.GetChild(i) as RectTransform;
-					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
-					formatPrefabRectTransform(rectTransform);
-					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
-					var layout = this.ContentTrans.GetChild(i).GetComponent<ScrollLayout>();
-					if (layout != null)
-					{
-						newLine = layout.newLine;
-					}
-					if (newLine == ScrollLayout.NewLine.None)
-					{
-						//发生过偏移，并且这次物体的右边界超过宽度
-						if (cursorPos.y > border.y && cursorPos.y + rectTransform.sizeDelta.y > Height - border.y)
-						{
-							//那么执行换行操作
-							cursorPos.y = border.y;
-							cursorPos.x += maxHeight;
-							maxHeight = 0;
-						}
-						//设置位置
-						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
-						//更新光标
-						cursorPos.y += rectTransform.sizeDelta.y;
-						//更新最大宽度
-						if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
-						//增加间隔
-						if (rectTransform.sizeDelta.y > 0)
-						{
-							cursorPos.y += spacing.y;
-						}
-						//更新最大高度
-						float curMaxHeight = rectTransform.sizeDelta.x > 0 ? (rectTransform.sizeDelta.x + spacing.x) : 0;
-						if (maxHeight < curMaxHeight)
-						{
-							maxHeight = curMaxHeight;
-						}
-					}
-					else
-					{
-						//发生过偏移，换行
-						if (cursorPos.y > border.y)
-						{
-							cursorPos.x += maxHeight;
-							maxHeight = 0;
-						}
-						switch (newLine)
-						{
-							case ScrollLayout.NewLine.Center:
-								{
-									cursorPos.y = Height / 2;
-								}
-								break;
-							case ScrollLayout.NewLine.LeftOrUp:
-								{
-									cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
-								}
-								break;
-							case ScrollLayout.NewLine.RightOrDown:
-								{
-									cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
-								}
-								break;
-						}
-						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
-						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
-						//换新行
-						cursorPos.y = border.y;
-						cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
-					}
-				}
-				//设置content高度
-				ContentTrans.sizeDelta = new Vector2(cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x,ContentTrans.sizeDelta.y);
-				float centerOffset = 0;
-				if (centered)
-				{
-					centerOffset = (Height - border.y - maxWidth) / 2;
-				}
-				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
-				{
-					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.up * centerOffset);
-				}
-			}
-			dic_RectTransform_AnchoredPosition.Clear();
-#endif
-		}
-
-		/// <summary>
 		/// applyLocate 表示保持界面固定不动
 		/// </summary>
 		private void SetAllData()
@@ -2111,12 +1915,14 @@ namespace BanSupport
 		private void OnValidate()
 		{
 			StartCoroutine(OnValidateEnd());
+			CheckValueChange(CheckMode.ContentChildren);
 		}
 
+		//因为存在Component的Add和Remove，所以不能直接在OnValidate里面调用
 		private IEnumerator OnValidateEnd()
 		{
 			yield return new WaitForEndOfFrame();
-			CheckValueChange(CheckMode.ContentChildren | CheckMode.Component);
+			CheckValueChange(CheckMode.Component);
 		}
 		
 		private void OnRectTransformDimensionsChange()
@@ -2153,6 +1959,7 @@ namespace BanSupport
 			{
 				_beSameAction();
 				_beSameAction = null;
+				RefreshWhenEditor();
 			}
 		}
 
@@ -2181,6 +1988,14 @@ namespace BanSupport
 		private bool CheckSetContentChildren()
 		{
 			bool result = false;
+			if (_startCorner != this.startCorner)
+			{
+				result = true;
+				_beSameAction += () =>
+				{
+					_startCorner = this.startCorner;
+				};
+			}
 			if (_size != (this.transform as RectTransform).sizeDelta)
 			{
 				result = true;
@@ -2189,6 +2004,7 @@ namespace BanSupport
 					_size = (this.transform as RectTransform).sizeDelta;
 				};
 			}
+
 			if (_spacing != this.spacing)
 			{
 				result = true;
@@ -2312,8 +2128,201 @@ namespace BanSupport
 					scrollRect.verticalScrollbar = null;
 				}
 			}
-			Debug.Log("刷新了");
-			//LayoutRebuilder.MarkLayoutForRebuild
+		}
+
+		public void SetContentChildren()
+		{
+			if (this.ContentTrans == null)
+			{
+				return;
+			}
+			//初始化
+			InitGetCenterOffset();
+			InitTransAnchoredPosition();
+			InitFormatPrefabRectTransform();
+			InitCursor();
+			InitContentTrans();
+
+			Dictionary<RectTransform, Vector2> dic_RectTransform_AnchoredPosition = new Dictionary<RectTransform, Vector2>();
+			var childCount = this.ContentTrans.childCount;
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				for (int i = 0; i < childCount; i++)
+				{
+					var rectTransform = this.ContentTrans.GetChild(i) as RectTransform;
+					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
+					formatPrefabRectTransform(rectTransform);
+					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
+					var layout = this.ContentTrans.GetChild(i).GetComponent<ScrollLayout>();
+					if (layout != null)
+					{
+						newLine = layout.newLine;
+					}
+					if (newLine == ScrollLayout.NewLine.None)
+					{
+						//发生过偏移，并且这次物体的右边界超过宽度
+						if (cursorPos.x > border.x && cursorPos.x + rectTransform.sizeDelta.x > Width - border.x)
+						{
+							//那么执行换行操作
+							cursorPos.x = border.x;
+							cursorPos.y += maxHeight;
+							maxHeight = 0;
+						}
+						//设置位置
+						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+						//更新光标
+						cursorPos.x += rectTransform.sizeDelta.x;
+						//更新最大宽度
+						if (maxWidth < cursorPos.x) { maxWidth = cursorPos.x; }
+						//增加间隔
+						if (rectTransform.sizeDelta.x > 0)
+						{
+							cursorPos.x += spacing.x;
+						}
+						float curMaxHeight = rectTransform.sizeDelta.y > 0 ? (rectTransform.sizeDelta.y + spacing.y) : 0;
+						//更新最大高度
+						if (maxHeight < curMaxHeight)
+						{
+							maxHeight = curMaxHeight;
+						}
+					}
+					else
+					{
+						//发生过偏移，换行
+						if (cursorPos.x > border.x)
+						{
+							cursorPos.y += maxHeight;
+							maxHeight = 0;
+						}
+						switch (newLine)
+						{
+							case ScrollLayout.NewLine.Center:
+								{
+									cursorPos.x = Width / 2;
+								}
+								break;
+							case ScrollLayout.NewLine.LeftOrUp:
+								{
+									cursorPos.x = rectTransform.sizeDelta.x / 2 + border.x;
+								}
+								break;
+							case ScrollLayout.NewLine.RightOrDown:
+								{
+									cursorPos.x = Width - rectTransform.sizeDelta.x / 2 - border.x;
+								}
+								break;
+						}
+						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
+						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.y / 2 * Vector2.up);
+						//换新行
+						cursorPos.x = border.x;
+						cursorPos.y += rectTransform.sizeDelta.y + spacing.y;
+					}
+				}
+				//设置content高度
+				ContentTrans.sizeDelta = new Vector2(ContentTrans.sizeDelta.x, cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y);
+				float centerOffset = 0;
+				if (centered)
+				{
+					centerOffset = (Width - border.x - maxWidth) / 2;
+				}
+				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
+				{
+					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.right * centerOffset);
+				}
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				for (int i = 0; i < childCount; i++)
+				{
+					var rectTransform = this.ContentTrans.GetChild(i) as RectTransform;
+					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
+					formatPrefabRectTransform(rectTransform);
+					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
+					var layout = this.ContentTrans.GetChild(i).GetComponent<ScrollLayout>();
+					if (layout != null)
+					{
+						newLine = layout.newLine;
+					}
+					if (newLine == ScrollLayout.NewLine.None)
+					{
+						//发生过偏移，并且这次物体的右边界超过宽度
+						if (cursorPos.y > border.y && cursorPos.y + rectTransform.sizeDelta.y > Height - border.y)
+						{
+							//那么执行换行操作
+							cursorPos.y = border.y;
+							cursorPos.x += maxHeight;
+							maxHeight = 0;
+						}
+						//设置位置
+						dic_RectTransform_AnchoredPosition.Add(rectTransform, cursorPos + rectTransform.sizeDelta / 2);
+						//更新光标
+						cursorPos.y += rectTransform.sizeDelta.y;
+						//更新最大宽度
+						if (maxWidth < cursorPos.y) { maxWidth = cursorPos.y; }
+						//增加间隔
+						if (rectTransform.sizeDelta.y > 0)
+						{
+							cursorPos.y += spacing.y;
+						}
+						//更新最大高度
+						float curMaxHeight = rectTransform.sizeDelta.x > 0 ? (rectTransform.sizeDelta.x + spacing.x) : 0;
+						if (maxHeight < curMaxHeight)
+						{
+							maxHeight = curMaxHeight;
+						}
+					}
+					else
+					{
+						//发生过偏移，换行
+						if (cursorPos.y > border.y)
+						{
+							cursorPos.x += maxHeight;
+							maxHeight = 0;
+						}
+						switch (newLine)
+						{
+							case ScrollLayout.NewLine.Center:
+								{
+									cursorPos.y = Height / 2;
+								}
+								break;
+							case ScrollLayout.NewLine.LeftOrUp:
+								{
+									cursorPos.y = rectTransform.sizeDelta.y / 2 + border.y;
+								}
+								break;
+							case ScrollLayout.NewLine.RightOrDown:
+								{
+									cursorPos.y = Height - rectTransform.sizeDelta.y / 2 - border.y;
+								}
+								break;
+						}
+						//设置位置（需要注意这里直接赋给位置，不需要进行居中处理）
+						rectTransform.anchoredPosition = TransAnchoredPosition(cursorPos + rectTransform.sizeDelta.x / 2 * Vector2.right);
+						//换新行
+						cursorPos.y = border.y;
+						cursorPos.x += rectTransform.sizeDelta.x + spacing.x;
+					}
+				}
+				//设置content高度
+				ContentTrans.sizeDelta = new Vector2(cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x, ContentTrans.sizeDelta.y);
+				float centerOffset = 0;
+				if (centered)
+				{
+					centerOffset = (Height - border.y - maxWidth) / 2;
+				}
+				foreach (var rectTransform in dic_RectTransform_AnchoredPosition.Keys)
+				{
+					rectTransform.anchoredPosition = TransAnchoredPosition(dic_RectTransform_AnchoredPosition[rectTransform] + Vector2.up * centerOffset);
+				}
+			}
+			dic_RectTransform_AnchoredPosition.Clear();
+		}
+
+		private void RefreshWhenEditor()
+		{
+			Debug.Log("RefreshWhenEditor");
 			LayoutRebuilder.MarkLayoutForRebuild(this.transform as RectTransform);
 			Canvas.ForceUpdateCanvases();
 			UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
@@ -2325,19 +2334,20 @@ namespace BanSupport
 			{
 				Gizmos.color = Color.green;
 				//基本点触区域
-				Tools.DrawRectBounds(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
+				Tools.DrawRect(this.transform.position, Width * this.transform.lossyScale.x, Height * this.transform.lossyScale.y, Color.green);
 				//滚动区域
-				if (ContentTrans != null)
+				if (this.ContentTrans != null)
 				{
-					var tempRectBounds = Tools.GetRectBounds(ContentTrans);
-					Tools.DrawRectBounds(tempRectBounds, this.transform.position.z, Color.green);
+					//Tools.DrawRectBounds(ToolsContentTrans, this.transform.position.z, Color.green);
+					//Tools.DrawRectBounds(tempRectBounds, , );
 					if ((border.x > 0 || border.y > 0) && (ContentTrans.rect.width > 2 * border.x) && (ContentTrans.rect.height > 2 * border.y))
 					{
+						Debug.Log("come here");
 						tempRectBounds.left += ContentTrans.lossyScale.x * border.x;
 						tempRectBounds.right -= ContentTrans.lossyScale.x * border.x;
 						tempRectBounds.up -= ContentTrans.lossyScale.y * border.y;
 						tempRectBounds.down += ContentTrans.lossyScale.y * border.y;
-						Tools.DrawRectBounds(scrollBounds, this.transform.position.z, Color.green);
+						Tools.DrawRect(scrollBounds, this.transform.position.z, Color.blue);
 					}
 				}
 			}
