@@ -153,27 +153,32 @@ namespace BanSupport
 
 		public static void DrawRect(Vector3 worldPos, float worldWidth, float worldHeight, Color color)
 		{
-			var leftUpPos = worldPos + Vector3.left * worldWidth / 2 + Vector3.up * worldHeight / 2;
-			var rightUpPos = worldPos + Vector3.right * worldWidth / 2 + Vector3.up * worldHeight / 2;
-			var leftDownPos = worldPos + Vector3.left * worldWidth / 2 + Vector3.down * worldHeight / 2;
-			var rightDownPos = worldPos + Vector3.right * worldWidth / 2 + Vector3.down * worldHeight / 2;
-			Debug.DrawLine(leftUpPos, rightUpPos, color);
-			Debug.DrawLine(leftDownPos, rightDownPos, color);
-			Debug.DrawLine(leftUpPos, leftDownPos, color);
-			Debug.DrawLine(rightUpPos, rightDownPos, color);
+			DrawRect(GetRectBounds(worldPos, worldWidth, worldHeight), worldPos.z, color);
 		}
 
-		public static void DrawRect(RectBounds rectBounds, float z, Color color)
+		public static void DrawRect(RectBounds rectBounds, float worldPosZ, Color color)
 		{
-			Debug.DrawLine(rectBounds.LeftUpPos, rectBounds.RightUpPos, color);
-			Debug.DrawLine(rectBounds.RightUpPos, rectBounds.RightDownPos, color);
-			Debug.DrawLine(rectBounds.RightDownPos, rectBounds.LeftDownPos, color);
-			Debug.DrawLine(rectBounds.LeftDownPos, rectBounds.LeftUpPos, color);
+			Vector3 leftUpPos = rectBounds.LeftUpPos;
+			Vector3 rightUpPos = rectBounds.RightUpPos;
+			Vector3 rightDownPos = rectBounds.RightDownPos;
+			Vector3 leftDownPos = rectBounds.LeftDownPos;
+			leftUpPos.z = worldPosZ;
+			rightUpPos.z = worldPosZ;
+			rightDownPos.z = worldPosZ;
+			leftDownPos.z = worldPosZ;
+			Debug.DrawLine(leftUpPos, rightUpPos, color);
+			Debug.DrawLine(rightUpPos, rightDownPos, color);
+			Debug.DrawLine(rightDownPos, leftDownPos, color);
+			Debug.DrawLine(leftDownPos, leftUpPos, color);
 		}
-		
 
+		public static void DrawRect(RectTransform rectTransform, Color color)
+		{
+			var rectBounds = GetRectBounds(rectTransform, out float worldPosZ);
+			DrawRect(rectBounds, worldPosZ, color);
+		}
 
-		private static RectBounds GetRectBounds(RectTransform rectTransform)
+		public static RectBounds GetRectBounds(RectTransform rectTransform,out float worldPosZ)
 		{
 			var pivot = rectTransform.pivot;
 			var width = rectTransform.rect.width * rectTransform.lossyScale.x;
@@ -183,21 +188,32 @@ namespace BanSupport
 			rectBounds.right = rectTransform.transform.position.x + width * (1 - pivot.x);
 			rectBounds.up = rectTransform.transform.position.y + height * (1 - pivot.y);
 			rectBounds.down = rectTransform.transform.position.y + height * (-pivot.y);
+			worldPosZ = rectTransform.position.z;
 			return rectBounds;
 		}
 
-		public static RectBounds GetRectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height, Vector3 worldPosition)
+		public static RectBounds GetRectBounds(Vector2 worldPos, float worldWidth, float worldHeight)
 		{
-			width = width * lossyScale.x;
-			height = height * lossyScale.y;
 			var rectBounds = new RectBounds();
-			rectBounds.left = worldPosition.x + width * (-pivot.x);
-			rectBounds.right = worldPosition.x + width * (1 - pivot.x);
-			rectBounds.up = worldPosition.y + height * (1 - pivot.y);
-			rectBounds.down = worldPosition.y + height * (-pivot.y);
+			rectBounds.left = worldPos.x - worldWidth / 2;
+			rectBounds.right = worldPos.x + worldWidth / 2;
+			rectBounds.up = worldPos.y + worldHeight / 2;
+			rectBounds.up = worldPos.y - worldHeight / 2;
 			return rectBounds;
 		}
 
 	}
 
 }
+
+//public static RectBounds GetRectBounds(Vector2 pivot, Vector3 lossyScale, float width, float height, Vector3 worldPosition)
+//{
+//	width = width * lossyScale.x;
+//	height = height * lossyScale.y;
+//	var rectBounds = new RectBounds();
+//	rectBounds.left = worldPosition.x + width * (-pivot.x);
+//	rectBounds.right = worldPosition.x + width * (1 - pivot.x);
+//	rectBounds.up = worldPosition.y + height * (1 - pivot.y);
+//	rectBounds.down = worldPosition.y + height * (-pivot.y);
+//	return rectBounds;
+//}

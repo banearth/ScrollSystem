@@ -2338,11 +2338,17 @@ namespace BanSupport
 				//滚动区域
 				if (this.ContentTrans != null)
 				{
-					//Tools.DrawRectBounds(ToolsContentTrans, this.transform.position.z, Color.green);
-					//Tools.DrawRectBounds(tempRectBounds, , );
+					var contentRect = Tools.GetRectBounds(this.ContentTrans,out float worldPosZ);
+
+
+
+					Tools.DrawRect(this.ContentTrans, Color.green);
 					if ((border.x > 0 || border.y > 0) && (ContentTrans.rect.width > 2 * border.x) && (ContentTrans.rect.height > 2 * border.y))
 					{
 						Debug.Log("come here");
+
+						//Tools.DrawRect();
+
 						tempRectBounds.left += ContentTrans.lossyScale.x * border.x;
 						tempRectBounds.right -= ContentTrans.lossyScale.x * border.x;
 						tempRectBounds.up -= ContentTrans.lossyScale.y * border.y;

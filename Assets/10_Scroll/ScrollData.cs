@@ -160,11 +160,8 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				Tools.DrawRect(
-					GetWorldPosition(), 
-					scrollSystem.ContentTrans.lossyScale.x * width, 
-					scrollSystem.ContentTrans.lossyScale.y * height, 
-					Color.red);
+				var localScale = scrollSystem.ContentTrans.lossyScale;
+				Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
 			}
 		}
 
