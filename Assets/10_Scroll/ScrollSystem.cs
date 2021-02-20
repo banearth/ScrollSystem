@@ -2339,21 +2339,17 @@ namespace BanSupport
 				if (this.ContentTrans != null)
 				{
 					var contentRect = Tools.GetRectBounds(this.ContentTrans,out float worldPosZ);
-
-
-
-					Tools.DrawRect(this.ContentTrans, Color.green);
+					Tools.DrawRect(contentRect, worldPosZ, Color.green);
 					if ((border.x > 0 || border.y > 0) && (ContentTrans.rect.width > 2 * border.x) && (ContentTrans.rect.height > 2 * border.y))
 					{
 						Debug.Log("come here");
-
-						//Tools.DrawRect();
-
-						tempRectBounds.left += ContentTrans.lossyScale.x * border.x;
-						tempRectBounds.right -= ContentTrans.lossyScale.x * border.x;
-						tempRectBounds.up -= ContentTrans.lossyScale.y * border.y;
-						tempRectBounds.down += ContentTrans.lossyScale.y * border.y;
-						Tools.DrawRect(scrollBounds, this.transform.position.z, Color.blue);
+						var borderOffsetX = ContentTrans.lossyScale.x * border.x;
+						var borderOffsetY = ContentTrans.lossyScale.y * border.y;
+						contentRect.left += borderOffsetX;
+						contentRect.right -= borderOffsetX;
+						contentRect.up -= borderOffsetY;
+						contentRect.down += borderOffsetY;
+						Tools.DrawRect(contentRect, worldPosZ, Color.cyan);
 					}
 				}
 			}
