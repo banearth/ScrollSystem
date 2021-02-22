@@ -58,7 +58,7 @@ namespace BanSupport
 
 		public Vector3 GetWorldPosition()
 		{
-			return Tools.GetUIPosByAnchoredPos(scrollSystem.ContentTrans, anchoredPosition, scrollSystem.PrefabAnchor);
+			return Tools.GetUIPosByAnchoredPos(scrollSystem.ContentTrans.Value, anchoredPosition, scrollSystem.PrefabAnchor);
 		}
 
 		/// <summary>
@@ -160,7 +160,7 @@ namespace BanSupport
 		{
 			if (scrollSystem.DrawGizmos)
 			{
-				var localScale = scrollSystem.ContentTrans.lossyScale;
+				var localScale = scrollSystem.ContentTrans.Value.lossyScale;
 				Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
 			}
 		}

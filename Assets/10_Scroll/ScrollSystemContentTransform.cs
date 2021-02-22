@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace BanSupport
 {
+	[ExecuteInEditMode]
 	public class ScrollSystemContentTransform : MonoBehaviour
 	{
 		private ScrollSystem _scrollSystem = null;
@@ -19,9 +20,24 @@ namespace BanSupport
 			}
 		}
 
+		private RectTransform _value = null;
+
+		public RectTransform Value
+		{
+			get
+			{
+				if (_value == null)
+				{
+					_value = this.transform as RectTransform;
+				}
+				return _value;
+			}
+		}
+
 #if UNITY_EDITOR
 		private void OnTransformChildrenChanged()
 		{
+			Debug.Log("OnTransformChildrenChanged");
 			if (Application.isPlaying)
 			{
 				return;
