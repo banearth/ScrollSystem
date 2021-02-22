@@ -22,6 +22,13 @@ namespace BanSupport
 
 		public enum ScrollDirection { Vertical, Horizontal }
 
+		public enum DataChange
+		{
+			None,//表示无变化，不需要操作
+			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
+			Removed,//表示需要位置重构
+		}
+
 		#endregion
 
 		#region 内部
@@ -31,6 +38,49 @@ namespace BanSupport
 		private RectTransform _selfRectTramsform = null;
 
 		private ScrollRect _scrollRect = null;
+
+		private RectBounds _scrollBounds;
+
+		/// <summary>
+		/// 运行时用的Data，核心数据
+		/// </summary>
+		private List<ScrollData> listData = new List<ScrollData>();
+
+		/// <summary>
+		/// 用于内部的搜索
+		/// </summary>
+		private List<SearchGroup> searchList = new List<SearchGroup>();
+
+		/// <summary>
+		/// 用于缓存物体对象
+		/// </summary>
+		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
+
+		/// <summary>
+		/// 光标的位置
+		/// </summary>
+		private Vector2 cursorPos;
+
+		/// <summary>
+		/// 最后一行的最大高度，用于在换行的时候使用
+		/// </summary>
+		private float maxHeight;
+
+		/// <summary>
+		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
+		/// </summary>
+		private float maxWidth = 0;
+
+		private float oldMaxWidth = 0;
+
+		/// <summary>
+		/// 视图最大尺寸，用于计算跳转使用
+		/// </summary>
+		private float contentSize = 0;
+
+		private Action<ScrollData> setSingleDataAction;
+
+		private bool inited = false;
 
 		#endregion
 
@@ -92,7 +142,7 @@ namespace BanSupport
 		/// <summary>
 		/// 本体
 		/// </summary>
-		private ScrollRect scrollRect
+		private ScrollRect ScrollRect
 		{
 			get
 			{
@@ -101,6 +151,18 @@ namespace BanSupport
 					_scrollRect = GetComponent<ScrollRect>();
 				}
 				return _scrollRect;
+			}
+		}
+
+		/// <summary>
+		/// 这个scrollRect的范围，用于检测是否超出了范围
+		/// 当位置发生改变的时候，这个值也需要更新
+		/// </summary>
+		public RectBounds ScrollBounds
+		{
+			get
+			{
+				return _scrollBounds;
 			}
 		}
 
@@ -187,67 +249,7 @@ namespace BanSupport
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
 
-
-		/// <summary>
-		/// 这个scrollRect的范围，用于检测是否超出了范围
-		/// 当位置发生改变的时候，这个值也需要更新
-		/// </summary>
-		public RectBounds scrollBounds
-		{
-			get
-			{
-				return _scrollBounds;
-			}
-		}
-		private RectBounds _scrollBounds;
-
-		/// <summary>
-		/// 运行时用的Data，核心数据
-		/// </summary>
-		private List<ScrollData> listData = new List<ScrollData>();
-
-		/// <summary>
-		/// 用于内部的搜索
-		/// </summary>
-		private List<SearchGroup> searchList = new List<SearchGroup>();
-
-		/// <summary>
-		/// 用于缓存物体对象
-		/// </summary>
-		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
-
-		/// <summary>
-		/// 光标的位置
-		/// </summary>
-		private Vector2 cursorPos;
-
-		/// <summary>
-		/// 最后一行的最大高度，用于在换行的时候使用
-		/// </summary>
-		private float maxHeight;
-
-		/// <summary>
-		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
-		/// </summary>
-		private float maxWidth = 0;
-
-		private float oldMaxWidth = 0;
-
-		/// <summary>
-		/// 视图最大尺寸，用于计算跳转使用
-		/// </summary>
-		private float contentSize = 0;
-
-		private Action<ScrollData> setSingleDataAction;
-
-		private bool inited = false;
-
-		public enum DataChange
-		{
-			None,//表示无变化，不需要操作
-			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
-			Removed,//表示需要位置重构
-		}
+		//haha
 
 		/// <summary>
 		/// 用于决定是否在show的时候进行数据操作
@@ -458,7 +460,7 @@ namespace BanSupport
 			public void Do(float targetNormalizedPos, bool animated)
 			{
 				if (!scrollSystem.moveEnable) { return; }
-				scrollSystem.scrollRect.StopMovement();
+				scrollSystem.ScrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = null;
 				targetNormalizedPos = Mathf.Clamp01(targetNormalizedPos);
@@ -495,7 +497,7 @@ namespace BanSupport
 			public void Do(ScrollData targetScrollData, bool animated)
 			{
 				if (!scrollSystem.moveEnable) { return; }
-				scrollSystem.scrollRect.StopMovement();
+				scrollSystem.ScrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = targetScrollData;
 				this.targetNormalizedPos = 0;
@@ -631,7 +633,7 @@ namespace BanSupport
 				//注册预制体对象池
 				RegistObjectPool();
 				//注册滚动监听
-				scrollRect.onValueChanged.AddListener(OnValueChanged);
+				ScrollRect.onValueChanged.AddListener(OnValueChanged);
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
 					setSingleDataAction = SetSingleContentDataWhenVertical;
@@ -1132,22 +1134,22 @@ namespace BanSupport
 
 		private float GetScrollRectNormalizedPosWhenVertical()
 		{
-			return scrollRect.verticalNormalizedPosition;
+			return ScrollRect.verticalNormalizedPosition;
 		}
 
 		private float GetScrollRectNormalizedPosWhenHorizontal()
 		{
-			return scrollRect.horizontalNormalizedPosition;
+			return ScrollRect.horizontalNormalizedPosition;
 		}
 
 		private void SetScrollRectNormalizedPosWhenVertical(float normalizedPos)
 		{
-			scrollRect.verticalNormalizedPosition = normalizedPos;
+			ScrollRect.verticalNormalizedPosition = normalizedPos;
 		}
 
 		private void SetScrollRectNormalizedPosWhenHorizontal(float normalizedPos)
 		{
-			scrollRect.horizontalNormalizedPosition = normalizedPos;
+			ScrollRect.horizontalNormalizedPosition = normalizedPos;
 		}
 
 		private void SetSingleContentDataWhenVertical(ScrollData data)
@@ -1312,23 +1314,23 @@ namespace BanSupport
 
 		private void DisableScrollDirection()
 		{
-			scrollRect.horizontal = false;
-			scrollRect.vertical = false;
-			scrollRect.enabled = false;
+			ScrollRect.horizontal = false;
+			ScrollRect.vertical = false;
+			ScrollRect.enabled = false;
 		}
 
 		private void EnableScrollDirection()
 		{
-			scrollRect.enabled = true;
+			ScrollRect.enabled = true;
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				scrollRect.horizontal = false;
-				scrollRect.vertical = true;
+				ScrollRect.horizontal = false;
+				ScrollRect.vertical = true;
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				scrollRect.horizontal = true;
-				scrollRect.vertical = false;
+				ScrollRect.horizontal = true;
+				ScrollRect.vertical = false;
 			}
 		}
 
@@ -1869,21 +1871,21 @@ namespace BanSupport
 
 		public void SetScrollDirection(bool isHorOrVer)
 		{
-			this.scrollRect.horizontal = isHorOrVer;
-			this.scrollRect.vertical = !isHorOrVer;
+			this.ScrollRect.horizontal = isHorOrVer;
+			this.ScrollRect.vertical = !isHorOrVer;
 		}
 
 		public void DisableMovement()
 		{
 			this.jumpState.Stop();
-			this.scrollRect.StopMovement();
-			this.scrollRect.enabled = false;
+			this.ScrollRect.StopMovement();
+			this.ScrollRect.enabled = false;
 			this.moveEnable = false;
 		}
 
 		public void EnableMovement()
 		{
-			this.scrollRect.enabled = true;
+			this.ScrollRect.enabled = true;
 			this.moveEnable = true;
 		}
 
@@ -2303,24 +2305,24 @@ namespace BanSupport
 				newScrollRect.decelerationRate = 0.04f;
 			}
 			EnableScrollDirection();
-			scrollRect.viewport = this.transform as RectTransform;
-			scrollRect.content = ContentTrans.Value;
+			ScrollRect.viewport = this.transform as RectTransform;
+			ScrollRect.content = ContentTrans.Value;
 
 			//交换horizontalBar和verticalBar
 			if (scrollDirection == ScrollDirection.Vertical)
 			{
-				if (scrollRect.verticalScrollbar == null && scrollRect.horizontalScrollbar != null)
+				if (ScrollRect.verticalScrollbar == null && ScrollRect.horizontalScrollbar != null)
 				{
-					scrollRect.verticalScrollbar = scrollRect.horizontalScrollbar;
-					scrollRect.horizontalScrollbar = null;
+					ScrollRect.verticalScrollbar = ScrollRect.horizontalScrollbar;
+					ScrollRect.horizontalScrollbar = null;
 				}
 			}
 			else if (scrollDirection == ScrollDirection.Horizontal)
 			{
-				if (scrollRect.horizontalScrollbar == null && scrollRect.verticalScrollbar != null)
+				if (ScrollRect.horizontalScrollbar == null && ScrollRect.verticalScrollbar != null)
 				{
-					scrollRect.horizontalScrollbar = scrollRect.verticalScrollbar;
-					scrollRect.verticalScrollbar = null;
+					ScrollRect.horizontalScrollbar = ScrollRect.verticalScrollbar;
+					ScrollRect.verticalScrollbar = null;
 				}
 			}
 

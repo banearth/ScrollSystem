@@ -172,7 +172,7 @@ namespace BanSupport
 		{
 			if (Time.frameCount == lastFrameCount) { return this.isVisible; }
 			this.lastFrameCount = Time.frameCount;
-			this.isVisible = rectBounds.Overlaps(scrollSystem.scrollBounds);
+			this.isVisible = rectBounds.Overlaps(scrollSystem.ScrollBounds);
 			return this.isVisible;
 		}
 
