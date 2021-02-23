@@ -122,7 +122,7 @@ namespace BanSupport
 		/// <summary>
 		/// 更新内容
 		/// </summary>
-		public void Update(ScrollSystem.WillShowState willShowState)
+		public void Update(ScrollSystem.DataChange dataChagne)
 		{
 			if (isVisible)
 			{
@@ -130,7 +130,7 @@ namespace BanSupport
 				{
 					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
-					willShowState = ScrollSystem.WillShowState.BothPositionAndContent;
+					dataChagne = ScrollSystem.DataChange.BothPositionAndContent;
 					//OnOpen
 					if (this.scrollSystem.onItemOpen != null)
 					{
@@ -140,12 +140,12 @@ namespace BanSupport
 					ShowGizmosBounds();
 #endif
 				}
-				if (willShowState >= ScrollSystem.WillShowState.OnlyPosition)
+				if (dataChagne >= ScrollSystem.DataChange.OnlyPosition)
 				{
 					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
 				}
-				if (willShowState >= ScrollSystem.WillShowState.BothPositionAndContent)
+				if (dataChagne >= ScrollSystem.DataChange.BothPositionAndContent)
 				{
 					//根据data刷新
 					if (this.scrollSystem.onItemRefresh != null)

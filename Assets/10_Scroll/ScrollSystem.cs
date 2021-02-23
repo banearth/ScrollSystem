@@ -10,6 +10,7 @@ todo
 1自定义布局功能
 2外部预制体导入
 3Flush功能
+4显示顺序问题
 */
 
 namespace BanSupport
@@ -18,73 +19,7 @@ namespace BanSupport
 	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
-		#region 枚举
-
-		public enum ScrollDirection { Vertical, Horizontal }
-
-		public enum DataChange
-		{
-			None,//表示无变化，不需要操作
-			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
-			Removed,//表示需要位置重构
-		}
-
-		#endregion
-
-		#region 内部
-
-		private ScrollSystemContentTransform _contentTrans = null;
-
-		private RectTransform _selfRectTramsform = null;
-
-		private ScrollRect _scrollRect = null;
-
-		private RectBounds _scrollBounds;
-
-		/// <summary>
-		/// 运行时用的Data，核心数据
-		/// </summary>
-		private List<ScrollData> listData = new List<ScrollData>();
-
-		/// <summary>
-		/// 用于内部的搜索
-		/// </summary>
-		private List<SearchGroup> searchList = new List<SearchGroup>();
-
-		/// <summary>
-		/// 用于缓存物体对象
-		/// </summary>
-		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
-
-		/// <summary>
-		/// 光标的位置
-		/// </summary>
-		private Vector2 cursorPos;
-
-		/// <summary>
-		/// 最后一行的最大高度，用于在换行的时候使用
-		/// </summary>
-		private float maxHeight;
-
-		/// <summary>
-		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
-		/// </summary>
-		private float maxWidth = 0;
-
-		private float oldMaxWidth = 0;
-
-		/// <summary>
-		/// 视图最大尺寸，用于计算跳转使用
-		/// </summary>
-		private float contentSize = 0;
-
-		private Action<ScrollData> setSingleDataAction;
-
-		private bool inited = false;
-
-		#endregion
-
-		#region 只读
+		#region -----------------------只读-----------------------
 
 		/// <summary>
 		/// Content节点名字
@@ -97,24 +32,55 @@ namespace BanSupport
 		/// </summary>
 		private static readonly string[] ignorePrefabNames = new string[] { "background" };
 
-		public bool DrawGizmos { get { return drawGizmos; } }
+		public bool DrawGizmos
+		{
+			get
+			{
+				return drawGizmos;
+			}
+		}
 
-		public Vector2 Border { get { return border; } }
+		public Vector2 Border
+		{
+			get
+			{
+				return border;
+			}
+		}
 
-		public Vector2 Spacing { get { return spacing; } }
-
-		public ScrollDirection Direction { get { return scrollDirection; } }
+		public Vector2 Spacing
+		{
+			get
+			{
+				return spacing;
+			}
+		}
 
 		/// <summary>
 		/// 像素单位的宽度
 		/// </summary>
-		public float Width { get { return SelfRectTransform.rect.width; } }
+		public float Width
+		{
+			get
+			{
+				return SelfRectTransform.rect.width;
+			}
+		}
 
 		/// <summary>
 		/// 像素单位的宽度
 		/// </summary>
-		public float Height { get { return SelfRectTransform.rect.height; } }
+		public float Height
+		{
+			get
+			{
+				return SelfRectTransform.rect.height;
+			}
+		}
 
+		/// <summary>
+		/// 内容节点
+		/// </summary>
 		public ScrollSystemContentTransform ContentTrans
 		{
 			get
@@ -127,6 +93,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 自身RectTransform
+		/// </summary>
 		public RectTransform SelfRectTransform
 		{
 			get
@@ -166,10 +135,137 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 用于更直观展示剩余缓存数量
+		/// </summary>
+		public Dictionary<string, PrefabGroup> ObjectPoolDic
+		{
+			get
+			{
+				return objectPoolDic;
+			}
+		}
+
+		#endregion
+
+		#region -----------------------枚举-----------------------
+
+		public enum ScrollDirection 
+		{ 
+			Vertical, 
+			Horizontal 
+		}
+
+		public enum DataAddOrRemove
+		{
+			None,//表示无变化，不需要操作
+			Added,//表示在末尾添加，不需要位置重构，只需要刷新显示
+			Removed,//表示需要位置重构
+		}
+
+		public enum DataChange
+		{
+			None,//表示不需要进行操作
+			OnlyPosition,//仅仅位置更新
+			BothPositionAndContent,//位置和内容都更新
+		}
+
+		#endregion
+
+		#region -----------------------内部-----------------------
+
+		private ScrollSystemContentTransform _contentTrans = null;
+
+		private RectTransform _selfRectTramsform = null;
+
+		private ScrollRect _scrollRect = null;
+
+		private RectBounds _scrollBounds;
+
+		/// <summary>
+		/// 编辑器模式下不会操作这个变量
+		/// </summary>
+		private bool inited = false;
+
+		/// <summary>
+		/// 运行时用的Data，核心数据
+		/// </summary>
+		private List<ScrollData> listData = new List<ScrollData>();
+
+		/// <summary>
+		/// 用于内部的搜索
+		/// </summary>
+		private List<SearchGroup> searchList = new List<SearchGroup>();
+
+		/// <summary>
+		/// 用于缓存物体对象
+		/// </summary>
+		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
+
+		/// <summary>
+		/// 光标的位置
+		/// </summary>
+		private Vector2 cursorPos;
+
+		/// <summary>
+		/// 最后一行的最大高度，用于在换行的时候使用
+		/// </summary>
+		private float maxHeight;
+
+		/// <summary>
+		/// 所有行里面的最大宽度，用于在居中的时候计算偏移量
+		/// </summary>
+		private float maxWidth = 0;
+
+		/// <summary>
+		/// 为了防止重复计算
+		/// </summary>
+		private float oldMaxWidth = 0;
+
+		/// <summary>
+		/// 视图最大尺寸，用于计算跳转使用
+		/// </summary>
+		private float contentSize = 0;
+
+		/// <summary>
+		/// 为单个ScrollData进行布局
+		/// </summary>
+		private Action<ScrollData> alignSingleDataAction;
+
+		/// <summary>
+		/// 用于决定是否在show的时候进行数据操作
+		/// </summary>
+		private DataAddOrRemove dataAddOrRemove = DataAddOrRemove.None;
+
+		/// <summary>
+		/// 用于更新内容或者位置
+		/// </summary>
+		private DataChange dataChange = DataChange.None;
+
+		/// <summary>
+		/// 跳转状态
+		/// </summary>
+		private JumpState jumpState = null;
+
+		/// <summary>
+		/// 获得距离中心点的距离
+		/// </summary>
+		private Func<Vector2, float> getDistanceToCenter = null;
+
+		/// <summary>
+		/// 内容的
+		/// </summary>
+		private Vector2 contentCenterPosition;
+
+		//haha
+
 		#endregion
 
 
-		#region 编辑器可调整的参数
+		private Vector2 prefabAnchor;
+		public Vector2 PrefabAnchor { get { return prefabAnchor; } }
+
+		#region 可编辑
 
 		/// <summary>
 		/// Gizmos相关
@@ -222,6 +318,9 @@ namespace BanSupport
 		[Header("<跳转>")]
 		private float resetNormalizedPosition = 0;
 
+		[SerializeField]
+		private bool moveEnable = true;
+
 		/// <summary>
 		/// 跳转的速度
 		/// </summary>
@@ -248,56 +347,6 @@ namespace BanSupport
 		/// </summary>
 		[SerializeField]
 		private ScrollDirection scrollDirection = ScrollDirection.Vertical;
-
-		//haha
-
-		/// <summary>
-		/// 用于决定是否在show的时候进行数据操作
-		/// </summary>
-		private DataChange dataChanged = DataChange.None;
-
-		public enum WillShowState
-		{
-			None,//表示不需要进行操作
-			OnlyPosition,//仅仅位置更新
-			BothPositionAndContent,//位置和内容都更新
-		}
-
-		public WillShowState willShowState = WillShowState.None;
-
-		private bool moveEnable = true;
-
-		/// <summary>
-		/// 跳转状态
-		/// </summary>
-		private JumpState jumpState = null;
-
-		/// <summary>
-		/// 获得距离中心点的距离
-		/// </summary>
-		private Func<Vector2, float> getDistanceToCenter;
-
-		/// <summary>
-		/// 用于更直观展示剩余缓存数量
-		/// </summary>
-		public Dictionary<string, PrefabGroup> ObjectPoolDic
-		{
-			get
-			{
-				return objectPoolDic;
-			}
-		}
-
-		private Vector2 centerAnchoredPosition;
-		private Vector2 prefabAnchor;
-		public Vector2 PrefabAnchor { get { return prefabAnchor; } }
-
-
-		#endregion
-
-		#region 只读
-
-
 
 		#endregion
 
@@ -367,6 +416,7 @@ namespace BanSupport
 
 			public bool Update()
 			{
+				//if (!scrollSystem.moveEnable) { return; }
 				if (state != State.None)
 				{
 					if (scrollSystem.scrollDirection == ScrollDirection.Vertical)
@@ -459,7 +509,6 @@ namespace BanSupport
 
 			public void Do(float targetNormalizedPos, bool animated)
 			{
-				if (!scrollSystem.moveEnable) { return; }
 				scrollSystem.ScrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = null;
@@ -496,7 +545,6 @@ namespace BanSupport
 
 			public void Do(ScrollData targetScrollData, bool animated)
 			{
-				if (!scrollSystem.moveEnable) { return; }
 				scrollSystem.ScrollRect.StopMovement();
 				state = animated ? State.Animated : State.Directly;
 				this.targetScrollData = targetScrollData;
@@ -576,38 +624,39 @@ namespace BanSupport
 		private void Update()
 		{
 			if (!Application.isPlaying) { return; }
-			if (dataChanged != DataChange.None)
+			if (dataAddOrRemove != DataAddOrRemove.None)
 			{
-				switch (dataChanged)
+				switch (dataAddOrRemove)
 				{
-					case DataChange.Added:
+					case DataAddOrRemove.Added:
 						for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
 						{
 							var scrollData = this.listData[i];
-							this.setSingleDataAction(scrollData);
+							this.alignSingleDataAction(scrollData);
 						}
 						EndSetData();
 						break;
-					case DataChange.Removed:
+					case DataAddOrRemove.Removed:
 						SetAllData();
 						break;
 				}
-				dataChanged = DataChange.None;
-				if (willShowState < WillShowState.OnlyPosition)
+				dataAddOrRemove = DataAddOrRemove.None;
+				if (dataChange < DataChange.OnlyPosition)
 				{
-					willShowState = WillShowState.OnlyPosition;
+					dataChange = DataChange.OnlyPosition;
 				}
 			}
 
 			//跳转相关
 			if (jumpState.Update())
 			{
-				if (willShowState < WillShowState.OnlyPosition)
+				//haha
+				if (dataChange < DataChange.OnlyPosition)
 				{
-					willShowState = WillShowState.OnlyPosition;
+					dataChange = DataChange.OnlyPosition;
 				}
 			}
-			if (willShowState != WillShowState.None)
+			if (dataChange != DataChange.None)
 			{
 				Show();
 			}
@@ -636,13 +685,13 @@ namespace BanSupport
 				ScrollRect.onValueChanged.AddListener(OnValueChanged);
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-					setSingleDataAction = SetSingleContentDataWhenVertical;
+					alignSingleDataAction = SetSingleContentDataWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
 					jumpState = new JumpState(this,SetScrollRectNormalizedPosWhenVertical, GetScrollRectNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					setSingleDataAction = SetSingleContentDataWhenHorizontal;
+					alignSingleDataAction = SetSingleContentDataWhenHorizontal;
 					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
 					jumpState = new JumpState(this, SetScrollRectNormalizedPosWhenHorizontal, GetScrollRectNormalizedPosWhenHorizontal);
 				}
@@ -651,20 +700,20 @@ namespace BanSupport
 
 		private void OnValueChanged(Vector2 newPos)
 		{
-			if (willShowState == WillShowState.OnlyPosition)
+			if (dataChange == DataChange.OnlyPosition)
 			{
-				willShowState = WillShowState.OnlyPosition;
+				dataChange = DataChange.OnlyPosition;
 			}
 		}
 
 		private float GetDistanceToCenterWhenVeritical(Vector2 anchoredPosition)
 		{
-			return Mathf.Abs(anchoredPosition.y - centerAnchoredPosition.y);
+			return Mathf.Abs(anchoredPosition.y - contentCenterPosition.y);
 		}
 
 		private float GetDistanceToCenterWhenHorizontal(Vector2 anchoredPosition)
 		{
-			return Mathf.Abs(anchoredPosition.x - centerAnchoredPosition.x);
+			return Mathf.Abs(anchoredPosition.x - contentCenterPosition.x);
 		}
 
 		private void SearchListSort()
@@ -684,8 +733,8 @@ namespace BanSupport
 					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
 					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
 					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
-					centerAnchoredPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
-					centerAnchoredPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
+					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
+					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 1:
 					//Right Up
@@ -693,8 +742,8 @@ namespace BanSupport
 					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
 					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
 					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
-					centerAnchoredPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
-					centerAnchoredPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
+					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
+					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 2:
 					//Left Down
@@ -702,8 +751,8 @@ namespace BanSupport
 					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
 					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
 					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
-					centerAnchoredPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
-					centerAnchoredPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
+					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
+					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 3:
 					//Right Down
@@ -711,8 +760,8 @@ namespace BanSupport
 					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
 					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
 					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
-					centerAnchoredPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
-					centerAnchoredPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
+					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
+					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 			}
 		}
@@ -866,7 +915,7 @@ namespace BanSupport
 				ListPool<ScrollData>.Release(nextVisibleDatas);
 				foreach (var visibleData in this.listVisibleScrollData)
 				{
-					visibleData.Update(willShowState);
+					visibleData.Update(dataChange);
 				}
 
 			}
@@ -1115,7 +1164,7 @@ namespace BanSupport
 			for (int i = 0; i < dataCount; i++)
 			{
 				var curData = this.listData[i];
-				setSingleDataAction(curData);
+				alignSingleDataAction(curData);
 			}
 			EndSetData();
 		}
@@ -1418,11 +1467,11 @@ namespace BanSupport
 				var scrollData = dic_DataSource_ScrollData[dataSource];
 				if (scrollData.CalculateSize(true))
 				{
-					dataChanged = DataChange.Removed;
+					dataAddOrRemove = DataAddOrRemove.Removed;
 				}
 				else
 				{
-					scrollData.Update(WillShowState.BothPositionAndContent);
+					scrollData.Update(DataChange.BothPositionAndContent);
 				}
 			}
 			else
@@ -1442,7 +1491,7 @@ namespace BanSupport
 				dic_DataSource_ScrollData.Remove(fromDataSource);
 				referScrollData.dataSource = toDataSource;
 				dic_DataSource_ScrollData.Add(toDataSource, referScrollData);
-				referScrollData.Update(WillShowState.BothPositionAndContent);
+				referScrollData.Update(DataChange.BothPositionAndContent);
 			}
 			else
 			{
@@ -1459,7 +1508,7 @@ namespace BanSupport
 			{
 				return;
 			}
-			dataChanged = DataChange.Removed;
+			dataAddOrRemove = DataAddOrRemove.Removed;
 		}
 
 		/// <summary>
@@ -1477,7 +1526,7 @@ namespace BanSupport
 			}
 			if (removedAny)
 			{
-				dataChanged = DataChange.Removed;
+				dataAddOrRemove = DataAddOrRemove.Removed;
 				Jump(this.resetNormalizedPosition);
 			}
 			this.addModeStartIndex = 0;
@@ -1522,9 +1571,9 @@ namespace BanSupport
 					listVisibleScrollData.Remove(removedScrollData);
 				}
 				//标记当前数据更改过
-				if (dataChanged < DataChange.Removed)
+				if (dataAddOrRemove < DataAddOrRemove.Removed)
 				{
-					dataChanged = DataChange.Removed;
+					dataAddOrRemove = DataAddOrRemove.Removed;
 				}
 				return true;
 			}
@@ -1555,9 +1604,9 @@ namespace BanSupport
 					listVisibleScrollData.Remove(removedScrollData);
 				}
 				//标记当前数据更改过
-				if (this.dataChanged < DataChange.Removed)
+				if (this.dataAddOrRemove < DataAddOrRemove.Removed)
 				{
-					dataChanged = DataChange.Removed;
+					dataAddOrRemove = DataAddOrRemove.Removed;
 				}
 				return true;
 			}
@@ -1577,9 +1626,9 @@ namespace BanSupport
 				return;
 			}
 			listData.Reverse();
-			if (this.dataChanged < DataChange.Removed)
+			if (this.dataAddOrRemove < DataAddOrRemove.Removed)
 			{
-				this.dataChanged = DataChange.Removed;
+				this.dataAddOrRemove = DataAddOrRemove.Removed;
 			}
 		}
 
@@ -1708,14 +1757,14 @@ namespace BanSupport
 			//如果之前什么都没有，那么不需要一个个添加进去
 			if (listData.Count <= 0)
 			{
-				dataChanged = DataChange.Removed;
+				dataAddOrRemove = DataAddOrRemove.Removed;
 				this.Jump(this.resetNormalizedPosition);
 			}
 			listData.Add(scrollData);
-			if (dataChanged < DataChange.Added)
+			if (dataAddOrRemove < DataAddOrRemove.Added)
 			{
 				addModeStartIndex = listData.Count - 1;
-				dataChanged = DataChange.Added;
+				dataAddOrRemove = DataAddOrRemove.Added;
 			}
 			if (dataSource != null)
 			{
@@ -1749,9 +1798,9 @@ namespace BanSupport
 			}
 			ScrollData newScrollData = new ScrollData(this, prefabName, newDataSource, onResize);
 			listData.Insert(insertIndex, newScrollData);
-			if (this.dataChanged < DataChange.Removed)
+			if (this.dataAddOrRemove < DataAddOrRemove.Removed)
 			{
-				this.dataChanged = DataChange.Removed;
+				this.dataAddOrRemove = DataAddOrRemove.Removed;
 				this.Jump(this.resetNormalizedPosition);
 			}
 			if (newDataSource != null)
