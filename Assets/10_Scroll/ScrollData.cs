@@ -98,6 +98,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 隐藏内容
+		/// </summary>
 		public void Hide()
 		{
 			this.isVisible = false;
@@ -153,15 +156,6 @@ namespace BanSupport
 			}
 		}
 
-		private void DrawRect()
-		{
-			if (scrollSystem.DrawGizmos)
-			{
-				var localScale = scrollSystem.ContentTrans.Value.lossyScale;
-				Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
-			}
-		}
-
 		/// <summary>
 		/// 只检查是否可见
 		/// </summary>
@@ -196,18 +190,27 @@ namespace BanSupport
 			}
 		}
 
-		//haha
-		private void UpdateAnchoredPosition()
-		{
-
-		}
-
+		/// <summary>
+		/// 更新边界区域
+		/// </summary>
 		private void UpdateRectBounds()
 		{
 			this.rectBounds.left = anchoredPosition.x - 0.5f * width;
 			this.rectBounds.right = anchoredPosition.x + 0.5f * width;
 			this.rectBounds.up = anchoredPosition.y + 0.5f * height;
 			this.rectBounds.down = anchoredPosition.y - 0.5f * height;
+		}
+
+		/// <summary>
+		/// 在Gizmos绘制
+		/// </summary>
+		private void DrawRect()
+		{
+			if (scrollSystem.DrawGizmos)
+			{
+				var localScale = scrollSystem.ContentTrans.Value.lossyScale;
+				Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
+			}
 		}
 
 	}
