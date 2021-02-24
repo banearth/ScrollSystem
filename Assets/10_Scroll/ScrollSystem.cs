@@ -146,6 +146,17 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 预制体的锚点
+		/// </summary>
+		public Vector2 PrefabAnchor
+		{
+			get
+			{
+				return prefabAnchor;
+			}
+		}
+
 		#endregion
 
 		#region -----------------------枚举-----------------------
@@ -253,17 +264,21 @@ namespace BanSupport
 		private Func<Vector2, float> getDistanceToCenter = null;
 
 		/// <summary>
-		/// 内容的
+		/// 内容的中心点
 		/// </summary>
 		private Vector2 contentCenterPosition;
 
-		//haha
+		/// <summary>
+		/// 预制体的锚点
+		/// </summary>
+		private Vector2 prefabAnchor;
+
+		/// <summary>
+		/// 增加Data的
+		/// </summary>
+		private int addDataStartIndex = 0;
 
 		#endregion
-
-
-		private Vector2 prefabAnchor;
-		public Vector2 PrefabAnchor { get { return prefabAnchor; } }
 
 		#region 可编辑
 
@@ -352,16 +367,35 @@ namespace BanSupport
 
 		#region 内部类
 
+		/// <summary>
+		/// 使用二分法来快速确定显示的ScrollData
+		/// </summary>
 		public class SearchGroup
 		{
+			/// <summary>
+			/// 左索引
+			/// </summary>
 			public int left;
+
+			/// <summary>
+			/// 右索引
+			/// </summary>
 			public int right;
+
+			/// <summary>
+			/// 中间索引
+			/// </summary>
+			public int middle;
+
+			/// <summary>
+			/// 是否找到
+			/// </summary>
+			public bool found;
+
 			/// <summary>
 			/// 距离scrollsystem的距离
 			/// </summary>
 			public float distance;
-			public int middle;
-			public bool found;
 
 			public static SearchGroup Get(int left, int right, ScrollSystem scrollSystem)
 			{
@@ -389,14 +423,11 @@ namespace BanSupport
 				}
 			}
 
-			public void EnterStorage() { }
-
-			public void ExitStorage() { }
-
-			public void Release() { }
-
 		}
 
+		/// <summary>
+		/// 用于处理跳转
+		/// </summary>
 		public class JumpState
 		{
 			private enum State { None, Directly, Animated }
@@ -617,19 +648,21 @@ namespace BanSupport
 
 		private void Start()
 		{
+			//只在运行时运行
 			if (!Application.isPlaying) { return; }
 			Init();
 		}
 
 		private void Update()
 		{
+			//只在运行时运行
 			if (!Application.isPlaying) { return; }
 			if (dataAddOrRemove != DataAddOrRemove.None)
 			{
 				switch (dataAddOrRemove)
 				{
 					case DataAddOrRemove.Added:
-						for (int i = this.addModeStartIndex; i < this.listData.Count; i++)
+						for (int i = this.addDataStartIndex; i < this.listData.Count; i++)
 						{
 							var scrollData = this.listData[i];
 							this.alignSingleDataAction(scrollData);
@@ -650,7 +683,6 @@ namespace BanSupport
 			//跳转相关
 			if (jumpState.Update())
 			{
-				//haha
 				if (dataChange < DataChange.OnlyPosition)
 				{
 					dataChange = DataChange.OnlyPosition;
@@ -664,6 +696,7 @@ namespace BanSupport
 
 		private void OnDestroy()
 		{
+			//只在运行时运行
 			if (!Application.isPlaying) { return; }
 			this.listData.Clear();
 		}
@@ -823,20 +856,16 @@ namespace BanSupport
 				}
 				SearchListSort();
 			}
-
 			//Debug.LogWarning("seachTimes:" + (1000 - maxSearchTimes));
-
 			if (maxSearchTimes == 0)
 			{
 				Debug.LogWarning("maxSearchTimes == 0");
 			}
-
 			if (searchList.Count > 0)
 			{
 				foreach (var aSearch in searchList) { ObjectPool<SearchGroup>.Release(aSearch); }
 				searchList.Clear();
 			}
-
 			//上下寻找下一帧视野内的所有ScrollData
 			if (found)
 			{
@@ -1178,7 +1207,7 @@ namespace BanSupport
 			UpdateContentSize();
 			UpdateEnableScroll();
 			//Add重置
-			this.addModeStartIndex = 0;
+			this.addDataStartIndex = 0;
 		}
 
 		private float GetScrollRectNormalizedPosWhenVertical()
@@ -1529,7 +1558,7 @@ namespace BanSupport
 				dataAddOrRemove = DataAddOrRemove.Removed;
 				Jump(this.resetNormalizedPosition);
 			}
-			this.addModeStartIndex = 0;
+			this.addDataStartIndex = 0;
 		}
 
 		/// <summary>
@@ -1739,8 +1768,7 @@ namespace BanSupport
 			return count;
 		}
 
-		private int addModeStartIndex = 0;
-
+		//haha
 		/// <summary>
 		/// 增
 		/// </summary>
@@ -1763,7 +1791,7 @@ namespace BanSupport
 			listData.Add(scrollData);
 			if (dataAddOrRemove < DataAddOrRemove.Added)
 			{
-				addModeStartIndex = listData.Count - 1;
+				addDataStartIndex = listData.Count - 1;
 				dataAddOrRemove = DataAddOrRemove.Added;
 			}
 			if (dataSource != null)

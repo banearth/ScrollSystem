@@ -48,13 +48,7 @@ namespace BanSupport
 		public float Up { get { return rectBounds.up; } }
 		public float Down { get { return rectBounds.down; } }
 
-		public Vector2 Size
-		{
-			get
-			{
-				return new Vector2(width, height);
-			}
-		}
+		public Vector2 Size { get { return new Vector2(width, height); } }
 
 		public Vector3 GetWorldPosition()
 		{
@@ -120,7 +114,7 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 更新内容
+		/// 更新内容和位置
 		/// </summary>
 		public void Update(ScrollSystem.DataChange dataChagne)
 		{
@@ -128,26 +122,29 @@ namespace BanSupport
 			{
 				if (this.targetTrans == null)
 				{
+					//如果实体第一次出现，那么需要更新位置和内容
+					dataChagne = ScrollSystem.DataChange.BothPositionAndContent;
 					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
-					dataChagne = ScrollSystem.DataChange.BothPositionAndContent;
-					//OnOpen
+					//Callback
 					if (this.scrollSystem.onItemOpen != null)
 					{
 						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 					}
 #if UNITY_EDITOR
-					ShowGizmosBounds();
+					DrawRect();
 #endif
 				}
+				//更新位置
 				if (dataChagne >= ScrollSystem.DataChange.OnlyPosition)
 				{
 					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
 				}
+				//更新内容
 				if (dataChagne >= ScrollSystem.DataChange.BothPositionAndContent)
 				{
-					//根据data刷新
+					//Callback
 					if (this.scrollSystem.onItemRefresh != null)
 					{
 						this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
@@ -156,7 +153,7 @@ namespace BanSupport
 			}
 		}
 
-		public void ShowGizmosBounds()
+		private void DrawRect()
 		{
 			if (scrollSystem.DrawGizmos)
 			{
@@ -197,6 +194,12 @@ namespace BanSupport
 				this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
 				UpdateRectBounds();
 			}
+		}
+
+		//haha
+		private void UpdateAnchoredPosition()
+		{
+
 		}
 
 		private void UpdateRectBounds()
