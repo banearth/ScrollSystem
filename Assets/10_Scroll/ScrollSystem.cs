@@ -214,6 +214,16 @@ namespace BanSupport
 		private Dictionary<string, PrefabGroup> objectPoolDic = new Dictionary<string, PrefabGroup>();
 
 		/// <summary>
+		/// 用于关联玩家的数据和ScrollData
+		/// </summary>
+		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
+
+		/// <summary>
+		/// 当前显示的ScrollData
+		/// </summary>
+		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
+
+		/// <summary>
 		/// 光标的位置
 		/// </summary>
 		private Vector2 cursorPos;
@@ -241,7 +251,7 @@ namespace BanSupport
 		/// <summary>
 		/// 为单个ScrollData进行布局
 		/// </summary>
-		private Action<ScrollData> alignSingleDataAction;
+		private Action<ScrollData> alignScrollDataAction;
 
 		/// <summary>
 		/// 用于决定是否在show的时候进行数据操作
@@ -664,8 +674,7 @@ namespace BanSupport
 					case DataAddOrRemove.Added:
 						for (int i = this.addDataStartIndex; i < this.listData.Count; i++)
 						{
-							var scrollData = this.listData[i];
-							this.alignSingleDataAction(scrollData);
+							this.alignScrollDataAction(this.listData[i]);
 						}
 						EndSetData();
 						break;
@@ -718,15 +727,15 @@ namespace BanSupport
 				ScrollRect.onValueChanged.AddListener(OnValueChanged);
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-					alignSingleDataAction = SetSingleContentDataWhenVertical;
+					alignScrollDataAction = AlignScrollDataWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
-					jumpState = new JumpState(this,SetScrollRectNormalizedPosWhenVertical, GetScrollRectNormalizedPosWhenVertical);
+					jumpState = new JumpState(this,SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					alignSingleDataAction = SetSingleContentDataWhenHorizontal;
+					alignScrollDataAction = SetSingleContentDataWhenHorizontal;
 					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
-					jumpState = new JumpState(this, SetScrollRectNormalizedPosWhenHorizontal, GetScrollRectNormalizedPosWhenHorizontal);
+					jumpState = new JumpState(this, SetNormalizedPosWhenHorizontal, GetNormalizedPosWhenHorizontal);
 				}
 			}
 		}
@@ -944,7 +953,7 @@ namespace BanSupport
 				ListPool<ScrollData>.Release(nextVisibleDatas);
 				foreach (var visibleData in this.listVisibleScrollData)
 				{
-					visibleData.Update(dataChange);
+					visibleData.Show(dataChange);
 				}
 
 			}
@@ -1193,7 +1202,7 @@ namespace BanSupport
 			for (int i = 0; i < dataCount; i++)
 			{
 				var curData = this.listData[i];
-				alignSingleDataAction(curData);
+				alignScrollDataAction(curData);
 			}
 			EndSetData();
 		}
@@ -1210,27 +1219,27 @@ namespace BanSupport
 			this.addDataStartIndex = 0;
 		}
 
-		private float GetScrollRectNormalizedPosWhenVertical()
+		private float GetNormalizedPosWhenVertical()
 		{
 			return ScrollRect.verticalNormalizedPosition;
 		}
 
-		private float GetScrollRectNormalizedPosWhenHorizontal()
+		private float GetNormalizedPosWhenHorizontal()
 		{
 			return ScrollRect.horizontalNormalizedPosition;
 		}
 
-		private void SetScrollRectNormalizedPosWhenVertical(float normalizedPos)
+		private void SetNormalizedPosWhenVertical(float normalizedPos)
 		{
 			ScrollRect.verticalNormalizedPosition = normalizedPos;
 		}
 
-		private void SetScrollRectNormalizedPosWhenHorizontal(float normalizedPos)
+		private void SetNormalizedPosWhenHorizontal(float normalizedPos)
 		{
 			ScrollRect.horizontalNormalizedPosition = normalizedPos;
 		}
 
-		private void SetSingleContentDataWhenVertical(ScrollData data)
+		private void AlignScrollDataWhenVertical(ScrollData data)
 		{
 			data.CalculateSize();
 			if (data.newLine == ScrollLayout.NewLine.None)
@@ -1461,9 +1470,7 @@ namespace BanSupport
 
 		#region 外部方法
 
-		private Dictionary<object, ScrollData> dic_DataSource_ScrollData = new Dictionary<object, ScrollData>();
-
-		private List<ScrollData> listVisibleScrollData = new List<ScrollData>(8);
+		//haha
 
 		public Action<string, GameObject, object> onItemOpen { get; private set; }
 
@@ -1500,7 +1507,7 @@ namespace BanSupport
 				}
 				else
 				{
-					scrollData.Update(DataChange.BothPositionAndContent);
+					scrollData.Show(DataChange.BothPositionAndContent);
 				}
 			}
 			else
@@ -1520,7 +1527,7 @@ namespace BanSupport
 				dic_DataSource_ScrollData.Remove(fromDataSource);
 				referScrollData.dataSource = toDataSource;
 				dic_DataSource_ScrollData.Add(toDataSource, referScrollData);
-				referScrollData.Update(DataChange.BothPositionAndContent);
+				referScrollData.Show(DataChange.BothPositionAndContent);
 			}
 			else
 			{

@@ -119,7 +119,7 @@ namespace BanSupport
 		/// <summary>
 		/// 更新内容和位置
 		/// </summary>
-		public void Update(ScrollSystem.DataChange dataChagne)
+		public void Show(ScrollSystem.DataChange dataChagne)
 		{
 			if (isVisible)
 			{
