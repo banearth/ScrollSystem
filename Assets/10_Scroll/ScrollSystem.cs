@@ -124,18 +124,6 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 这个scrollRect的范围，用于检测是否超出了范围
-		/// 当位置发生改变的时候，这个值也需要更新
-		/// </summary>
-		public RectBounds ScrollBounds
-		{
-			get
-			{
-				return _scrollBounds;
-			}
-		}
-
-		/// <summary>
 		/// 用于更直观展示剩余缓存数量
 		/// </summary>
 		public Dictionary<string, PrefabGroup> ObjectPoolDic
@@ -161,10 +149,10 @@ namespace BanSupport
 
 		#region -----------------------枚举-----------------------
 
-		public enum ScrollDirection 
-		{ 
-			Vertical, 
-			Horizontal 
+		public enum ScrollDirection
+		{
+			Vertical,
+			Horizontal
 		}
 
 		public enum DataAddOrRemove
@@ -191,12 +179,16 @@ namespace BanSupport
 
 		private ScrollRect _scrollRect = null;
 
-		private RectBounds _scrollBounds;
-
 		/// <summary>
 		/// 编辑器模式下不会操作这个变量
 		/// </summary>
 		private bool inited = false;
+
+		/// <summary>
+		/// 这个scrollRect的范围，用于检测是否超出了范围
+		/// 当位置发生改变的时候，这个值也需要更新
+		/// </summary>
+		public RectBounds bounds;
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -249,11 +241,6 @@ namespace BanSupport
 		private float contentSize = 0;
 
 		/// <summary>
-		/// 为单个ScrollData进行布局
-		/// </summary>
-		private Action<ScrollData> alignScrollDataAction;
-
-		/// <summary>
 		/// 用于决定是否在show的时候进行数据操作
 		/// </summary>
 		private DataAddOrRemove dataAddOrRemove = DataAddOrRemove.None;
@@ -269,11 +256,6 @@ namespace BanSupport
 		private JumpState jumpState = null;
 
 		/// <summary>
-		/// 获得距离中心点的距离
-		/// </summary>
-		private Func<Vector2, float> getDistanceToCenter = null;
-
-		/// <summary>
 		/// 内容的中心点
 		/// </summary>
 		private Vector2 contentCenterPosition;
@@ -287,6 +269,28 @@ namespace BanSupport
 		/// 增加Data的
 		/// </summary>
 		private int addDataStartIndex = 0;
+
+		#endregion
+
+		#region -----------------------事件-----------------------
+
+		public Action<string, GameObject, object> onItemOpen { get; private set; }
+
+		public Action<string, GameObject, object> onItemClose { get; private set; }
+
+		public Action<string, GameObject, object> onItemRefresh { get; private set; }
+
+		//public
+
+		/// <summary>
+		/// 获得距离中心点的距离
+		/// </summary>
+		private Func<Vector2, float> getDistanceToCenter = null;
+
+		/// <summary>
+		/// 为单个ScrollData进行布局
+		/// </summary>
+		private Action<ScrollData> alignScrollDataAction;
 
 		#endregion
 
@@ -332,7 +336,7 @@ namespace BanSupport
 		//备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中
 		[Tooltip("用途：自动排列居中\n备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中")]
 		[SerializeField]
-		private bool centered = false;
+		private bool isCenter = false;
 
 		/// <summary>
 		/// 当发生重置的时候，设置的位置
@@ -342,9 +346,6 @@ namespace BanSupport
 		[SerializeField]
 		[Header("<跳转>")]
 		private float resetNormalizedPosition = 0;
-
-		[SerializeField]
-		private bool moveEnable = true;
 
 		/// <summary>
 		/// 跳转的速度
@@ -359,13 +360,6 @@ namespace BanSupport
 		[Tooltip("注册数量")]
 		[SerializeField]
 		private int registPoolCount = 3;
-
-		/// <summary>
-		/// 超出边界的时候才允许滚动
-		/// </summary>
-		[Tooltip("超出边界的时候才允许滚动")]
-		[SerializeField]
-		private bool enableScrollOnlyWhenOutOfBounds = false;
 
 		/// <summary>
 		/// 滚动方向
@@ -608,7 +602,7 @@ namespace BanSupport
 
 			private ScrollSystem scrollSystem;
 
-			public PrefabGroup(GameObject origin, ScrollSystem scrollSystem,int registPoolCount)
+			public PrefabGroup(GameObject origin, ScrollSystem scrollSystem, int registPoolCount)
 			{
 				this.prefabName = origin.name;
 				this.origin = origin;
@@ -729,7 +723,7 @@ namespace BanSupport
 				{
 					alignScrollDataAction = AlignScrollDataWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
-					jumpState = new JumpState(this,SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
+					jumpState = new JumpState(this, SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
@@ -1021,7 +1015,8 @@ namespace BanSupport
 
 		private void UpdateCentered()
 		{
-			if (centered)
+			//haha
+			if (isCenter)
 			{
 				if (oldMaxWidth == maxWidth)
 				{
@@ -1117,11 +1112,6 @@ namespace BanSupport
 			}
 		}
 
-		public Vector2 GetCenterOffset()
-		{
-			return getCenterOffset();
-		}
-
 		private Action<RectTransform> formatPrefabRectTransform;
 
 		/// <summary>
@@ -1214,7 +1204,10 @@ namespace BanSupport
 		{
 			UpdateCentered();
 			UpdateContentSize();
-			UpdateEnableScroll();
+
+			//haha
+			//UpdateEnableScroll();
+
 			//Add重置
 			this.addDataStartIndex = 0;
 		}
@@ -1365,40 +1358,6 @@ namespace BanSupport
 			}
 		}
 
-		private void UpdateEnableScroll()
-		{
-			//超出边界的时候才允许滚动
-			if (enableScrollOnlyWhenOutOfBounds)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					if (this.ContentTrans.Value.sizeDelta.y > Height)
-					{
-						EnableScrollDirection();
-					}
-					else
-					{
-						DisableScrollDirection();
-					}
-				}
-				else
-				{
-					if (this.ContentTrans.Value.sizeDelta.x > Width)
-					{
-						EnableScrollDirection();
-					}
-					else
-					{
-						DisableScrollDirection();
-					}
-				}
-			}
-			else
-			{
-				EnableScrollDirection();
-			}
-		}
-
 		private void DisableScrollDirection()
 		{
 			ScrollRect.horizontal = false;
@@ -1468,16 +1427,19 @@ namespace BanSupport
 
 		#endregion
 
+		//haha
+		#region 关于回调
+
+		#endregion
+
 		#region 外部方法
 
-		//haha
 
-		public Action<string, GameObject, object> onItemOpen { get; private set; }
 
-		public Action<string, GameObject, object> onItemClose { get; private set; }
-
-		public Action<string, GameObject, object> onItemRefresh { get; private set; }
-
+		/// <summary>
+		/// 设置刷新回调
+		/// 参数依次为 （预制体名字，）
+		/// </summary>
 		public void SetOnItemRefresh(Action<string, GameObject, object> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
@@ -1891,6 +1853,32 @@ namespace BanSupport
 			}
 		}
 
+		public bool IsContentOutOfBounds()
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				if (this.ContentTrans.Value.sizeDelta.y > Height)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				if (this.ContentTrans.Value.sizeDelta.x > Width)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+
 		#endregion
 
 		#region 一些辅助方法
@@ -1964,13 +1952,11 @@ namespace BanSupport
 			this.jumpState.Stop();
 			this.ScrollRect.StopMovement();
 			this.ScrollRect.enabled = false;
-			this.moveEnable = false;
 		}
 
 		public void EnableMovement()
 		{
 			this.ScrollRect.enabled = true;
-			this.moveEnable = true;
 		}
 
 		#endregion
@@ -2115,12 +2101,12 @@ namespace BanSupport
 					_border = border;
 				};
 			}
-			if (_centered != centered)
+			if (_centered != isCenter)
 			{
 				result = true;
 				_beSameAction += () =>
 				{
-					_centered = centered;
+					_centered = isCenter;
 				};
 			}
 			if (ContentTrans != null)
@@ -2234,7 +2220,7 @@ namespace BanSupport
 				//设置content高度
 				ContentTrans.Value.sizeDelta = new Vector2(ContentTrans.Value.sizeDelta.x, cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y);
 				float centerOffset = 0;
-				if (centered)
+				if (isCenter)
 				{
 					centerOffset = (Width - border.x - maxWidth) / 2;
 				}
@@ -2320,7 +2306,7 @@ namespace BanSupport
 				//设置content高度
 				ContentTrans.Value.sizeDelta = new Vector2(cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x, ContentTrans.Value.sizeDelta.y);
 				float centerOffset = 0;
-				if (centered)
+				if (isCenter)
 				{
 					centerOffset = (Height - border.y - maxWidth) / 2;
 				}

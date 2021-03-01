@@ -130,6 +130,7 @@ namespace BanSupport
 					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
 					//Callback
+					this.scrollSystem.Call
 					if (this.scrollSystem.onItemOpen != null)
 					{
 						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
