@@ -50,7 +50,7 @@ public class Free : MonoBehaviour
 
 		BindEvent();
 
-		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
+		scrollSystem.SetItemRefresh((prefabName, root, data) =>
 		{
 			//if (useOpenCloseRefreshEvent)
 			//{

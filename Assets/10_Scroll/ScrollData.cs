@@ -107,10 +107,7 @@ namespace BanSupport
 			if (this.targetTrans != null)
 			{
 				//离开视野
-				if (this.scrollSystem.onItemClose != null)
-				{
-					this.scrollSystem.onItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
-				}
+				this.scrollSystem.CallItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 				objectPool.Release(this.targetTrans.gameObject);
 				this.targetTrans = null;
 			}
@@ -119,34 +116,34 @@ namespace BanSupport
 		/// <summary>
 		/// 更新内容和位置
 		/// </summary>
-		public void Show(ScrollSystem.DataChange dataChagne)
+		public void Show(ScrollSystem.DataChange dataChange)
 		{
 			if (isVisible)
 			{
 				if (this.targetTrans == null)
 				{
 					//如果实体第一次出现，那么需要更新位置和内容
-					dataChagne = ScrollSystem.DataChange.BothPositionAndContent;
+					dataChange = ScrollSystem.DataChange.BothPositionAndContent;
 					//进入视野
 					this.targetTrans = objectPool.Get().transform as RectTransform;
 					//Callback
-					this.scrollSystem.Call
-					if (this.scrollSystem.onItemOpen != null)
-					{
-						this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
-					}
+					//this.scrollSystem.
+					//if (this.scrollSystem.onItemOpen != null)
+					//{
+					//	this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
+					//}
 #if UNITY_EDITOR
 					DrawRect();
 #endif
 				}
 				//更新位置
-				if (dataChagne >= ScrollSystem.DataChange.OnlyPosition)
+				if (dataChange >= ScrollSystem.DataChange.OnlyPosition)
 				{
 					this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
 					this.targetTrans.anchoredPosition = anchoredPosition;
 				}
 				//更新内容
-				if (dataChagne >= ScrollSystem.DataChange.BothPositionAndContent)
+				if (dataChange >= ScrollSystem.DataChange.BothPositionAndContent)
 				{
 					//Callback
 					if (this.scrollSystem.onItemRefresh != null)

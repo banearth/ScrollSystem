@@ -274,13 +274,23 @@ namespace BanSupport
 
 		#region -----------------------事件-----------------------
 
-		public Action<string, GameObject, object> onItemOpen { get; private set; }
+		/// <summary>
+		/// 打开回调（物体从无到有的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemOpen = null;
 
-		public Action<string, GameObject, object> onItemClose { get; private set; }
+		/// <summary>
+		/// 关闭回调（物体从有到无的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemClose = null;
 
-		public Action<string, GameObject, object> onItemRefresh { get; private set; }
-
-		//public
+		/// <summary>
+		/// 刷新回调（内容变化的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemRefresh = null;
 
 		/// <summary>
 		/// 获得距离中心点的距离
@@ -290,7 +300,7 @@ namespace BanSupport
 		/// <summary>
 		/// 为单个ScrollData进行布局
 		/// </summary>
-		private Action<ScrollData> alignScrollDataAction;
+		private Action<ScrollData> alignScrollDataAction = null;
 
 		#endregion
 
@@ -591,10 +601,10 @@ namespace BanSupport
 		public class PrefabGroup
 		{
 			public string prefabName { get; private set; }
+			public ScrollLayout.NewLine newLine { private set; get; }
 			public GameObject origin;
 			public GameObject bindOrigin;
 			public GameObjectPool pool;
-			public ScrollLayout.NewLine newLine { private set; get; }
 
 			public float prefabWidth { private set; get; }
 
@@ -765,37 +775,37 @@ namespace BanSupport
 			switch (startCorner) {
 				case 0:
 					//Left Up
-					_scrollBounds.left = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -ContentTrans.Value.anchoredPosition.x;
+					bounds.right = Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.up = -ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 1:
 					//Right Up
-					_scrollBounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.right = -ContentTrans.Value.anchoredPosition.x;
+					bounds.up = -ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 2:
 					//Left Down
-					_scrollBounds.left = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -ContentTrans.Value.anchoredPosition.x;
+					bounds.right = Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.up = Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 3:
 					//Right Down
-					_scrollBounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.right = -ContentTrans.Value.anchoredPosition.x;
+					bounds.up = Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
@@ -1434,25 +1444,43 @@ namespace BanSupport
 
 		#region 外部方法
 
-
-
-		/// <summary>
-		/// 设置刷新回调
-		/// 参数依次为 （预制体名字，）
-		/// </summary>
-		public void SetOnItemRefresh(Action<string, GameObject, object> onItemRefresh)
+		public void SetItemRefresh(Action<string, GameObject, object> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
 		}
 
-		public void SetOnItemClose(Action<string, GameObject, object> onItemClose)
+		public void SetItemClose(Action<string, GameObject, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
-
-		public void SetOnItemOpen(Action<string, GameObject, object> onItemOpen)
+			
+		public void SetItemOpen(Action<string, GameObject, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
+		}
+
+		public void CallItemRefresh(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemRefresh != null)
+			{
+				this.onItemRefresh(prefabName, go, data);
+			}
+		}
+
+		public void CallItemClose(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemClose != null)
+			{
+				this.onItemClose(prefabName, go, data);
+			}
+		}
+
+		public void CallItemOpen(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemOpen != null)
+			{
+				this.onItemOpen(prefabName, go, data);
+			}
 		}
 
 		/// <summary>
