@@ -94,7 +94,7 @@ public class Example : MonoBehaviour
 
 		BindEvent();
 
-		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
+		scrollSystem.SetItemRefresh((prefabName, root, data) =>
 		{
 			if (useOpenCloseRefreshEvent)
 			{
@@ -130,7 +130,7 @@ public class Example : MonoBehaviour
 			}
 		});
 
-		scrollSystem.SetOnItemClose((prefabName, root, data) =>
+		scrollSystem.SetItemClose((prefabName, root, data) =>
 		{
 			if (useOpenCloseRefreshEvent)
 			{
@@ -138,7 +138,7 @@ public class Example : MonoBehaviour
 			}
 		});
 
-		scrollSystem.SetOnItemOpen((prefabName, root, data) =>
+		scrollSystem.SetItemOpen((prefabName, root, data) =>
 		{
 			if (useOpenCloseRefreshEvent)
 			{
@@ -148,7 +148,7 @@ public class Example : MonoBehaviour
 
 		if (useBeginDragEvent)
 		{
-			scrollSystem.SetOnBeginDrag(data =>
+			scrollSystem.SetBeginDrag(data =>
 			{
 				Debug.Log("OnBeginDrag");
 			});
@@ -156,7 +156,7 @@ public class Example : MonoBehaviour
 
 		if (useEndDragEvent)
 		{
-			scrollSystem.SetOnEndDrag(data =>
+			scrollSystem.SetEndDrag(data =>
 			{
 				Debug.Log("OnEndDrag");
 			});
@@ -164,7 +164,7 @@ public class Example : MonoBehaviour
 
 		if (useDragEvent)
 		{
-			scrollSystem.SetOnDrag(data =>
+			scrollSystem.SetDrag(data =>
 			{
 				Debug.Log("OnDrag");
 			});
@@ -200,8 +200,8 @@ public class Example : MonoBehaviour
 				}
 			}
 		});
-		buttonCheck.onClick.AddListener(() => { Debug.Log(scrollSystem.GetCount(GetSelectedPrefabNames().ToArray())); });
-		buttonCheckExcept.onClick.AddListener(() => { Debug.Log(scrollSystem.GetCountExcept(GetSelectedPrefabNames().ToArray())); });
+		buttonCheck.onClick.AddListener(() => { Debug.Log(scrollSystem.GetDataCount(GetSelectedPrefabNames().ToArray())); });
+		buttonCheckExcept.onClick.AddListener(() => { Debug.Log(scrollSystem.GetDataCountExcept(GetSelectedPrefabNames().ToArray())); });
 		buttonAddChat.onClick.AddListener(() =>
 		{
 			AddChat(inputField_ChatContent.text);
@@ -255,7 +255,7 @@ public class Example : MonoBehaviour
 		{
 			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
 			{
-				scrollSystem.JumpDataByIndex(result, true);
+				scrollSystem.Jump(result, true);
 			}
 		});
 		buttonLastOne.onClick.AddListener(() =>

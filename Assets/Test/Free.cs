@@ -86,7 +86,7 @@ public class Free : MonoBehaviour
 			}
 		});
 
-		scrollSystem.SetOnItemClose((prefabName, root, data) =>
+		scrollSystem.SetItemClose((prefabName, root, data) =>
 		{
 			//if (useOpenCloseRefreshEvent)
 			//{
@@ -94,7 +94,7 @@ public class Free : MonoBehaviour
 			//}
 		});
 
-		scrollSystem.SetOnItemOpen((prefabName, root, data) =>
+		scrollSystem.SetItemOpen((prefabName, root, data) =>
 		{
 			//if (useOpenCloseRefreshEvent)
 			//{

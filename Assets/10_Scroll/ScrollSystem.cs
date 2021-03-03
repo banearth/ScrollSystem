@@ -188,7 +188,7 @@ namespace BanSupport
 		/// 这个scrollRect的范围，用于检测是否超出了范围
 		/// 当位置发生改变的时候，这个值也需要更新
 		/// </summary>
-		public RectBounds bounds;
+		private RectBounds bounds;
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -304,7 +304,7 @@ namespace BanSupport
 
 		#endregion
 
-		#region 可编辑
+		#region -----------------------可编辑-----------------------
 
 		/// <summary>
 		/// Gizmos相关
@@ -379,7 +379,7 @@ namespace BanSupport
 
 		#endregion
 
-		#region 内部类
+		#region -----------------------内部类-----------------------
 
 		/// <summary>
 		/// 使用二分法来快速确定显示的ScrollData
@@ -598,6 +598,9 @@ namespace BanSupport
 
 		}
 
+		/// <summary>
+		/// 用于封装预制体
+		/// </summary>
 		public class PrefabGroup
 		{
 			public string prefabName { get; private set; }
@@ -656,9 +659,220 @@ namespace BanSupport
 
 		}
 
+		/// <summary>
+		/// 滚动物核心数据
+		/// </summary>
+		public class ScrollData
+		{
+
+			public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+			{
+				Init(scrollSystem, prefabName, dataSource, getSize);
+			}
+
+			protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+			{
+				this.scrollSystem = scrollSystem;
+				this.objectPool = scrollSystem.ObjectPoolDic[prefabName];
+				this.dataSource = dataSource;
+				this.newLine = objectPool.newLine;
+				this.getSize = getSize;
+				this.isPositionInited = false;
+			}
+
+			//基本的属性值
+			public float width;
+			public float height;
+			public ScrollLayout.NewLine newLine;
+			public ScrollSystem.PrefabGroup objectPool;
+			public System.Object dataSource;
+			public ScrollSystem scrollSystem;
+			public Vector2 anchoredPosition;
+			public Vector2 originPosition;
+			private int lastFrameCount;
+			private bool sizeCalculated = false;
+
+			private Func<object, Vector2> getSize;
+			public bool isVisible { get; private set; }
+			public bool isPositionInited { get; private set; }
+
+			private RectBounds bounds;
+			private RectTransform targetTrans = null;
+
+			public float Left { get { return bounds.left; } }
+			public float Right { get { return bounds.right; } }
+			public float Up { get { return bounds.up; } }
+			public float Down { get { return bounds.down; } }
+
+			public Vector2 Size { get { return new Vector2(width, height); } }
+
+			public Vector3 GetWorldPosition()
+			{
+				return Tools.GetUIPosByAnchoredPos(scrollSystem.ContentTrans.Value, anchoredPosition, scrollSystem.PrefabAnchor);
+			}
+
+			/// <summary>
+			/// 设置宽度和高度，返回是否发生过改变
+			/// </summary>
+			public bool CalculateSize(bool forceCalculate = false)
+			{
+				float oldWidth = this.width;
+				float oldHeight = this.height;
+				if (forceCalculate || (sizeCalculated == false))
+				{
+					sizeCalculated = true;
+					if (getSize != null)
+					{
+						var newSize = getSize(dataSource);
+						if (newSize.x >= 0)
+						{
+							this.width = newSize.x;
+						}
+						else
+						{
+							this.width = objectPool.prefabWidth;
+						}
+						if (newSize.y >= 0)
+						{
+							this.height = newSize.y;
+						}
+						else
+						{
+							this.height = objectPool.prefabHeight;
+						}
+					}
+					else
+					{
+						this.width = objectPool.prefabWidth;
+						this.height = objectPool.prefabHeight;
+					}
+					return (oldWidth != this.width) || (oldHeight != this.height);
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			/// <summary>
+			/// 隐藏内容
+			/// </summary>
+			public void Hide()
+			{
+				this.isVisible = false;
+				if (this.targetTrans != null)
+				{
+					//离开视野
+					this.scrollSystem.CallItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
+					objectPool.Release(this.targetTrans.gameObject);
+					this.targetTrans = null;
+				}
+			}
+
+			/// <summary>
+			/// 更新内容和位置
+			/// </summary>
+			public void Show(ScrollSystem.DataChange dataChange)
+			{
+				if (isVisible)
+				{
+					if (this.targetTrans == null)
+					{
+						//如果实体第一次出现，那么需要更新位置和内容
+						dataChange = ScrollSystem.DataChange.BothPositionAndContent;
+						//进入视野
+						this.targetTrans = objectPool.Get().transform as RectTransform;
+						//Callback
+						//this.scrollSystem.
+						//if (this.scrollSystem.onItemOpen != null)
+						//{
+						//	this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
+						//}
+#if UNITY_EDITOR
+					DrawRect();
+#endif
+					}
+					//更新位置
+					if (dataChange >= ScrollSystem.DataChange.OnlyPosition)
+					{
+						this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
+						this.targetTrans.anchoredPosition = anchoredPosition;
+					}
+					//更新内容
+					if (dataChange >= ScrollSystem.DataChange.BothPositionAndContent)
+					{
+						//Callback
+						if (this.scrollSystem.onItemRefresh != null)
+						{
+							this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
+						}
+					}
+				}
+			}
+
+			/// <summary>
+			/// 只检查是否可见
+			/// </summary>
+			public bool IsVisible()
+			{
+				if (Time.frameCount == lastFrameCount) { return this.isVisible; }
+				this.lastFrameCount = Time.frameCount;
+				//haha
+				this.isVisible = bounds.Overlaps(scrollSystem.bounds);
+				return this.isVisible;
+			}
+
+			/// <summary>
+			/// 设置位置
+			/// </summary>
+			public void SetAnchoredPosition(Vector2 originPosition)
+			{
+				this.isPositionInited = true;
+				this.originPosition = originPosition;
+				this.anchoredPosition = scrollSystem.TransAnchoredPosition(originPosition);
+				UpdateRectBounds();
+			}
+
+			/// <summary>
+			/// 设置居中偏移量
+			/// </summary>
+			public void SetCenterOffset(Vector2 offset)
+			{
+				if (newLine == ScrollLayout.NewLine.None)
+				{
+					this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
+					UpdateRectBounds();
+				}
+			}
+
+			/// <summary>
+			/// 更新边界区域
+			/// </summary>
+			private void UpdateRectBounds()
+			{
+				this.bounds.left = anchoredPosition.x - 0.5f * width;
+				this.bounds.right = anchoredPosition.x + 0.5f * width;
+				this.bounds.up = anchoredPosition.y + 0.5f * height;
+				this.bounds.down = anchoredPosition.y - 0.5f * height;
+			}
+
+			/// <summary>
+			/// 在Gizmos绘制
+			/// </summary>
+			private void DrawRect()
+			{
+				if (scrollSystem.DrawGizmos)
+				{
+					var localScale = scrollSystem.ContentTrans.Value.lossyScale;
+					Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
+				}
+			}
+
+		}
+
 		#endregion
 
-		#region 内部方法
+		#region-----------------------内部方法-----------------------
 
 		private void Start()
 		{
@@ -1437,23 +1651,30 @@ namespace BanSupport
 
 		#endregion
 
-		//haha
-		#region 关于回调
+		#region -----------------------事件相关-----------------------
 
-		#endregion
-
-		#region 外部方法
-
+		/// <summary>
+		/// 设置打开回调（物体从无到有的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
 		public void SetItemRefresh(Action<string, GameObject, object> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
 		}
 
+		/// <summary>
+		/// 设置关闭回调（物体从有到无的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
 		public void SetItemClose(Action<string, GameObject, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
-			
+
+		/// <summary>
+		/// 刷新回调（内容变化的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
 		public void SetItemOpen(Action<string, GameObject, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
@@ -1482,6 +1703,27 @@ namespace BanSupport
 				this.onItemOpen(prefabName, go, data);
 			}
 		}
+
+		public void SetBeginDrag(Action<PointerEventData> onBeginDrag)
+		{
+			this.onBeginDrag = onBeginDrag;
+		}
+
+		public void SetEndDrag(Action<PointerEventData> onEndDrag)
+		{
+			this.onEndDrag = onEndDrag;
+		}
+
+		public void SetDrag(Action<PointerEventData> onDrag)
+		{
+			this.onDrag = onDrag;
+		}
+
+		#endregion
+
+		#region -----------------------外部调用的方法-----------------------
+
+
 
 		/// <summary>
 		/// 更新元素显示
@@ -1661,11 +1903,11 @@ namespace BanSupport
 		/// <summary>
 		/// 通过一个索引来跳转倒某个位置
 		/// </summary>
-		public void JumpDataByIndex(int index,bool animated = false)
+		public void Jump(int index,bool animated = false)
 		{
 			if (index >= 0 && index < listData.Count)
 			{
-				JumpData(listData[index].dataSource, animated);
+				Jump(listData[index].dataSource, animated);
 			}
 			else
 			{
@@ -1676,7 +1918,7 @@ namespace BanSupport
 		/// <summary>
 		/// 跳转到某个数据
 		/// </summary>
-		public void JumpData(object dataSource, bool animated = false)
+		public void Jump(object dataSource, bool animated = false)
 		{
 			if (!dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
@@ -1729,7 +1971,7 @@ namespace BanSupport
 		/// <summary>
 		/// 全部的元素数量
 		/// </summary>
-		public int GetCount()
+		public int GetDataCount()
 		{
 			return listData.Count;
 		}
@@ -1737,7 +1979,7 @@ namespace BanSupport
 		/// <summary>
 		/// 某种或多种元素的总数量
 		/// </summary>
-		public int GetCount(params string[] prefabNames)
+		public int GetDataCount(params string[] prefabNames)
 		{
 			int count = 0;
 			foreach (var curData in listData)
@@ -1752,7 +1994,7 @@ namespace BanSupport
 		/// <summary>
 		/// 除了某种或者多种元素的总数量
 		/// </summary>
-		public int GetCountExcept(params string[] prefabNames)
+		public int GetDataCountExcept(params string[] prefabNames)
 		{
 			int count = 0;
 			foreach (var curData in listData)
@@ -1765,7 +2007,6 @@ namespace BanSupport
 			return count;
 		}
 
-		//haha
 		/// <summary>
 		/// 增
 		/// </summary>
@@ -1881,6 +2122,9 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 是否超出边界
+		/// </summary>
 		public bool IsContentOutOfBounds()
 		{
 			if (scrollDirection == ScrollDirection.Vertical)
@@ -1952,21 +2196,6 @@ namespace BanSupport
 			{
 				onDrag(eventData);
 			}
-		}
-
-		public void SetOnBeginDrag(Action<PointerEventData> onBeginDrag)
-		{
-			this.onBeginDrag = onBeginDrag;
-		}
-
-		public void SetOnEndDrag(Action<PointerEventData> onEndDrag)
-		{
-			this.onEndDrag = onEndDrag;
-		}
-
-		public void SetOnDrag(Action<PointerEventData> onDrag)
-		{
-			this.onDrag = onDrag;
 		}
 
 		public void SetScrollDirection(bool isHorOrVer)

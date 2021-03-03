@@ -29,7 +29,7 @@ public class ItemD : MonoBehaviour
     public void OnClick()
     {
 		//Debug.Log("itemD:" + data.index);
-		scrollSystem.JumpData(this.data,true);
+		scrollSystem.Jump(this.data,true);
 	}
 
 }

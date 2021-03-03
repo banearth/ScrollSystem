@@ -12,7 +12,7 @@ public class MultipleManager : MonoBehaviour
 	void Start()
 	{
 
-		scrollSystem.SetOnItemRefresh((prefabName, root, data) =>
+		scrollSystem.SetItemRefresh((prefabName, root, data) =>
 		{
 			switch (prefabName)
 			{
