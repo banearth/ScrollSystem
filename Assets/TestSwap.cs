@@ -18,7 +18,7 @@ public class TestSwap : MonoBehaviour
 
 	void Start()
 	{
-		scrollSystem.SetOnItemRefresh(UpdateInfo);
+		scrollSystem.SetItemRefresh(UpdateInfo);
 
 		buttonClear.onClick.AddListener(() =>
 		{
@@ -58,7 +58,7 @@ public class TestSwap : MonoBehaviour
 				scrollSystem.Add("SlotItem", aSlotItem);
 			}
 		}
-		int emptyCount = maxCount - scrollSystem.GetCount();
+		int emptyCount = maxCount - scrollSystem.GetDataCount();
 		for (int i = 0; i < emptyCount; i++)
 		{
 			scrollSystem.Add("SlotItem", new SlotData { type = SlotData.Type.empty });

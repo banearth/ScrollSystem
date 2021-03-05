@@ -124,18 +124,6 @@ namespace BanSupport
 		}
 
 		/// <summary>
-		/// 这个scrollRect的范围，用于检测是否超出了范围
-		/// 当位置发生改变的时候，这个值也需要更新
-		/// </summary>
-		public RectBounds ScrollBounds
-		{
-			get
-			{
-				return _scrollBounds;
-			}
-		}
-
-		/// <summary>
 		/// 用于更直观展示剩余缓存数量
 		/// </summary>
 		public Dictionary<string, PrefabGroup> ObjectPoolDic
@@ -161,10 +149,10 @@ namespace BanSupport
 
 		#region -----------------------枚举-----------------------
 
-		public enum ScrollDirection 
-		{ 
-			Vertical, 
-			Horizontal 
+		public enum ScrollDirection
+		{
+			Vertical,
+			Horizontal
 		}
 
 		public enum DataAddOrRemove
@@ -191,12 +179,16 @@ namespace BanSupport
 
 		private ScrollRect _scrollRect = null;
 
-		private RectBounds _scrollBounds;
-
 		/// <summary>
 		/// 编辑器模式下不会操作这个变量
 		/// </summary>
 		private bool inited = false;
+
+		/// <summary>
+		/// 这个scrollRect的范围，用于检测是否超出了范围
+		/// 当位置发生改变的时候，这个值也需要更新
+		/// </summary>
+		private RectBounds bounds;
 
 		/// <summary>
 		/// 运行时用的Data，核心数据
@@ -249,11 +241,6 @@ namespace BanSupport
 		private float contentSize = 0;
 
 		/// <summary>
-		/// 为单个ScrollData进行布局
-		/// </summary>
-		private Action<ScrollData> alignScrollDataAction;
-
-		/// <summary>
 		/// 用于决定是否在show的时候进行数据操作
 		/// </summary>
 		private DataAddOrRemove dataAddOrRemove = DataAddOrRemove.None;
@@ -267,11 +254,6 @@ namespace BanSupport
 		/// 跳转状态
 		/// </summary>
 		private JumpState jumpState = null;
-
-		/// <summary>
-		/// 获得距离中心点的距离
-		/// </summary>
-		private Func<Vector2, float> getDistanceToCenter = null;
 
 		/// <summary>
 		/// 内容的中心点
@@ -290,7 +272,49 @@ namespace BanSupport
 
 		#endregion
 
-		#region 可编辑
+		#region -----------------------事件-----------------------
+
+		/// <summary>
+		/// 打开回调（物体从无到有的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemOpen = null;
+
+		/// <summary>
+		/// 关闭回调（物体从有到无的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemClose = null;
+
+		/// <summary>
+		/// 刷新回调（内容变化的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		private Action<string, GameObject, object> onItemRefresh = null;
+
+		/// <summary>
+		/// 获得距离中心点的距离
+		/// </summary>
+		private Func<Vector2, float> getDistanceToCenter = null;
+
+		/// <summary>
+		/// 为单个ScrollData进行布局
+		/// </summary>
+		private Action<ScrollData> alignScrollDataAction = null;
+
+		/// <summary>
+		/// 获得居中偏移量
+		/// </summary>
+		private Func<Vector2> getCenterOffset;
+
+		/// <summary>
+		/// 根据其实锚点转换
+		/// </summary>
+		private Func<Vector2, Vector2> getAnchoredPosition;
+
+		#endregion
+
+		#region -----------------------可编辑-----------------------
 
 		/// <summary>
 		/// Gizmos相关
@@ -332,7 +356,7 @@ namespace BanSupport
 		//备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中
 		[Tooltip("用途：自动排列居中\n备注：如果是垂直排列，对应水平居中；如果是水平，对应的垂直居中")]
 		[SerializeField]
-		private bool centered = false;
+		private bool isCenter = false;
 
 		/// <summary>
 		/// 当发生重置的时候，设置的位置
@@ -342,9 +366,6 @@ namespace BanSupport
 		[SerializeField]
 		[Header("<跳转>")]
 		private float resetNormalizedPosition = 0;
-
-		[SerializeField]
-		private bool moveEnable = true;
 
 		/// <summary>
 		/// 跳转的速度
@@ -361,13 +382,6 @@ namespace BanSupport
 		private int registPoolCount = 3;
 
 		/// <summary>
-		/// 超出边界的时候才允许滚动
-		/// </summary>
-		[Tooltip("超出边界的时候才允许滚动")]
-		[SerializeField]
-		private bool enableScrollOnlyWhenOutOfBounds = false;
-
-		/// <summary>
 		/// 滚动方向
 		/// </summary>
 		[SerializeField]
@@ -375,7 +389,7 @@ namespace BanSupport
 
 		#endregion
 
-		#region 内部类
+		#region -----------------------内部类-----------------------
 
 		/// <summary>
 		/// 使用二分法来快速确定显示的ScrollData
@@ -594,13 +608,16 @@ namespace BanSupport
 
 		}
 
+		/// <summary>
+		/// 用于封装预制体
+		/// </summary>
 		public class PrefabGroup
 		{
 			public string prefabName { get; private set; }
+			public ScrollLayout.NewLine newLine { private set; get; }
 			public GameObject origin;
 			public GameObject bindOrigin;
 			public GameObjectPool pool;
-			public ScrollLayout.NewLine newLine { private set; get; }
 
 			public float prefabWidth { private set; get; }
 
@@ -608,7 +625,7 @@ namespace BanSupport
 
 			private ScrollSystem scrollSystem;
 
-			public PrefabGroup(GameObject origin, ScrollSystem scrollSystem,int registPoolCount)
+			public PrefabGroup(GameObject origin, ScrollSystem scrollSystem, int registPoolCount)
 			{
 				this.prefabName = origin.name;
 				this.origin = origin;
@@ -652,9 +669,216 @@ namespace BanSupport
 
 		}
 
+		/// <summary>
+		/// 滚动物核心数据
+		/// </summary>
+		public class ScrollData
+		{
+
+			public ScrollData(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+			{
+				Init(scrollSystem, prefabName, dataSource, getSize);
+			}
+
+			protected void Init(ScrollSystem scrollSystem, string prefabName, object dataSource, Func<object, Vector2> getSize)
+			{
+				this.scrollSystem = scrollSystem;
+				this.objectPool = scrollSystem.ObjectPoolDic[prefabName];
+				this.dataSource = dataSource;
+				this.newLine = objectPool.newLine;
+				this.getSize = getSize;
+				this.isPositionInited = false;
+			}
+
+			//基本的属性值
+			public float width;
+			public float height;
+			public ScrollLayout.NewLine newLine;
+			public ScrollSystem.PrefabGroup objectPool;
+			public System.Object dataSource;
+			public ScrollSystem scrollSystem;
+			public Vector2 anchoredPosition;
+			public Vector2 originPosition;
+			private int lastFrameCount;
+			private bool sizeCalculated = false;
+
+			private Func<object, Vector2> getSize;
+			public bool isVisible { get; private set; }
+			public bool isPositionInited { get; private set; }
+
+			private RectBounds bounds;
+			private RectTransform targetTrans = null;
+
+			public float Left { get { return bounds.left; } }
+			public float Right { get { return bounds.right; } }
+			public float Up { get { return bounds.up; } }
+			public float Down { get { return bounds.down; } }
+
+			public Vector2 Size { get { return new Vector2(width, height); } }
+
+			public Vector3 GetWorldPosition()
+			{
+				return Tools.GetUIPosByAnchoredPos(scrollSystem.ContentTrans.Value, anchoredPosition, scrollSystem.PrefabAnchor);
+			}
+
+			/// <summary>
+			/// 设置宽度和高度，返回是否发生过改变
+			/// </summary>
+			public bool CalculateSize(bool forceCalculate = false)
+			{
+				float oldWidth = this.width;
+				float oldHeight = this.height;
+				if (forceCalculate || (sizeCalculated == false))
+				{
+					sizeCalculated = true;
+					if (getSize != null)
+					{
+						var newSize = getSize(dataSource);
+						if (newSize.x >= 0)
+						{
+							this.width = newSize.x;
+						}
+						else
+						{
+							this.width = objectPool.prefabWidth;
+						}
+						if (newSize.y >= 0)
+						{
+							this.height = newSize.y;
+						}
+						else
+						{
+							this.height = objectPool.prefabHeight;
+						}
+					}
+					else
+					{
+						this.width = objectPool.prefabWidth;
+						this.height = objectPool.prefabHeight;
+					}
+					return (oldWidth != this.width) || (oldHeight != this.height);
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			/// <summary>
+			/// 隐藏内容
+			/// </summary>
+			public void Hide()
+			{
+				this.isVisible = false;
+				if (this.targetTrans != null)
+				{
+					//离开视野
+					this.scrollSystem.CallItemClose(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
+					objectPool.Release(this.targetTrans.gameObject);
+					this.targetTrans = null;
+				}
+			}
+
+			/// <summary>
+			/// 更新内容和位置
+			/// </summary>
+			public void Show(ScrollSystem.DataChange dataChange)
+			{
+				if (isVisible)
+				{
+					if (this.targetTrans == null)
+					{
+						//如果实体第一次出现，那么需要更新位置和内容
+						dataChange = ScrollSystem.DataChange.BothPositionAndContent;
+						//进入视野
+						this.targetTrans = objectPool.Get().transform as RectTransform;
+						//Callback
+						this.scrollSystem.CallItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
+#if UNITY_EDITOR
+					DrawRect();
+#endif
+					}
+					//更新位置
+					if (dataChange >= ScrollSystem.DataChange.OnlyPosition)
+					{
+						this.targetTrans.sizeDelta = new Vector2(this.width, this.height);
+						this.targetTrans.anchoredPosition = anchoredPosition;
+					}
+					//更新内容
+					if (dataChange >= ScrollSystem.DataChange.BothPositionAndContent)
+					{
+						//Callback
+
+						if (this.scrollSystem.onItemRefresh != null)
+						{
+							this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
+						}
+					}
+				}
+			}
+
+			/// <summary>
+			/// 只检查是否可见
+			/// </summary>
+			public bool IsVisible()
+			{
+				if (Time.frameCount == lastFrameCount) { return this.isVisible; }
+				this.lastFrameCount = Time.frameCount;
+				this.isVisible = bounds.Overlaps(scrollSystem.bounds);
+				return this.isVisible;
+			}
+
+			/// <summary>
+			/// 设置位置
+			/// </summary>
+			public void SetAnchoredPosition(Vector2 originPosition)
+			{
+				this.isPositionInited = true;
+				this.originPosition = originPosition;
+				this.anchoredPosition = scrollSystem.TransAnchoredPosition(originPosition);
+				UpdateRectBounds();
+			}
+
+			/// <summary>
+			/// 设置居中偏移量
+			/// </summary>
+			public void SetCenterOffset(Vector2 offset)
+			{
+				if (newLine == ScrollLayout.NewLine.None)
+				{
+					this.anchoredPosition = scrollSystem.TransAnchoredPosition(this.originPosition + offset);
+					UpdateRectBounds();
+				}
+			}
+
+			/// <summary>
+			/// 更新边界区域
+			/// </summary>
+			private void UpdateRectBounds()
+			{
+				this.bounds.left = anchoredPosition.x - 0.5f * width;
+				this.bounds.right = anchoredPosition.x + 0.5f * width;
+				this.bounds.up = anchoredPosition.y + 0.5f * height;
+				this.bounds.down = anchoredPosition.y - 0.5f * height;
+			}
+
+			/// <summary>
+			/// 在Gizmos绘制
+			/// </summary>
+			private void DrawRect()
+			{
+				if (scrollSystem.DrawGizmos)
+				{
+					var localScale = scrollSystem.ContentTrans.Value.lossyScale;
+					Tools.DrawRect(GetWorldPosition(), localScale.x * width, localScale.y * height, Color.red);
+				}
+			}
+
+		}
+
 		#endregion
 
-		#region 内部方法
+		#region-----------------------内部方法-----------------------
 
 		private void Start()
 		{
@@ -717,7 +941,7 @@ namespace BanSupport
 				inited = true;
 				//初始化
 				InitGetCenterOffset();
-				InitTransAnchoredPosition();
+				SetGetAnchoredPosition();
 				InitFormatPrefabRectTransform();
 				InitCursor();
 				InitContentTrans();
@@ -729,7 +953,7 @@ namespace BanSupport
 				{
 					alignScrollDataAction = AlignScrollDataWhenVertical;
 					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
-					jumpState = new JumpState(this,SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
+					jumpState = new JumpState(this, SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
@@ -771,37 +995,37 @@ namespace BanSupport
 			switch (startCorner) {
 				case 0:
 					//Left Up
-					_scrollBounds.left = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -ContentTrans.Value.anchoredPosition.x;
+					bounds.right = Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.up = -ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 1:
 					//Right Up
-					_scrollBounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = -ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.right = -ContentTrans.Value.anchoredPosition.x;
+					bounds.up = -ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -Height - ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = -Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 2:
 					//Left Down
-					_scrollBounds.left = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -ContentTrans.Value.anchoredPosition.x;
+					bounds.right = Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.up = Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
 				case 3:
 					//Right Down
-					_scrollBounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.right = -ContentTrans.Value.anchoredPosition.x;
-					_scrollBounds.up = Height - ContentTrans.Value.anchoredPosition.y;
-					_scrollBounds.down = -ContentTrans.Value.anchoredPosition.y;
+					bounds.left = -Width - ContentTrans.Value.anchoredPosition.x;
+					bounds.right = -ContentTrans.Value.anchoredPosition.x;
+					bounds.up = Height - ContentTrans.Value.anchoredPosition.y;
+					bounds.down = -ContentTrans.Value.anchoredPosition.y;
 					contentCenterPosition.x = Width / 2 - ContentTrans.Value.anchoredPosition.x;
 					contentCenterPosition.y = Height / 2 - ContentTrans.Value.anchoredPosition.y;
 					break;
@@ -1021,7 +1245,7 @@ namespace BanSupport
 
 		private void UpdateCentered()
 		{
-			if (centered)
+			if (isCenter)
 			{
 				if (oldMaxWidth == maxWidth)
 				{
@@ -1053,73 +1277,14 @@ namespace BanSupport
 			}
 		}
 
-		private Func<Vector2, Vector2> transAnchoredPosition;
-
-		private void InitTransAnchoredPosition()
-		{
-			switch (startCorner)
-			{
-				case 0:
-					//Left Up
-					transAnchoredPosition = origin =>
-					{
-						origin.y = -origin.y;
-						return origin;
-					};
-					break;
-				case 1:
-					//Right Up
-					transAnchoredPosition = origin =>
-					{
-						origin.x = -origin.x;
-						origin.y = -origin.y;
-						return origin;
-					};
-					break;
-				case 2:
-					//Left Down
-					transAnchoredPosition = origin =>
-					{
-						return origin;
-					};
-					break;
-				case 3:
-					//Right Down
-					transAnchoredPosition = origin =>
-					{
-						origin.x = -origin.x;
-						return origin;
-					};
-					break;
-			}
-		}
-
+		//haha
 		/// <summary>
 		/// 转化AnchoredPosition
 		/// </summary>
 		public Vector2 TransAnchoredPosition(Vector2 position)
 		{
-			var returnPosition = transAnchoredPosition(position);
+			var returnPosition = getAnchoredPosition(position);
 			return returnPosition;
-		}
-
-		private Func<Vector2> getCenterOffset;
-
-		private void InitGetCenterOffset()
-		{
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
-			}
-		}
-
-		public Vector2 GetCenterOffset()
-		{
-			return getCenterOffset();
 		}
 
 		private Action<RectTransform> formatPrefabRectTransform;
@@ -1214,7 +1379,10 @@ namespace BanSupport
 		{
 			UpdateCentered();
 			UpdateContentSize();
-			UpdateEnableScroll();
+
+			//haha
+			//UpdateEnableScroll();
+
 			//Add重置
 			this.addDataStartIndex = 0;
 		}
@@ -1365,40 +1533,6 @@ namespace BanSupport
 			}
 		}
 
-		private void UpdateEnableScroll()
-		{
-			//超出边界的时候才允许滚动
-			if (enableScrollOnlyWhenOutOfBounds)
-			{
-				if (scrollDirection == ScrollDirection.Vertical)
-				{
-					if (this.ContentTrans.Value.sizeDelta.y > Height)
-					{
-						EnableScrollDirection();
-					}
-					else
-					{
-						DisableScrollDirection();
-					}
-				}
-				else
-				{
-					if (this.ContentTrans.Value.sizeDelta.x > Width)
-					{
-						EnableScrollDirection();
-					}
-					else
-					{
-						DisableScrollDirection();
-					}
-				}
-			}
-			else
-			{
-				EnableScrollDirection();
-			}
-		}
-
 		private void DisableScrollDirection()
 		{
 			ScrollRect.horizontal = false;
@@ -1468,30 +1602,135 @@ namespace BanSupport
 
 		#endregion
 
-		#region 外部方法
+		#region -----------------------内部事件-----------------------
 
-		//haha
+		/// <summary>
+		/// 设置锚点方法
+		/// </summary>
+		private void SetGetAnchoredPosition()
+		{
+			switch (startCorner)
+			{
+				case 0:
+					//Left Up
+					getAnchoredPosition = origin =>
+					{
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 1:
+					//Right Up
+					getAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 2:
+					//Left Down
+					getAnchoredPosition = origin =>
+					{
+						return origin;
+					};
+					break;
+				case 3:
+					//Right Down
+					getAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						return origin;
+					};
+					break;
+			}
+		}
 
-		public Action<string, GameObject, object> onItemOpen { get; private set; }
+		private void SetGetCenterOffset()
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
+			}
+		}
 
-		public Action<string, GameObject, object> onItemClose { get; private set; }
+		private void CallItemRefresh(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemRefresh != null)
+			{
+				this.onItemRefresh(prefabName, go, data);
+			}
+		}
 
-		public Action<string, GameObject, object> onItemRefresh { get; private set; }
+		public void CallItemClose(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemClose != null)
+			{
+				this.onItemClose(prefabName, go, data);
+			}
+		}
 
-		public void SetOnItemRefresh(Action<string, GameObject, object> onItemRefresh)
+		public void CallItemOpen(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemOpen != null)
+			{
+				this.onItemOpen(prefabName, go, data);
+			}
+		}
+
+		#endregion
+
+		#region -----------------------外部事件-----------------------
+
+		/// <summary>
+		/// 设置打开回调（物体从无到有的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		public void SetItemRefresh(Action<string, GameObject, object> onItemRefresh)
 		{
 			this.onItemRefresh = onItemRefresh;
 		}
 
-		public void SetOnItemClose(Action<string, GameObject, object> onItemClose)
+		/// <summary>
+		/// 设置关闭回调（物体从有到无的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		public void SetItemClose(Action<string, GameObject, object> onItemClose)
 		{
 			this.onItemClose = onItemClose;
 		}
 
-		public void SetOnItemOpen(Action<string, GameObject, object> onItemOpen)
+		/// <summary>
+		/// 刷新回调（内容变化的时候）
+		/// 参数依次为 （预制体名字，实例化物体，数据）
+		/// </summary>
+		public void SetItemOpen(Action<string, GameObject, object> onItemOpen)
 		{
 			this.onItemOpen = onItemOpen;
 		}
+
+		public void SetBeginDrag(Action<PointerEventData> onBeginDrag)
+		{
+			this.onBeginDrag = onBeginDrag;
+		}
+
+		public void SetEndDrag(Action<PointerEventData> onEndDrag)
+		{
+			this.onEndDrag = onEndDrag;
+		}
+
+		public void SetDrag(Action<PointerEventData> onDrag)
+		{
+			this.onDrag = onDrag;
+		}
+
+		#endregion
+
+		#region -----------------------外部调用的方法-----------------------
 
 		/// <summary>
 		/// 更新元素显示
@@ -1671,11 +1910,11 @@ namespace BanSupport
 		/// <summary>
 		/// 通过一个索引来跳转倒某个位置
 		/// </summary>
-		public void JumpDataByIndex(int index,bool animated = false)
+		public void Jump(int index,bool animated = false)
 		{
 			if (index >= 0 && index < listData.Count)
 			{
-				JumpData(listData[index].dataSource, animated);
+				Jump(listData[index].dataSource, animated);
 			}
 			else
 			{
@@ -1686,7 +1925,7 @@ namespace BanSupport
 		/// <summary>
 		/// 跳转到某个数据
 		/// </summary>
-		public void JumpData(object dataSource, bool animated = false)
+		public void Jump(object dataSource, bool animated = false)
 		{
 			if (!dic_DataSource_ScrollData.ContainsKey(dataSource))
 			{
@@ -1739,7 +1978,7 @@ namespace BanSupport
 		/// <summary>
 		/// 全部的元素数量
 		/// </summary>
-		public int GetCount()
+		public int GetDataCount()
 		{
 			return listData.Count;
 		}
@@ -1747,7 +1986,7 @@ namespace BanSupport
 		/// <summary>
 		/// 某种或多种元素的总数量
 		/// </summary>
-		public int GetCount(params string[] prefabNames)
+		public int GetDataCount(params string[] prefabNames)
 		{
 			int count = 0;
 			foreach (var curData in listData)
@@ -1762,7 +2001,7 @@ namespace BanSupport
 		/// <summary>
 		/// 除了某种或者多种元素的总数量
 		/// </summary>
-		public int GetCountExcept(params string[] prefabNames)
+		public int GetDataCountExcept(params string[] prefabNames)
 		{
 			int count = 0;
 			foreach (var curData in listData)
@@ -1775,7 +2014,6 @@ namespace BanSupport
 			return count;
 		}
 
-		//haha
 		/// <summary>
 		/// 增
 		/// </summary>
@@ -1891,9 +2129,38 @@ namespace BanSupport
 			}
 		}
 
+		/// <summary>
+		/// 是否超出边界
+		/// </summary>
+		public bool IsContentOutOfBounds()
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				if (this.ContentTrans.Value.sizeDelta.y > Height)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				if (this.ContentTrans.Value.sizeDelta.x > Width)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+
 		#endregion
 
-		#region 一些辅助方法
+		#region -----------------------一些辅助方法-----------------------
 
 		/// <summary>
 		/// 不区分大小写
@@ -1938,21 +2205,6 @@ namespace BanSupport
 			}
 		}
 
-		public void SetOnBeginDrag(Action<PointerEventData> onBeginDrag)
-		{
-			this.onBeginDrag = onBeginDrag;
-		}
-
-		public void SetOnEndDrag(Action<PointerEventData> onEndDrag)
-		{
-			this.onEndDrag = onEndDrag;
-		}
-
-		public void SetOnDrag(Action<PointerEventData> onDrag)
-		{
-			this.onDrag = onDrag;
-		}
-
 		public void SetScrollDirection(bool isHorOrVer)
 		{
 			this.ScrollRect.horizontal = isHorOrVer;
@@ -1964,24 +2216,21 @@ namespace BanSupport
 			this.jumpState.Stop();
 			this.ScrollRect.StopMovement();
 			this.ScrollRect.enabled = false;
-			this.moveEnable = false;
 		}
 
 		public void EnableMovement()
 		{
 			this.ScrollRect.enabled = true;
-			this.moveEnable = true;
 		}
 
 		#endregion
 
-		#region 仅用于编辑器模式下
+		#region -----------------------仅用于编辑器模式下-----------------------
 
 #if UNITY_EDITOR
 
 		private int _startCorner = int.MinValue;
 		private int _clipType = 0;
-
 
 		private Vector2 _size = Vector2.zero;
 		private ScrollDirection _scrollDirection = ScrollDirection.Vertical;
@@ -2115,12 +2364,12 @@ namespace BanSupport
 					_border = border;
 				};
 			}
-			if (_centered != centered)
+			if (_centered != isCenter)
 			{
 				result = true;
 				_beSameAction += () =>
 				{
-					_centered = centered;
+					_centered = isCenter;
 				};
 			}
 			if (ContentTrans != null)
@@ -2150,7 +2399,7 @@ namespace BanSupport
 			}
 			//初始化
 			InitGetCenterOffset();
-			InitTransAnchoredPosition();
+			SetGetAnchoredPosition();
 			InitFormatPrefabRectTransform();
 			InitCursor();
 			InitContentTrans();
@@ -2234,7 +2483,7 @@ namespace BanSupport
 				//设置content高度
 				ContentTrans.Value.sizeDelta = new Vector2(ContentTrans.Value.sizeDelta.x, cursorPos.y + maxHeight - (childCount > 0 ? spacing.y : 0) + border.y);
 				float centerOffset = 0;
-				if (centered)
+				if (isCenter)
 				{
 					centerOffset = (Width - border.x - maxWidth) / 2;
 				}
@@ -2320,7 +2569,7 @@ namespace BanSupport
 				//设置content高度
 				ContentTrans.Value.sizeDelta = new Vector2(cursorPos.x + maxHeight - (childCount > 0 ? spacing.x : 0) + border.x, ContentTrans.Value.sizeDelta.y);
 				float centerOffset = 0;
-				if (centered)
+				if (isCenter)
 				{
 					centerOffset = (Height - border.y - maxWidth) / 2;
 				}
