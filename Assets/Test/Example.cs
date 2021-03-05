@@ -266,7 +266,7 @@ public class Example : MonoBehaviour
 				{
 					result--;
 					inputField_JumpDataIndex.text = result.ToString();
-					scrollSystem.JumpDataByIndex(result, true);
+					scrollSystem.Jump(result, true);
 				}
 			}
 		});
@@ -274,11 +274,11 @@ public class Example : MonoBehaviour
 		{
 			if (int.TryParse(inputField_JumpDataIndex.text, out int result))
 			{
-				if (result + 1 < scrollSystem.GetCount())
+				if (result + 1 < scrollSystem.GetDataCount())
 				{
 					result++;
 					inputField_JumpDataIndex.text = result.ToString();
-					scrollSystem.JumpDataByIndex(result, true);
+					scrollSystem.Jump(result, true);
 				}
 			}
 		});

@@ -302,6 +302,16 @@ namespace BanSupport
 		/// </summary>
 		private Action<ScrollData> alignScrollDataAction = null;
 
+		/// <summary>
+		/// 获得居中偏移量
+		/// </summary>
+		private Func<Vector2> getCenterOffset;
+
+		/// <summary>
+		/// 根据其实锚点转换
+		/// </summary>
+		private Func<Vector2, Vector2> getAnchoredPosition;
+
 		#endregion
 
 		#region -----------------------可编辑-----------------------
@@ -783,11 +793,7 @@ namespace BanSupport
 						//进入视野
 						this.targetTrans = objectPool.Get().transform as RectTransform;
 						//Callback
-						//this.scrollSystem.
-						//if (this.scrollSystem.onItemOpen != null)
-						//{
-						//	this.scrollSystem.onItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
-						//}
+						this.scrollSystem.CallItemOpen(objectPool.prefabName, this.targetTrans.gameObject, this.dataSource);
 #if UNITY_EDITOR
 					DrawRect();
 #endif
@@ -802,6 +808,7 @@ namespace BanSupport
 					if (dataChange >= ScrollSystem.DataChange.BothPositionAndContent)
 					{
 						//Callback
+
 						if (this.scrollSystem.onItemRefresh != null)
 						{
 							this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
@@ -817,7 +824,6 @@ namespace BanSupport
 			{
 				if (Time.frameCount == lastFrameCount) { return this.isVisible; }
 				this.lastFrameCount = Time.frameCount;
-				//haha
 				this.isVisible = bounds.Overlaps(scrollSystem.bounds);
 				return this.isVisible;
 			}
@@ -935,7 +941,7 @@ namespace BanSupport
 				inited = true;
 				//初始化
 				InitGetCenterOffset();
-				InitTransAnchoredPosition();
+				SetGetAnchoredPosition();
 				InitFormatPrefabRectTransform();
 				InitCursor();
 				InitContentTrans();
@@ -1239,7 +1245,6 @@ namespace BanSupport
 
 		private void UpdateCentered()
 		{
-			//haha
 			if (isCenter)
 			{
 				if (oldMaxWidth == maxWidth)
@@ -1272,68 +1277,14 @@ namespace BanSupport
 			}
 		}
 
-		private Func<Vector2, Vector2> transAnchoredPosition;
-
-		private void InitTransAnchoredPosition()
-		{
-			switch (startCorner)
-			{
-				case 0:
-					//Left Up
-					transAnchoredPosition = origin =>
-					{
-						origin.y = -origin.y;
-						return origin;
-					};
-					break;
-				case 1:
-					//Right Up
-					transAnchoredPosition = origin =>
-					{
-						origin.x = -origin.x;
-						origin.y = -origin.y;
-						return origin;
-					};
-					break;
-				case 2:
-					//Left Down
-					transAnchoredPosition = origin =>
-					{
-						return origin;
-					};
-					break;
-				case 3:
-					//Right Down
-					transAnchoredPosition = origin =>
-					{
-						origin.x = -origin.x;
-						return origin;
-					};
-					break;
-			}
-		}
-
+		//haha
 		/// <summary>
 		/// 转化AnchoredPosition
 		/// </summary>
 		public Vector2 TransAnchoredPosition(Vector2 position)
 		{
-			var returnPosition = transAnchoredPosition(position);
+			var returnPosition = getAnchoredPosition(position);
 			return returnPosition;
-		}
-
-		private Func<Vector2> getCenterOffset;
-
-		private void InitGetCenterOffset()
-		{
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
-			}
 		}
 
 		private Action<RectTransform> formatPrefabRectTransform;
@@ -1651,7 +1602,89 @@ namespace BanSupport
 
 		#endregion
 
-		#region -----------------------事件相关-----------------------
+		#region -----------------------内部事件-----------------------
+
+		/// <summary>
+		/// 设置锚点方法
+		/// </summary>
+		private void SetGetAnchoredPosition()
+		{
+			switch (startCorner)
+			{
+				case 0:
+					//Left Up
+					getAnchoredPosition = origin =>
+					{
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 1:
+					//Right Up
+					getAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						origin.y = -origin.y;
+						return origin;
+					};
+					break;
+				case 2:
+					//Left Down
+					getAnchoredPosition = origin =>
+					{
+						return origin;
+					};
+					break;
+				case 3:
+					//Right Down
+					getAnchoredPosition = origin =>
+					{
+						origin.x = -origin.x;
+						return origin;
+					};
+					break;
+			}
+		}
+
+		private void SetGetCenterOffset()
+		{
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
+			}
+		}
+
+		private void CallItemRefresh(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemRefresh != null)
+			{
+				this.onItemRefresh(prefabName, go, data);
+			}
+		}
+
+		public void CallItemClose(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemClose != null)
+			{
+				this.onItemClose(prefabName, go, data);
+			}
+		}
+
+		public void CallItemOpen(string prefabName, GameObject go, object data)
+		{
+			if (this.onItemOpen != null)
+			{
+				this.onItemOpen(prefabName, go, data);
+			}
+		}
+
+		#endregion
+
+		#region -----------------------外部事件-----------------------
 
 		/// <summary>
 		/// 设置打开回调（物体从无到有的时候）
@@ -1680,30 +1713,6 @@ namespace BanSupport
 			this.onItemOpen = onItemOpen;
 		}
 
-		public void CallItemRefresh(string prefabName, GameObject go, object data)
-		{
-			if (this.onItemRefresh != null)
-			{
-				this.onItemRefresh(prefabName, go, data);
-			}
-		}
-
-		public void CallItemClose(string prefabName, GameObject go, object data)
-		{
-			if (this.onItemClose != null)
-			{
-				this.onItemClose(prefabName, go, data);
-			}
-		}
-
-		public void CallItemOpen(string prefabName, GameObject go, object data)
-		{
-			if (this.onItemOpen != null)
-			{
-				this.onItemOpen(prefabName, go, data);
-			}
-		}
-
 		public void SetBeginDrag(Action<PointerEventData> onBeginDrag)
 		{
 			this.onBeginDrag = onBeginDrag;
@@ -1722,8 +1731,6 @@ namespace BanSupport
 		#endregion
 
 		#region -----------------------外部调用的方法-----------------------
-
-
 
 		/// <summary>
 		/// 更新元素显示
@@ -2153,7 +2160,7 @@ namespace BanSupport
 
 		#endregion
 
-		#region 一些辅助方法
+		#region -----------------------一些辅助方法-----------------------
 
 		/// <summary>
 		/// 不区分大小写
@@ -2218,13 +2225,12 @@ namespace BanSupport
 
 		#endregion
 
-		#region 仅用于编辑器模式下
+		#region -----------------------仅用于编辑器模式下-----------------------
 
 #if UNITY_EDITOR
 
 		private int _startCorner = int.MinValue;
 		private int _clipType = 0;
-
 
 		private Vector2 _size = Vector2.zero;
 		private ScrollDirection _scrollDirection = ScrollDirection.Vertical;
@@ -2393,7 +2399,7 @@ namespace BanSupport
 			}
 			//初始化
 			InitGetCenterOffset();
-			InitTransAnchoredPosition();
+			SetGetAnchoredPosition();
 			InitFormatPrefabRectTransform();
 			InitCursor();
 			InitContentTrans();
