@@ -16,7 +16,7 @@ todo
 namespace BanSupport
 {
 
-	public class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
+	public partial class ScrollSystem : MonoBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
 	{
 
 		#region -----------------------只读-----------------------
@@ -87,6 +87,7 @@ namespace BanSupport
 			{
 				if (_contentTrans == null)
 				{
+					var 
 					_contentTrans = this.transform.Find(ContentTransformName)?.GetComponent<ScrollSystemContentTransform>();
 				}
 				return _contentTrans;
@@ -293,24 +294,29 @@ namespace BanSupport
 		private Action<string, GameObject, object> onItemRefresh = null;
 
 		/// <summary>
-		/// 获得距离中心点的距离
-		/// </summary>
-		private Func<Vector2, float> getDistanceToCenter = null;
-
-		/// <summary>
 		/// 为单个ScrollData进行布局
 		/// </summary>
-		private Action<ScrollData> alignScrollDataAction = null;
+		private Action<ScrollData> onAlignScrollDataAction = null;
+
+		/// <summary>
+		/// 格式化预制体
+		/// </summary>
+		private Action<RectTransform> onFormatPrefab = null;
 
 		/// <summary>
 		/// 获得居中偏移量
 		/// </summary>
-		private Func<Vector2> getCenterOffset;
+		private Func<Vector2> onGetCenterOffset = null;
 
 		/// <summary>
 		/// 根据其实锚点转换
 		/// </summary>
-		private Func<Vector2, Vector2> getAnchoredPosition;
+		private Func<Vector2, Vector2> onGetAnchoredPosition = null;
+
+		/// <summary>
+		/// 获得距离中心点的距离
+		/// </summary>
+		private Func<Vector2, float> onGetDistanceToCenter = null;
 
 		#endregion
 
@@ -428,7 +434,7 @@ namespace BanSupport
 				result.right = right;
 				result.middle = (left + right) / 2;
 				var curData = scrollSystem.listData[result.middle];
-				result.distance = scrollSystem.getDistanceToCenter(curData.anchoredPosition);
+				result.distance = scrollSystem.onGetDistanceToCenter(curData.anchoredPosition);
 				result.found = curData.IsVisible();
 				return result;
 			}
@@ -808,11 +814,7 @@ namespace BanSupport
 					if (dataChange >= ScrollSystem.DataChange.BothPositionAndContent)
 					{
 						//Callback
-
-						if (this.scrollSystem.onItemRefresh != null)
-						{
-							this.scrollSystem.onItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
-						}
+						this.scrollSystem.CallItemRefresh(objectPool.prefabName, this.targetTrans.gameObject, dataSource);
 					}
 				}
 			}
@@ -898,7 +900,7 @@ namespace BanSupport
 					case DataAddOrRemove.Added:
 						for (int i = this.addDataStartIndex; i < this.listData.Count; i++)
 						{
-							this.alignScrollDataAction(this.listData[i]);
+							this.onAlignScrollDataAction(this.listData[i]);
 						}
 						EndSetData();
 						break;
@@ -940,8 +942,8 @@ namespace BanSupport
 			{
 				inited = true;
 				//初始化
-				InitGetCenterOffset();
-				SetGetAnchoredPosition();
+				InitDelegate();
+				
 				InitFormatPrefabRectTransform();
 				InitCursor();
 				InitContentTrans();
@@ -951,14 +953,14 @@ namespace BanSupport
 				ScrollRect.onValueChanged.AddListener(OnValueChanged);
 				if (scrollDirection == ScrollDirection.Vertical)
 				{
-					alignScrollDataAction = AlignScrollDataWhenVertical;
-					getDistanceToCenter = GetDistanceToCenterWhenVeritical;
+					onAlignScrollDataAction = AlignScrollDataWhenVertical;
+					onGetDistanceToCenter = GetDistanceToCenterWhenVeritical;
 					jumpState = new JumpState(this, SetNormalizedPosWhenVertical, GetNormalizedPosWhenVertical);
 				}
 				else if (scrollDirection == ScrollDirection.Horizontal)
 				{
-					alignScrollDataAction = SetSingleContentDataWhenHorizontal;
-					getDistanceToCenter = GetDistanceToCenterWhenHorizontal;
+					onAlignScrollDataAction = SetSingleContentDataWhenHorizontal;
+					onGetDistanceToCenter = GetDistanceToCenterWhenHorizontal;
 					jumpState = new JumpState(this, SetNormalizedPosWhenHorizontal, GetNormalizedPosWhenHorizontal);
 				}
 			}
@@ -1252,7 +1254,7 @@ namespace BanSupport
 					return;
 				}
 				oldMaxWidth = maxWidth;
-				var centerOffset = getCenterOffset();
+				var centerOffset = onGetCenterOffset();
 				foreach (var aScrollData in listData)
 				{
 					aScrollData.SetCenterOffset(centerOffset);
@@ -1283,11 +1285,9 @@ namespace BanSupport
 		/// </summary>
 		public Vector2 TransAnchoredPosition(Vector2 position)
 		{
-			var returnPosition = getAnchoredPosition(position);
+			var returnPosition = onGetAnchoredPosition(position);
 			return returnPosition;
 		}
-
-		private Action<RectTransform> formatPrefabRectTransform;
 
 		/// <summary>
 		/// 格式化预制体
@@ -1298,7 +1298,7 @@ namespace BanSupport
 			{
 				case 0:
 					//Left Up
-					formatPrefabRectTransform = rectTransform =>
+					onFormatPrefab = rectTransform =>
 					{
 						rectTransform.pivot = new Vector2(0.5f, 0.5f);
 						rectTransform.anchorMin = new Vector2(0, 1);
@@ -1307,7 +1307,7 @@ namespace BanSupport
 					break;
 				case 1:
 					//Right Up
-					formatPrefabRectTransform = rectTransform =>
+					onFormatPrefab = rectTransform =>
 					{
 						rectTransform.pivot = new Vector2(0.5f, 0.5f);
 						rectTransform.anchorMin = new Vector2(1, 1);
@@ -1316,7 +1316,7 @@ namespace BanSupport
 					break;
 				case 2:
 					//Left Down
-					formatPrefabRectTransform = rectTransform =>
+					onFormatPrefab = rectTransform =>
 					{
 						rectTransform.pivot = new Vector2(0.5f, 0.5f);
 						rectTransform.anchorMin = new Vector2(0, 0);
@@ -1325,7 +1325,7 @@ namespace BanSupport
 					break;
 				case 3:
 					//Right Down
-					formatPrefabRectTransform = rectTransform =>
+					onFormatPrefab = rectTransform =>
 					{
 						rectTransform.pivot = new Vector2(0.5f, 0.5f);
 						rectTransform.anchorMin = new Vector2(1, 0);
@@ -1367,7 +1367,7 @@ namespace BanSupport
 			for (int i = 0; i < dataCount; i++)
 			{
 				var curData = this.listData[i];
-				alignScrollDataAction(curData);
+				onAlignScrollDataAction(curData);
 			}
 			EndSetData();
 		}
@@ -1575,7 +1575,7 @@ namespace BanSupport
 			{
 				if (IsPrefabNameIgnored(originRectTransform.name)) { continue; }
 				//确保提前格式化
-				formatPrefabRectTransform(originRectTransform);
+				onFormatPrefab(originRectTransform);
 				if (objectPoolDic.ContainsKey(originRectTransform.name))
 				{
 					Debug.LogWarning("请确保缓存对象没有重名情况！");
@@ -1604,16 +1604,23 @@ namespace BanSupport
 
 		#region -----------------------内部事件-----------------------
 
-		/// <summary>
-		/// 设置锚点方法
-		/// </summary>
-		private void SetGetAnchoredPosition()
+		private void InitDelegate()
 		{
+			//中心偏移量
+			if (scrollDirection == ScrollDirection.Vertical)
+			{
+				onGetCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
+			}
+			else if (scrollDirection == ScrollDirection.Horizontal)
+			{
+				onGetCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
+			}
+			//根据起始点，确定坐标转化方式
 			switch (startCorner)
 			{
 				case 0:
 					//Left Up
-					getAnchoredPosition = origin =>
+					onGetAnchoredPosition = origin =>
 					{
 						origin.y = -origin.y;
 						return origin;
@@ -1621,7 +1628,7 @@ namespace BanSupport
 					break;
 				case 1:
 					//Right Up
-					getAnchoredPosition = origin =>
+					onGetAnchoredPosition = origin =>
 					{
 						origin.x = -origin.x;
 						origin.y = -origin.y;
@@ -1630,32 +1637,21 @@ namespace BanSupport
 					break;
 				case 2:
 					//Left Down
-					getAnchoredPosition = origin =>
+					onGetAnchoredPosition = origin =>
 					{
 						return origin;
 					};
 					break;
 				case 3:
 					//Right Down
-					getAnchoredPosition = origin =>
+					onGetAnchoredPosition = origin =>
 					{
 						origin.x = -origin.x;
 						return origin;
 					};
 					break;
 			}
-		}
 
-		private void SetGetCenterOffset()
-		{
-			if (scrollDirection == ScrollDirection.Vertical)
-			{
-				getCenterOffset = () => { return new Vector2((Width - border.x - maxWidth) / 2, 0); };
-			}
-			else if (scrollDirection == ScrollDirection.Horizontal)
-			{
-				getCenterOffset = () => { return new Vector2(0, (Height - border.y - maxWidth) / 2); };
-			}
 		}
 
 		private void CallItemRefresh(string prefabName, GameObject go, object data)
@@ -2398,8 +2394,7 @@ namespace BanSupport
 				return;
 			}
 			//初始化
-			InitGetCenterOffset();
-			SetGetAnchoredPosition();
+			InitDelegate();
 			InitFormatPrefabRectTransform();
 			InitCursor();
 			InitContentTrans();
@@ -2412,7 +2407,7 @@ namespace BanSupport
 				{
 					var rectTransform = this.ContentTrans.Value.GetChild(i) as RectTransform;
 					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
-					formatPrefabRectTransform(rectTransform);
+					onFormatPrefab(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.ContentTrans.Value.GetChild(i).GetComponent<ScrollLayout>();
 					if (layout != null)
@@ -2498,7 +2493,7 @@ namespace BanSupport
 				{
 					var rectTransform = this.ContentTrans.Value.GetChild(i) as RectTransform;
 					if (IsPrefabNameIgnored(rectTransform.name)) { continue; }
-					formatPrefabRectTransform(rectTransform);
+					onFormatPrefab(rectTransform);
 					ScrollLayout.NewLine newLine = ScrollLayout.NewLine.None;
 					var layout = this.ContentTrans.Value.GetChild(i).GetComponent<ScrollLayout>();
 					if (layout != null)

@@ -12,10 +12,10 @@ namespace BanSupport
 		public string intField = "";
 		public int expertValue;
 
-		public IntConditionAttribute(string intField,int expertValue)
+		public IntConditionAttribute(string intField,int expectValue)
 		{
 			this.intField = intField;
-			this.expertValue = expertValue;
+			this.expertValue = expectValue;
 		}
 
 	}
