@@ -32,7 +32,7 @@ namespace BanSupport
 
 				if (GUILayout.Button("子物体手动刷新"))
 				{
-					script.SetContentChildren();
+					script.SetContent();
 				}
 
 				if (GUILayout.Button("打开几乘几设置窗口"))

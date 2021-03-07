@@ -13,7 +13,7 @@ namespace BanSupport
 	/// <summary>
 	/// 这个东西定义了基本的排列方式
 	/// </summary>
-	[ExecuteInEditMode]
+	[ExecuteAlways]
 	public class ScrollLayout : MonoBehaviour
 	{
 		public NewLine newLine = NewLine.None;
@@ -89,7 +89,7 @@ namespace BanSupport
 			var scrollSystem = this.gameObject.GetComponentInParent<ScrollSystem>();
 			if (scrollSystem != null)
 			{
-				scrollSystem.SetContentChildren();
+				scrollSystem.SetContent();
 			}
 		}
 

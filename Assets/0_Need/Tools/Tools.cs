@@ -566,6 +566,20 @@ namespace BanSupport
 			}
 		}
 
+		public static bool AddComponent<T>(GameObject go) where T : Component
+		{
+			var t = go.GetComponent<T>();
+			if (t == null)
+			{
+				go.AddComponent<T>();
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
 		public static bool RemoveComponent<T>(GameObject go) where T : Component
 		{
 			var t = go.GetComponent<T>();
